@@ -1,6 +1,12 @@
+import type { Permission, RoleCode } from '@/shared/config/permissions';
+
 export type SessionUser = {
   email: string;
   name: string;
+  /** Роли — для отображения; доступ проверяется только по permissions */
+  roles: RoleCode[];
+  /** Права, рассчитанные бэкендом по ролям пользователя */
+  permissions: Permission[];
 };
 
 /**

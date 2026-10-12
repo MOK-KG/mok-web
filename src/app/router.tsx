@@ -1,5 +1,7 @@
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-dom';
-import { AuthGate, LoginPage, PendingPage } from '@/features/auth';
+import { AuthGate, LoginPage, PendingPage, RequirePermission } from '@/features/auth';
+import { SectionPage } from '@/features/sections/SectionPage';
+import { type Section, sections } from '@/shared/config/permissions';
 import { HomePage } from './HomePage';
 
 export const routes: RouteObject[] = [
@@ -27,6 +29,17 @@ export const routes: RouteObject[] = [
       </AuthGate>
     ),
   },
+  // Разделы: без права — экран 403 по прямой ссылке
+  ...(Object.keys(sections) as Section[]).map((section) => ({
+    path: `/${section}`,
+    element: (
+      <AuthGate access="active">
+        <RequirePermission permission={sections[section]}>
+          <SectionPage section={section} />
+        </RequirePermission>
+      </AuthGate>
+    ),
+  })),
   { path: '*', element: <Navigate to="/" replace /> },
 ];
 

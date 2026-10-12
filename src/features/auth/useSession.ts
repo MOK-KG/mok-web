@@ -7,8 +7,12 @@ export function useSession() {
   return useQuery({
     queryKey: sessionQueryKey,
     queryFn: authApi.getSession,
-    staleTime: 60_000,
     retry: false,
+    // Смена роли действует без перезапуска: сессия перечитывается при возврате на вкладку,
+    // раз в минуту и после любого ответа 403 (см. app/providers)
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 60_000,
   });
 }
 

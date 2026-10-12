@@ -39,7 +39,10 @@
   },
   "home": {
     "greeting": "Hello, {{name}}",
-    "placeholder": "Platform sections will appear here."
+    "placeholder": "Platform sections will appear here.",
+    "roles": "Roles: {{roles}}",
+    "sections": "Sections",
+    "noSections": "No sections available. Contact the administrator."
   },
   "settings": {
     "theme": "Theme",
@@ -66,5 +69,20 @@
     "left_one": "{{count}} day left",
     "left_other": "{{count}} days left",
     "notWorkingDay": "The deadline falls on a non-working day"
+  },
+  "sections": {
+    "home": "Home",
+    "placeholder": "This section is under development.",
+    "tasks": "Tasks",
+    "documents": "Records management",
+    "knowledge": "Knowledge base",
+    "chat": "Chat",
+    "staff": "Staff",
+    "journal": "Activity log"
+  },
+  "forbidden": {
+    "title": "Access denied",
+    "text": "Your role does not have access to this section. Contact the administrator if you need it.",
+    "home": "Home"
   }
 }
