@@ -31,3 +31,6 @@ dist-ssr
 
 # tests
 coverage
+
+# Claude Code (личные настройки)
+.claude/settings.local.json

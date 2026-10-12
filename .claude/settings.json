@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm run *)",
+      "Bash(pnpm lint)",
+      "Bash(pnpm format)",
+      "Bash(pnpm test)",
+      "Bash(pnpm test *)",
+      "Bash(pnpm build)",
+      "Bash(pnpm typecheck)",
+      "Bash(npx *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Read(../docs/**)",
+      "Bash(git push)",
+      "Bash(git push *)"
+    ],
+    "deny": ["Bash(rm -rf *)"],
+    "additionalDirectories": ["../docs"]
+  }
+}

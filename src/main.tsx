@@ -12,7 +12,7 @@ if (!root) throw new Error('Root element #root not found');
 createRoot(root).render(
   <StrictMode>
     <AppProviders>
-      <RouterProvider router={router} />
+      <RouterProvider router={router} future={{ v7_startTransition: true }} />
     </AppProviders>
   </StrictMode>,
 );
