@@ -2,7 +2,7 @@
  * HTTP-клиент. Типы API будут генерироваться из OpenAPI командой `pnpm api:sync`
  * в src/shared/api/schema.d.ts, когда появится бэкенд.
  */
-const baseUrl = import.meta.env.VITE_API_URL ?? '/api';
+const baseUrl = import.meta.env.VITE_API_URL || '/api';
 
 export class ApiError extends Error {
   readonly status: number;
