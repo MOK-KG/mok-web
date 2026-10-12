@@ -269,3 +269,7 @@ export const PlusMediumIcon = icon(
   17,
   `<path d="M8.5 3.54167V13.4583M3.54167 8.5H13.4583" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>`,
 );
+export const MenuIcon = icon(
+  16,
+  `<path d="M2.66667 4H13.3333M2.66667 8H13.3333M2.66667 12H13.3333" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
+);

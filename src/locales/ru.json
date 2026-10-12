@@ -174,7 +174,22 @@
     "queueText": "info@olympic.kg · задача создаётся только после подтверждения",
     "queueOpen": "Разобрать",
     "board": "Доска задач",
-    "moved": "Задача перенесена в «{{status}}»"
+    "moved": "Задача перенесена в «{{status}}»",
+    "quick": {
+      "all": "Все",
+      "overdue": "Просрочено",
+      "mine": "Мои",
+      "hot": "Горит"
+    },
+    "showTasks_one": "Показать {{count}} задачу",
+    "showTasks_few": "Показать {{count}} задачи",
+    "showTasks_many": "Показать {{count}} задач",
+    "showTasks_other": "Показать {{count}} задачи",
+    "escalationShort": "Эскалация · {{hours}} часа",
+    "deputyShort": "В отпуске · зам. {{name}}",
+    "openMenu": "Разделы",
+    "closeSearch": "Закрыть поиск",
+    "noResults": "Ничего не найдено"
   },
   "taskCard": {
     "close": "Закрыть",

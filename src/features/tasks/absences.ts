@@ -1,5 +1,5 @@
 import { addDays, diffDays, type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
-import { people } from './mock';
+import { people } from './directory';
 import type { Person } from './types';
 
 export type Absence = {

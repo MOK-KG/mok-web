@@ -166,7 +166,20 @@
     "queueText": "info@olympic.kg · a task is created only after confirmation",
     "queueOpen": "Review",
     "board": "Task board",
-    "moved": "Task moved to “{{status}}”"
+    "moved": "Task moved to “{{status}}”",
+    "quick": {
+      "all": "All",
+      "overdue": "Overdue",
+      "mine": "Mine",
+      "hot": "Urgent"
+    },
+    "showTasks_one": "Show {{count}} task",
+    "showTasks_other": "Show {{count}} tasks",
+    "escalationShort": "Escalation · {{hours}} h",
+    "deputyShort": "On leave · deputy {{name}}",
+    "openMenu": "Sections",
+    "closeSearch": "Close search",
+    "noResults": "Nothing found"
   },
   "taskCard": {
     "close": "Close",

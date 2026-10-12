@@ -166,7 +166,20 @@
     "queueText": "info@olympic.kg · тапшырма ырастагандан кийин гана түзүлөт",
     "queueOpen": "Иреттөө",
     "board": "Тапшырмалар тактасы",
-    "moved": "Тапшырма «{{status}}» тизмесине жылдырылды"
+    "moved": "Тапшырма «{{status}}» тизмесине жылдырылды",
+    "quick": {
+      "all": "Баары",
+      "overdue": "Кечиккен",
+      "mine": "Меники",
+      "hot": "Шашылыш"
+    },
+    "showTasks_one": "{{count}} тапшырманы көрсөтүү",
+    "showTasks_other": "{{count}} тапшырманы көрсөтүү",
+    "escalationShort": "Эскалация · {{hours}} саат",
+    "deputyShort": "Өргүүдө · орун басары {{name}}",
+    "openMenu": "Бөлүмдөр",
+    "closeSearch": "Издөөнү жабуу",
+    "noResults": "Эч нерсе табылган жок"
   },
   "taskCard": {
     "close": "Жабуу",
