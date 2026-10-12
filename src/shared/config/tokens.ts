@@ -25,7 +25,14 @@ export type ThemeColorName =
   | 'success'
   | 'warning'
   | 'danger'
-  | 'info';
+  | 'info'
+  | 'line'
+  | 'control'
+  | 'control-active'
+  | 'danger-soft'
+  | 'danger-line'
+  | 'warning-soft'
+  | 'warning-line';
 
 export const themes: Record<ThemeName, Record<ThemeColorName, string>> = {
   dark: {
@@ -41,6 +48,14 @@ export const themes: Record<ThemeName, Record<ThemeColorName, string>> = {
     warning: '#FBBF24',
     danger: '#FF8A8A',
     info: '#5B9BF3',
+    // Из макета Figma (экран входа)
+    line: 'rgba(255, 255, 255, 0.08)',
+    control: '#131E31',
+    'control-active': '#22314D',
+    'danger-soft': '#1E1013',
+    'danger-line': 'rgba(232, 17, 45, 0.35)',
+    'warning-soft': '#1C1A10',
+    'warning-line': 'rgba(247, 201, 72, 0.28)',
   },
   light: {
     canvas: '#EDF1F7',
@@ -55,6 +70,14 @@ export const themes: Record<ThemeName, Record<ThemeColorName, string>> = {
     warning: '#D97706',
     danger: '#B91C1C',
     info: '#2563EB',
+    // Из макета Figma (экран входа)
+    line: 'rgba(10, 22, 40, 0.1)',
+    control: '#EDF1F6',
+    'control-active': '#FFFFFF',
+    'danger-soft': '#FEF2F2',
+    'danger-line': 'rgba(232, 17, 45, 0.3)',
+    'warning-soft': '#FFFBEB',
+    'warning-line': 'rgba(247, 201, 72, 0.4)',
   },
 };
 
@@ -79,8 +102,8 @@ export const tailwindColors = {
   ),
 };
 
-/** Скругления, px */
-export const radii = [6, 8, 9, 11, 14, 18] as const;
+/** Скругления, px. 12 и 24 — из макета Figma (кнопки, нижняя панель), в ТЗ их не было */
+export const radii = [6, 8, 9, 11, 12, 14, 18, 24] as const;
 
 export const tailwindBorderRadius = {
   none: '0px',

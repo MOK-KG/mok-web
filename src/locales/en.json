@@ -2,9 +2,44 @@
   "app": {
     "title": "NOC KR · Internal platform"
   },
-  "demo": {
-    "greeting": "Welcome to the National Olympic Committee platform",
-    "today": "Today: {{date}}"
+  "auth": {
+    "orgName": "NOC OF THE KYRGYZ REPUBLIC",
+    "headline1": "One office.",
+    "headline2": "One system.",
+    "tagline": "Tasks, records management, knowledge base and internal communications — in one place, for the fourteen staff of the NOC office.",
+    "taglineShort": "Tasks, documents and knowledge — in one place.",
+    "title": "Sign in",
+    "subtitle": "Use the Google work account issued on the olympic.kg domain.",
+    "subtitleShort": "Google work account on the olympic.kg domain",
+    "continueWithGoogle": "Continue with Google",
+    "signInWithAnother": "Sign in with another account",
+    "redirecting": "Redirecting to Google…",
+    "openingGoogle": "Opening Google…",
+    "popupHint": "Nothing opened? Check whether your browser is blocking pop-ups.",
+    "noPassword": "no password",
+    "forgotTitle": "Forgot your password?",
+    "forgotText": "The platform has no password of its own. Access is managed by Google Workspace — you can only reset it there.",
+    "forgotTextShort": "The platform has no password — access is managed by Google Workspace. Reset it there.",
+    "openWorkspace": "Open Google Workspace",
+    "noAccess": "No access? Accounts are created by the administrator.",
+    "contactAdmin": "Contact the administrator",
+    "deniedTitle": "Access denied",
+    "deniedText": "The account {{email}} does not belong to the olympic.kg domain. You can only sign in with a work account.",
+    "deniedFooter": "Work accounts are issued by the office administrator.",
+    "deniedFooterShort": "Work accounts are issued by the administrator.",
+    "pendingTitle": "Account under review",
+    "signedInAs": "Signed in as {{email}}",
+    "pendingBannerTitle": "No role assigned yet",
+    "pendingBannerText": "The administrator needs to assign you a role and a department. Until then, tasks, documents and the knowledge base are closed. This usually takes one working day.",
+    "pendingBannerTextShort": "The administrator needs to assign a role and a department. Until then, access is closed. This usually takes one working day.",
+    "refreshStatus": "Refresh status",
+    "urgentAccess": "Need access urgently?",
+    "signOut": "Sign out",
+    "genericError": "Could not sign in. Please try again."
+  },
+  "home": {
+    "greeting": "Hello, {{name}}",
+    "placeholder": "Platform sections will appear here."
   },
   "settings": {
     "theme": "Theme",

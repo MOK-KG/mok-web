@@ -13,8 +13,10 @@ export class ApiError extends Error {
   }
 }
 
+export const apiUrl = (path: string) => `${baseUrl}${path}`;
+
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${baseUrl}${path}`, {
+  const res = await fetch(apiUrl(path), {
     ...init,
     headers: { 'Content-Type': 'application/json', ...init?.headers },
     credentials: 'include',
