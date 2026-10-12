@@ -2,7 +2,30 @@ import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-do
 import { AuthGate, LoginPage, PendingPage, RequirePermission } from '@/features/auth';
 import { SectionPage } from '@/features/sections/SectionPage';
 import { type Section, sections } from '@/shared/config/permissions';
-import { HomePage } from './HomePage';
+import { AppLayout, type RouteHandle } from './layout/AppLayout';
+
+/** Пути разделов меню */
+export const sectionPaths: Record<Section, string> = {
+  dashboard: '/',
+  tasks: '/tasks',
+  calendar: '/calendar',
+  chat: '/chat',
+  knowledge: '/knowledge',
+  documents: '/documents',
+  files: '/files',
+  access: '/access',
+};
+
+// Разделы внутри каркаса. Без права — экран 403 по прямой ссылке (адрес не меняется)
+const sectionRoutes: RouteObject[] = (Object.keys(sections) as Section[]).map((section) => ({
+  ...(section === 'dashboard' ? { index: true } : { path: sectionPaths[section].slice(1) }),
+  handle: { section } satisfies RouteHandle,
+  element: (
+    <RequirePermission permission={sections[section]}>
+      <SectionPage />
+    </RequirePermission>
+  ),
+}));
 
 export const routes: RouteObject[] = [
   {
@@ -25,21 +48,11 @@ export const routes: RouteObject[] = [
     path: '/',
     element: (
       <AuthGate access="active">
-        <HomePage />
+        <AppLayout />
       </AuthGate>
     ),
+    children: sectionRoutes,
   },
-  // Разделы: без права — экран 403 по прямой ссылке
-  ...(Object.keys(sections) as Section[]).map((section) => ({
-    path: `/${section}`,
-    element: (
-      <AuthGate access="active">
-        <RequirePermission permission={sections[section]}>
-          <SectionPage section={section} />
-        </RequirePermission>
-      </AuthGate>
-    ),
-  })),
   { path: '*', element: <Navigate to="/" replace /> },
 ];
 

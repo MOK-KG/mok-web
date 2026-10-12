@@ -57,12 +57,11 @@ describe('права доступа', () => {
     vi.unstubAllEnvs();
   });
 
-  it('на главной видны только разделы роли', async () => {
+  it('в меню только разделы роли', async () => {
     signInAs('R6');
     await render('/');
-    await waitFor(() => text().includes('Делопроизводство'));
-    expect(text()).not.toContain('Сотрудники');
-    expect(text()).not.toContain('Журнал действий');
+    await waitFor(() => text().includes('Документы'));
+    expect(text()).not.toContain('Роли и доступ');
   });
 
   it('прямая ссылка без права — экран 403, адрес не меняется', async () => {
@@ -82,8 +81,8 @@ describe('права доступа', () => {
 
   it('смена роли действует сразу, без перезагрузки', async () => {
     signInAs('R1');
-    await render('/staff');
-    await waitFor(() => text().includes('Сотрудники') && !text().includes('Нет доступа'));
+    await render('/access');
+    await waitFor(() => text().includes('Раздел в разработке'));
 
     // Администратор сменил роль на бэкенде; пользователь вернулся на вкладку
     mockApi.setRole('R3');

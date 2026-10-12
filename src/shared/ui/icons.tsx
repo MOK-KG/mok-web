@@ -1,0 +1,111 @@
+// Набор иконок из макета Figma («единый набор 1.7 stroke»), сгенерирован из SVG.
+// Геометрия как в макете; цвет линии — currentColor, чтобы иконка брала цвет текста.
+import type { SVGProps } from 'react';
+
+type IconProps = SVGProps<SVGSVGElement> & { size?: number };
+
+function icon(viewBox: number, body: string) {
+  return function Icon({ size = viewBox, ...rest }: IconProps) {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${viewBox} ${viewBox}`}
+        fill="none"
+        aria-hidden
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: статичная разметка иконок из макета
+        dangerouslySetInnerHTML={{ __html: body }}
+        {...rest}
+      />
+    );
+  };
+}
+
+export const EmblemIcon = icon(
+  18,
+  `<path d="M9 15.3C12.4794 15.3 15.3 12.4794 15.3 9C15.3 5.52061 12.4794 2.7 9 2.7C5.52061 2.7 2.7 5.52061 2.7 9C2.7 12.4794 5.52061 15.3 9 15.3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 2.7V15.3M2.7 9H15.3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const DashboardIcon = icon(
+  18,
+  `<path d="M3 7.875L9 3L15 7.875V15H3V7.875Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.125 15V10.5H10.875V15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const TasksIcon = icon(
+  18,
+  `<path d="M5.475 3.375H3.525C3.02794 3.375 2.625 3.77794 2.625 4.275V13.725C2.625 14.2221 3.02794 14.625 3.525 14.625H5.475C5.97206 14.625 6.375 14.2221 6.375 13.725V4.275C6.375 3.77794 5.97206 3.375 5.475 3.375Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.35 3.375H8.4C7.90294 3.375 7.5 3.77794 7.5 4.275V9.975C7.5 10.4721 7.90294 10.875 8.4 10.875H10.35C10.8471 10.875 11.25 10.4721 11.25 9.975V4.275C11.25 3.77794 10.8471 3.375 10.35 3.375Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.475 3.375H13.275C12.7779 3.375 12.375 3.77794 12.375 4.275V6.975C12.375 7.47206 12.7779 7.875 13.275 7.875H14.475C14.9721 7.875 15.375 7.47206 15.375 6.975V4.275C15.375 3.77794 14.9721 3.375 14.475 3.375Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const CalendarIcon = icon(
+  18,
+  `<path d="M13.875 3.75H4.125C3.29657 3.75 2.625 4.42157 2.625 5.25V13.5C2.625 14.3284 3.29657 15 4.125 15H13.875C14.7034 15 15.375 14.3284 15.375 13.5V5.25C15.375 4.42157 14.7034 3.75 13.875 3.75Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.625 7.5H15.375M6 2.25V5.25M12 2.25V5.25" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const ChatIcon = icon(
+  18,
+  `<path d="M15 9C15 10.3924 14.4469 11.7277 13.4623 12.7123C12.4777 13.6969 11.1424 14.25 9.75 14.25H6.75L3.75 16.5V13.125C2.9069 12.4636 2.2864 11.5599 1.97185 10.5355C1.6573 9.51115 1.66375 8.41503 1.99035 7.39441C2.31695 6.37379 2.94805 5.47756 3.79888 4.82609C4.64971 4.17461 5.67952 3.79911 6.75 3.75H9.75C11.1424 3.75 12.4777 4.30312 13.4623 5.28769C14.4469 6.27226 15 7.60761 15 9Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const KnowledgeIcon = icon(
+  18,
+  `<path d="M3.75 3.375C3.75 3.07663 3.86853 2.79048 4.0795 2.5795C4.29048 2.36853 4.57663 2.25 4.875 2.25H14.25V15.75H4.875C4.57663 15.75 4.29048 15.6315 4.0795 15.4205C3.86853 15.2095 3.75 14.9234 3.75 14.625V3.375Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.75 2.25V15.75" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const DocumentsIcon = icon(
+  18,
+  `<path d="M4.875 2.25H10.125L13.875 6V15.75H4.875V2.25Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.125 2.25V6H13.875" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.75 9.75H12M6.75 12.75H10.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const FilesIcon = icon(
+  18,
+  `<path d="M6 2.25H12L15.75 8.25L12.75 13.5H5.25L2.25 8.25L6 2.25Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 2.25L5.25 8.25H12.75L12 2.25" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const AccessIcon = icon(
+  18,
+  `<path d="M9 2.625L14.625 4.725V8.775C14.625 12.225 12.225 14.325 9 15C5.775 14.325 3.375 12.225 3.375 8.775V4.725L9 2.625Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.125 9L8.625 10.5L11.25 7.875" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const SidebarCollapseIcon = icon(
+  18,
+  `<path d="M14.1 3.375H3.9C2.98873 3.375 2.25 4.11373 2.25 5.025V12.975C2.25 13.8863 2.98873 14.625 3.9 14.625H14.1C15.0113 14.625 15.75 13.8863 15.75 12.975V5.025C15.75 4.11373 15.0113 3.375 14.1 3.375Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.9 3.375V14.625" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.375 7.125L10.5 9L12.375 10.875" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const SidebarExpandIcon = icon(
+  18,
+  `<path d="M14.1 3.375H3.9C2.98873 3.375 2.25 4.11373 2.25 5.025V12.975C2.25 13.8863 2.98873 14.625 3.9 14.625H14.1C15.0113 14.625 15.75 13.8863 15.75 12.975V5.025C15.75 4.11373 15.0113 3.375 14.1 3.375Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.9 3.375V14.625" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.125 7.125L12 9L10.125 10.875" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const ChevronDownIcon = icon(
+  13,
+  `<path d="M3.25 5.14583L6.5 8.125L9.75 5.14583" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const MoonIcon = icon(
+  16,
+  `<path d="M13.3333 9.66667C12.3625 9.94258 11.3357 9.95423 10.3589 9.70039C9.3821 9.44656 8.49082 8.93646 7.77718 8.22282C7.06354 7.50918 6.55344 6.6179 6.29961 5.64111C6.04577 4.66432 6.05742 3.63745 6.33333 2.66667C5.38351 2.93663 4.52071 3.4501 3.83044 4.1562C3.14017 4.8623 2.64639 5.73652 2.39804 6.69222C2.14969 7.64793 2.15538 8.65194 2.41455 9.60477C2.67373 10.5576 3.17738 11.4262 3.87561 12.1244C4.57384 12.8226 5.44241 13.3263 6.39523 13.5854C7.34806 13.8446 8.35207 13.8503 9.30778 13.602C10.2635 13.3536 11.1377 12.8598 11.8438 12.1696C12.5499 11.4793 13.0634 10.6165 13.3333 9.66667Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const CheckDoubleIcon = icon(
+  14,
+  `<path d="M1.16667 7.29167L3.5 9.625L8.16667 4.66667" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.41667 8.75L7.29167 9.625L12.25 4.66667" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const CheckIcon = icon(
+  14,
+  `<path d="M2.91667 7.29167L5.54167 9.91667L11.0833 4.375" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const BoltIcon = icon(
+  16,
+  `<path d="M8.66667 1.33333L2.66667 9.33333H6.66667L6 14.6667L12 6.66667H8L8.66667 1.33333Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const ClockIcon = icon(
+  16,
+  `<path d="M8 14C11.3137 14 14 11.3137 14 8C14 4.68629 11.3137 2 8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 4.66667V8L10.6667 9.33333" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const MailIcon = icon(
+  16,
+  `<path d="M12.6667 3.33333H3.33333C2.59695 3.33333 2 3.93029 2 4.66667V11.3333C2 12.0697 2.59695 12.6667 3.33333 12.6667H12.6667C13.403 12.6667 14 12.0697 14 11.3333V4.66667C14 3.93029 13.403 3.33333 12.6667 3.33333Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 4.66667L8 8.66667L14 4.66667" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const AtSignIcon = icon(
+  16,
+  `<path d="M8 10.6667C9.47276 10.6667 10.6667 9.47276 10.6667 8C10.6667 6.52724 9.47276 5.33333 8 5.33333C6.52724 5.33333 5.33333 6.52724 5.33333 8C5.33333 9.47276 6.52724 10.6667 8 10.6667Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.6667 5.33333V8.66667C10.6667 9.1971 10.8774 9.70581 11.2525 10.0809C11.6275 10.456 12.1362 10.6667 12.6667 10.6667C13.1971 10.6667 13.7058 10.456 14.0809 10.0809C14.456 9.70581 14.6667 9.1971 14.6667 8.66667V8C14.6855 6.64139 14.2426 5.31663 13.4105 4.2425C12.5784 3.16836 11.4063 2.40846 10.0861 2.08714C8.76594 1.76582 7.37578 1.90212 6.14312 2.47372C4.91047 3.04532 3.90832 4.01838 3.30068 5.23367C2.69303 6.44896 2.51587 7.83452 2.79818 9.1636C3.08049 10.4927 3.80556 11.6866 4.85473 12.55C5.9039 13.4133 7.21505 13.895 8.57362 13.9162C9.93219 13.9374 11.2577 13.4969 12.3333 12.6667" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const CheckSmallIcon = icon(
+  16,
+  `<path d="M3.33333 8.33333L6.33333 11.3333L12.6667 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const SettingsIcon = icon(
+  16,
+  `<path d="M8 10C9.10457 10 10 9.10457 10 8C10 6.89543 9.10457 6 8 6C6.89543 6 6 6.89543 6 8C6 9.10457 6.89543 10 8 10Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.9333 10C12.8349 10.2066 12.8013 10.4382 12.837 10.6643C12.8727 10.8904 12.976 11.1004 13.1333 11.2667L13.2 11.3333C13.3528 11.448 13.4792 11.5941 13.5707 11.7618C13.6621 11.9295 13.7164 12.1149 13.73 12.3055C13.7435 12.496 13.716 12.6873 13.6492 12.8662C13.5824 13.0452 13.4779 13.2077 13.3428 13.3428C13.2077 13.4779 13.0452 13.5824 12.8662 13.6492C12.6873 13.716 12.496 13.7435 12.3055 13.73C12.1149 13.7164 11.9295 13.6621 11.7618 13.5707C11.5941 13.4792 11.448 13.3528 11.3333 13.2L11.2667 13.1333C11.1004 12.976 10.8904 12.8727 10.6643 12.837C10.4382 12.8013 10.2066 12.8349 10 12.9333C9.8063 13.0207 9.64108 13.1609 9.5232 13.3377C9.40531 13.5145 9.33952 13.7209 9.33333 13.9333V14C9.33333 14.3536 9.19286 14.6928 8.94281 14.9428C8.69276 15.1929 8.35362 15.3333 8 15.3333C7.64638 15.3333 7.30724 15.1929 7.05719 14.9428C6.80714 14.6928 6.66667 14.3536 6.66667 14V13.9333C6.65481 13.7134 6.57914 13.5017 6.4489 13.3241C6.31867 13.1465 6.13951 13.0107 5.93333 12.9333C5.7267 12.8349 5.49509 12.8013 5.26899 12.837C5.04289 12.8727 4.83291 12.976 4.66667 13.1333L4.6 13.2C4.48538 13.3528 4.33926 13.4792 4.17154 13.5707C4.00382 13.6621 3.8184 13.7164 3.62785 13.73C3.4373 13.7435 3.24607 13.716 3.0671 13.6492C2.88813 13.5824 2.7256 13.4779 2.59052 13.3428C2.45545 13.2077 2.35097 13.0452 2.28417 12.8662C2.21737 12.6873 2.18981 12.496 2.20335 12.3055C2.2169 12.1149 2.27123 11.9295 2.36266 11.7618C2.4541 11.5941 2.58051 11.448 2.73333 11.3333L2.8 11.2667C2.95735 11.1004 3.06068 10.8904 3.09638 10.6643C3.13208 10.4382 3.09848 10.2066 3 10C2.91258 9.8063 2.77247 9.64108 2.59565 9.5232C2.41883 9.40531 2.21242 9.33952 2 9.33333C1.64638 9.33333 1.30724 9.19286 1.05719 8.94281C0.807143 8.69276 0.666667 8.35362 0.666667 8C0.666667 7.64638 0.807143 7.30724 1.05719 7.05719C1.30724 6.80714 1.64638 6.66667 2 6.66667H2.06667C2.28658 6.65481 2.49827 6.57914 2.67586 6.4489C2.85346 6.31867 2.98926 6.13951 3.06667 5.93333C3.16514 5.7267 3.19874 5.49509 3.16304 5.26899C3.12734 5.04289 3.02402 4.83291 2.86667 4.66667L2.8 4.6C2.64718 4.48538 2.52077 4.33926 2.42933 4.17154C2.33789 4.00382 2.28356 3.8184 2.27002 3.62785C2.25648 3.4373 2.28404 3.24607 2.35084 3.0671C2.41764 2.88813 2.52211 2.7256 2.65719 2.59052C2.79227 2.45545 2.9548 2.35097 3.13377 2.28417C3.31274 2.21737 3.50397 2.18981 3.69452 2.20335C3.88507 2.2169 4.07048 2.27123 4.23821 2.36266C4.40593 2.4541 4.55205 2.58051 4.66667 2.73333L4.73333 2.8C4.89957 2.95735 5.10956 3.06068 5.33566 3.09638C5.56176 3.13208 5.79337 3.09848 6 3H6.66667C6.86037 2.91258 7.02559 2.77247 7.14347 2.59565C7.26135 2.41883 7.32714 2.21242 7.33333 2C7.33333 1.64638 7.47381 1.30724 7.72386 1.05719C7.97391 0.807143 8.31304 0.666667 8.66667 0.666667C9.02029 0.666667 9.35943 0.807143 9.60948 1.05719C9.85952 1.30724 10 1.64638 10 2V2.06667C10.0062 2.27909 10.072 2.48549 10.1899 2.66231C10.3077 2.83914 10.473 2.97925 10.6667 3.06667C10.8733 3.16514 11.1049 3.19874 11.331 3.16304C11.5571 3.12734 11.7671 3.02402 11.9333 2.86667L12 2.8C12.1146 2.64718 12.2607 2.52077 12.4285 2.42933C12.5962 2.33789 12.7816 2.28356 12.9721 2.27002C13.1627 2.25648 13.3539 2.28404 13.5329 2.35084C13.7119 2.41764 13.8744 2.52211 14.0095 2.65719C14.1446 2.79227 14.249 2.9548 14.3158 3.13377C14.3826 3.31274 14.4102 3.50397 14.3966 3.69452C14.3831 3.88507 14.3288 4.07048 14.2373 4.23821C14.1459 4.40593 14.0195 4.55205 13.8667 4.66667L13.8 4.73333C13.6426 4.89957 13.5393 5.10956 13.5036 5.33566C13.4679 5.56176 13.5015 5.79337 13.6 6V6.66667C13.6874 6.86037 13.8275 7.02559 14.0044 7.14347C14.1812 7.26135 14.3876 7.32714 14.6 7.33333H14C14.3536 7.33333 14.6928 7.47381 14.9428 7.72386C15.1929 7.97391 15.3333 8.31304 15.3333 8.66667C15.3333 9.02029 15.1929 9.35943 14.9428 9.60948C14.6928 9.85952 14.3536 10 14 10H13.9333C13.7209 10.0062 13.5145 10.072 13.3377 10.1899C13.1609 10.3077 13.0207 10.473 12.9333 10.6667V10Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const BellIcon = icon(
+  16,
+  `<g transform="translate(-8 -8)"><path d="M20 18.3333V14.6667C20 13.6058 19.5786 12.5884 18.8284 11.8382C18.0783 11.0881 17.0609 10.6667 16 10.6667C14.9391 10.6667 13.9217 11.0881 13.1716 11.8382C12.4214 12.5884 12 13.6058 12 14.6667V18.3333L10.6667 20.3333H21.3333L20 18.3333Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.6667 22.3333H17.3333" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></g>`,
+);

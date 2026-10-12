@@ -8,7 +8,13 @@
     <script>
       // Применяем сохранённую тему до первой отрисовки, чтобы не было мигания
       try {
-        const theme = localStorage.getItem('nok.theme');
+        const saved = localStorage.getItem('nok.theme');
+        const theme =
+          saved === 'system'
+            ? matchMedia('(prefers-color-scheme: light)').matches
+              ? 'light'
+              : 'dark'
+            : saved;
         if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme;
       } catch {}
     </script>

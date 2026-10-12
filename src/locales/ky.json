@@ -74,15 +74,39 @@
     "home": "Башкы бетке",
     "placeholder": "Бөлүм иштелип жатат.",
     "tasks": "Тапшырмалар",
-    "documents": "Иш кагаздарын жүргүзүү",
+    "documents": "Документтер",
     "knowledge": "Билим базасы",
     "chat": "Чат",
-    "staff": "Кызматкерлер",
-    "journal": "Аракеттер журналы"
+    "dashboard": "Иш столу",
+    "calendar": "Календарь",
+    "files": "Файлдар",
+    "access": "Ролдор жана кирүү"
   },
   "forbidden": {
     "title": "Кирүүгө уруксат жок",
     "text": "Сиздин ролуңузда бул бөлүмгө укук жок. Кирүү керек болсо, администраторго жазыңыз.",
     "home": "Башкы бетке"
+  },
+  "time": {
+    "now": "азыр",
+    "minutes": "{{count}} мүн",
+    "hours": "{{count}} с",
+    "yesterday": "кечээ",
+    "days": "{{count}} күн"
+  },
+  "shell": {
+    "orgShort": "КР УОК",
+    "collapse": "Жыйноо",
+    "expand": "Жайып көрсөтүү",
+    "notifications": "Билдирмелер",
+    "readAll": "Баарын окулду деп белгилөө",
+    "notificationSettings": "Билдирмелерди жөндөө",
+    "noNotifications": "Жаңы билдирмелер жок",
+    "language": "Тил",
+    "theme": "Тема",
+    "themeSystem": "Системадагыдай",
+    "mainNav": "Негизги меню",
+    "unread_one": "{{count}} окула элек",
+    "unread_other": "{{count}} окула элек"
   }
 }

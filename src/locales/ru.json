@@ -78,15 +78,41 @@
     "home": "На главную",
     "placeholder": "Раздел в разработке.",
     "tasks": "Задачи",
-    "documents": "Делопроизводство",
+    "documents": "Документы",
     "knowledge": "База знаний",
     "chat": "Чат",
-    "staff": "Сотрудники",
-    "journal": "Журнал действий"
+    "dashboard": "Рабочий стол",
+    "calendar": "Календарь",
+    "files": "Файлы",
+    "access": "Роли и доступ"
   },
   "forbidden": {
     "title": "Нет доступа",
     "text": "У вашей роли нет прав на этот раздел. Если доступ нужен, напишите администратору.",
     "home": "На главную"
+  },
+  "time": {
+    "now": "сейчас",
+    "minutes": "{{count}} мин",
+    "hours": "{{count}} ч",
+    "yesterday": "вчера",
+    "days": "{{count}} дн"
+  },
+  "shell": {
+    "orgShort": "НОК КР",
+    "collapse": "Свернуть",
+    "expand": "Развернуть",
+    "notifications": "Уведомления",
+    "readAll": "Прочитать все",
+    "notificationSettings": "Настроить уведомления",
+    "noNotifications": "Новых уведомлений нет",
+    "language": "Язык",
+    "theme": "Тема",
+    "themeSystem": "Как в системе",
+    "mainNav": "Основное меню",
+    "unread_one": "{{count}} непрочитанное",
+    "unread_few": "{{count}} непрочитанных",
+    "unread_many": "{{count}} непрочитанных",
+    "unread_other": "{{count}} непрочитанных"
   }
 }

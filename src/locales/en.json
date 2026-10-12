@@ -74,15 +74,39 @@
     "home": "Home",
     "placeholder": "This section is under development.",
     "tasks": "Tasks",
-    "documents": "Records management",
+    "documents": "Documents",
     "knowledge": "Knowledge base",
     "chat": "Chat",
-    "staff": "Staff",
-    "journal": "Activity log"
+    "dashboard": "Dashboard",
+    "calendar": "Calendar",
+    "files": "Files",
+    "access": "Roles & access"
   },
   "forbidden": {
     "title": "Access denied",
     "text": "Your role does not have access to this section. Contact the administrator if you need it.",
     "home": "Home"
+  },
+  "time": {
+    "now": "now",
+    "minutes": "{{count}} min",
+    "hours": "{{count}} h",
+    "yesterday": "yesterday",
+    "days": "{{count}} d"
+  },
+  "shell": {
+    "orgShort": "NOC KR",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "notifications": "Notifications",
+    "readAll": "Mark all as read",
+    "notificationSettings": "Notification settings",
+    "noNotifications": "No new notifications",
+    "language": "Language",
+    "theme": "Theme",
+    "themeSystem": "System",
+    "mainNav": "Main menu",
+    "unread_one": "{{count}} unread",
+    "unread_other": "{{count}} unread"
   }
 }

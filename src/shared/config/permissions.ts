@@ -31,6 +31,9 @@ export const permissions = [
   'knowledge.edit',
   // Чат
   'chat.use',
+  // Календарь и файлы
+  'calendar.view',
+  'files.view',
   // Сотрудники и роли
   'staff.view',
   'staff.manage',
@@ -42,15 +45,21 @@ export const permissions = [
 
 export type Permission = (typeof permissions)[number];
 
-/** Разделы приложения и право, без которого раздел закрыт */
+/**
+ * Разделы бокового меню в порядке макета и право, без которого раздел закрыт.
+ * null — раздел доступен любому пользователю с ролью.
+ * Журнал действий — внутри «Ролей и доступа» (право journal.view).
+ */
 export const sections = {
+  dashboard: null,
   tasks: 'tasks.view',
-  documents: 'documents.view',
-  knowledge: 'knowledge.view',
+  calendar: 'calendar.view',
   chat: 'chat.use',
-  staff: 'staff.view',
-  journal: 'journal.view',
-} as const satisfies Record<string, Permission>;
+  knowledge: 'knowledge.view',
+  documents: 'documents.view',
+  files: 'files.view',
+  access: 'staff.view',
+} as const satisfies Record<string, Permission | null>;
 
 export type Section = keyof typeof sections;
 
@@ -58,7 +67,13 @@ export const roleCodes = ['R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9'] 
 
 export type RoleCode = (typeof roleCodes)[number];
 
-const everyone: Permission[] = ['tasks.view', 'knowledge.view', 'chat.use'];
+const everyone: Permission[] = [
+  'tasks.view',
+  'knowledge.view',
+  'chat.use',
+  'calendar.view',
+  'files.view',
+];
 
 /**
  * ЗАГЛУШКА матрицы ролей — только для mock-режима, НЕ из ТЗ.

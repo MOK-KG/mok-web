@@ -19,3 +19,21 @@ export function formatIsoDate(date: IsoDate, pattern = 'EEEEEE, d MMMM yyyy', la
   const [y, m, d] = date.split('-').map(Number);
   return format(new Date(y, m - 1, d), pattern, { locale: localeFor(lang) });
 }
+
+/**
+ * Короткое относительное время для лент: «12 мин», «3 ч», «вчера», «2 дн».
+ * Ключи перевода — time.* (формы числа i18next).
+ */
+export function relativeShort(
+  iso: string,
+  t: (key: string, options?: Record<string, unknown>) => string,
+  now: Date = new Date(),
+) {
+  const minutes = Math.max(0, Math.round((now.getTime() - new Date(iso).getTime()) / 60_000));
+  if (minutes < 1) return t('time.now');
+  if (minutes < 60) return t('time.minutes', { count: minutes });
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return t('time.hours', { count: hours });
+  const days = Math.floor(hours / 24);
+  return days === 1 ? t('time.yesterday') : t('time.days', { count: days });
+}

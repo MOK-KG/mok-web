@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import type { Permission } from '@/shared/config/permissions';
+import { type Permission, type Section, sections } from '@/shared/config/permissions';
 import { useSession } from './useSession';
 
 /**
@@ -11,9 +11,14 @@ import { useSession } from './useSession';
 export function useCan() {
   const session = useSession();
   const granted = new Set(session.data?.status === 'active' ? session.data.user.permissions : []);
+  const isActive = session.data?.status === 'active';
+  const can = (permission: Permission | null) =>
+    permission === null ? isActive : granted.has(permission);
   return {
-    can: (permission: Permission) => granted.has(permission),
+    can,
     canAny: (list: Permission[]) => list.some((p) => granted.has(p)),
+    /** Открыт ли раздел меню */
+    canOpen: (section: Section) => can(sections[section]),
   };
 }
 
@@ -39,7 +44,8 @@ export function RequirePermission({
   permission,
   children,
 }: {
-  permission: Permission;
+  /** null — достаточно активной роли */
+  permission: Permission | null;
   children: ReactNode;
 }) {
   const { can } = useCan();
@@ -49,7 +55,7 @@ export function RequirePermission({
 export function ForbiddenPage() {
   const { t } = useTranslation();
   return (
-    <main className="flex min-h-screen items-center justify-center bg-canvas p-6">
+    <main className="flex h-full min-h-[60vh] items-center justify-center p-6">
       <section
         role="alert"
         className="w-full max-w-[420px] rounded-18 border border-line bg-panel p-8 text-center"

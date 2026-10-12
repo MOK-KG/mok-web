@@ -32,7 +32,10 @@ export type ThemeColorName =
   | 'danger-soft'
   | 'danger-line'
   | 'warning-soft'
-  | 'warning-line';
+  | 'warning-line'
+  | 'popover'
+  | 'popover-active'
+  | 'row-highlight';
 
 export const themes: Record<ThemeName, Record<ThemeColorName, string>> = {
   dark: {
@@ -56,6 +59,10 @@ export const themes: Record<ThemeName, Record<ThemeColorName, string>> = {
     'danger-line': 'rgba(232, 17, 45, 0.35)',
     'warning-soft': '#1C1A10',
     'warning-line': 'rgba(247, 201, 72, 0.28)',
+    // Из макета Figma (выпадающие меню и уведомления)
+    popover: '#1A2438',
+    'popover-active': '#25334E',
+    'row-highlight': 'rgba(255, 255, 255, 0.025)',
   },
   light: {
     canvas: '#EDF1F7',
@@ -78,6 +85,10 @@ export const themes: Record<ThemeName, Record<ThemeColorName, string>> = {
     'danger-line': 'rgba(232, 17, 45, 0.3)',
     'warning-soft': '#FFFBEB',
     'warning-line': 'rgba(247, 201, 72, 0.4)',
+    // Из макета Figma (выпадающие меню и уведомления)
+    popover: '#FFFFFF',
+    'popover-active': '#EDF1F6',
+    'row-highlight': 'rgba(10, 22, 40, 0.03)',
   },
 };
 
