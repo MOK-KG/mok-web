@@ -25,7 +25,8 @@ export type Task = {
   code: string;
   title: string;
   status: TaskStatus;
-  project: Project;
+  /** null — без проекта */
+  project: Project | null;
   /** Срок; null — без срока */
   due: IsoDate | null;
   assignee: Person | null;
@@ -42,6 +43,40 @@ export type Task = {
   escalationHours: number | null;
   /** Исполнитель в отпуске — задачу ведёт заместитель */
   deputy: Person | null;
+};
+
+export type Subtask = { id: string; title: string; done: boolean; assignee: Person | null };
+
+export type Comment = { id: string; author: Person; at: string; text: string };
+
+export type HistoryKind =
+  | 'escalation'
+  | 'assignee'
+  | 'due'
+  | 'created'
+  | 'status'
+  | 'subtask'
+  | 'comment';
+
+/** Запись журнала изменений задачи — только добавляется, не меняется и не удаляется */
+export type HistoryEntry = { id: string; kind: HistoryKind; text: string; at: string };
+
+export type Reschedule = { from: IsoDate; to: IsoDate; by: Person };
+
+/** Полные данные задачи для карточки (модального окна) */
+export type TaskDetail = Task & {
+  description: string;
+  knowledgeLink: string | null;
+  subtaskItems: Subtask[];
+  commentItems: Comment[];
+  history: HistoryEntry[];
+  rescheduleLog: Reschedule[];
+  /** За сколько дней напомнить исполнителю и постановщику; null — без напоминания */
+  reminderDays: number | null;
+  /** Время эскалации (ISO) */
+  escalatedAt: string | null;
+  source: { kind: 'email'; mailbox: string; at: string } | { kind: 'manual' };
+  department: string;
 };
 
 /** Вкладки доски */

@@ -45,6 +45,7 @@ export type ThemeColorName =
   | 'info-chip'
   | 'info-text'
   | 'muted-chip'
+  | 'info-line'
   | 'tone-blue'
   | 'tone-amber'
   | 'tone-red'
@@ -100,6 +101,7 @@ export const themes: Record<ThemeName, Record<ThemeColorName, string>> = {
     'info-chip': '#131E30',
     'info-text': '#7FA8D9',
     'muted-chip': '#141C2C',
+    'info-line': 'rgba(91, 155, 243, 0.28)',
     // Оттенки проектов и аватаров: цвет и фон
     'tone-blue': '#5B9BF3',
     'tone-blue-bg': '#1E3A5F',
@@ -155,6 +157,7 @@ export const themes: Record<ThemeName, Record<ThemeColorName, string>> = {
     'info-chip': '#DBEAFE',
     'info-text': '#1D4ED8',
     'muted-chip': '#F4F6F9',
+    'info-line': 'rgba(37, 99, 235, 0.3)',
     // Оттенки проектов и аватаров: цвет и фон
     'tone-blue': '#1D4ED8',
     'tone-blue-bg': '#DBEAFE',

@@ -7,8 +7,9 @@ import { AppProviders } from '@/app/providers';
 import { routes } from '@/app/router';
 import { mockSessionFor } from '@/features/auth/mock';
 import { addDays } from '@/shared/lib/workDays';
-import { moveTask, resetTasksMock, WipLimitError } from './api';
+import { createTask, findSimilar, moveTask, resetTasksMock, tabCounts, WipLimitError } from './api';
 import { urgencyOf } from './deadline';
+import { people } from './directory';
 import { applyFilters, emptyFilters, matchesDue } from './filters';
 import { createMockTasks } from './mock';
 
@@ -61,7 +62,10 @@ describe('срочность и фильтры (логика)', () => {
 
   it('сумма задач по проектам равна числу задач', () => {
     const byProject = new Map<string, number>();
-    for (const t of department) byProject.set(t.project.id, (byProject.get(t.project.id) ?? 0) + 1);
+    for (const t of department) {
+      const id = t.project?.id ?? 'none';
+      byProject.set(id, (byProject.get(id) ?? 0) + 1);
+    }
     expect([...byProject.values()].reduce((a, b) => a + b, 0)).toBe(department.length);
   });
 });
@@ -75,6 +79,30 @@ describe('лимит «В работе»', () => {
     await moveTask(queue[0], 'in_progress');
     await moveTask(queue[1], 'in_progress');
     await expect(moveTask(queue[2], 'in_progress')).rejects.toBeInstanceOf(WipLimitError);
+  });
+});
+
+describe('создание и похожие задачи', () => {
+  it('новая задача попадает в очередь департамента: 20 → 21, «Поставленные мной» 9 → 10', async () => {
+    resetTasksMock();
+    const task = await createTask({
+      title: 'Подготовить отчёт по антидопингу за 2026 год',
+      description: '',
+      assignee: people.dt,
+      due: addDays(TODAY, 3),
+      project: null,
+      priority: 'normal',
+      attachments: 0,
+    });
+    expect(task.status).toBe('queue');
+    expect(task.history[0].kind).toBe('created');
+    expect(tabCounts().department).toBe(21);
+    // Автор — текущий пользователь: «Поставленные мной» 9 → 10
+    expect(tabCounts().createdByMe).toBe(10);
+    // Похожие ищутся по словам названия
+    expect(findSimilar('Антидопинговый план на 2028 год').map((t) => t.title)).toContain(
+      'Антидопинговый план на 2027 год',
+    );
   });
 });
 

@@ -22,6 +22,7 @@ type Props = {
   filtered: boolean;
   /** Лимит «В работе» исчерпан (по всем задачам) */
   limitReached: boolean;
+  onOpen: (id: string) => void;
 };
 
 /** Колонка канбана (макет Figma: col/*) */
@@ -34,6 +35,7 @@ export function Column({
   canDrag,
   filtered,
   limitReached,
+  onOpen,
 }: Props) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
@@ -91,7 +93,7 @@ export function Column({
               </p>
             )}
             {group.tasks.map((task) => (
-              <TaskCard key={task.id} task={task} draggable={canDrag} />
+              <TaskCard key={task.id} task={task} draggable={canDrag} onOpen={onOpen} />
             ))}
           </div>
         ))}

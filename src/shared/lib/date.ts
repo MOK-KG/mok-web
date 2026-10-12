@@ -37,3 +37,20 @@ export function relativeShort(
   const days = Math.floor(hours / 24);
   return days === 1 ? t('time.yesterday') : t('time.days', { count: days });
 }
+
+/**
+ * Момент времени (ISO) в часовом поясе Бишкека (UTC+6) — независимо от пояса браузера.
+ * Например «8 сент, 11:05».
+ */
+export function formatInBishkek(iso: string, pattern = 'd MMM, HH:mm', lang?: string) {
+  const shifted = new Date(Date.parse(iso) + 6 * 3_600_000);
+  const local = new Date(
+    shifted.getUTCFullYear(),
+    shifted.getUTCMonth(),
+    shifted.getUTCDate(),
+    shifted.getUTCHours(),
+    shifted.getUTCMinutes(),
+  );
+  // Сокращения месяцев без точки, как в макете: «8 сент, 11:05»
+  return format(local, pattern, { locale: localeFor(lang) }).replace(/\.(?=[\s,]|$)/g, '');
+}

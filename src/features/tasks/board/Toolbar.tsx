@@ -35,6 +35,7 @@ type Props = {
   onFilters: (f: TaskFilters) => void;
   /** Задачи вкладки до фильтров — для счётчиков в фильтре */
   tasks: Task[];
+  onNewTask: () => void;
 };
 
 /** Строка вкладок со счётчиками и панель инструментов доски */
@@ -94,9 +95,8 @@ export function Toolbar(props: Props) {
         <Can permission="tasks.create">
           <button
             type="button"
-            disabled
-            title={t('tasks.comingSoon')}
-            className="flex h-8 items-center gap-[7px] rounded-9 bg-brand-red px-3 text-[12.5px] font-semibold tracking-[-0.1px] text-[#FFFFFF] disabled:cursor-not-allowed"
+            onClick={props.onNewTask}
+            className="flex h-8 items-center gap-[7px] rounded-9 bg-brand-red px-3 text-[12.5px] font-semibold tracking-[-0.1px] text-[#FFFFFF] hover:opacity-90"
           >
             <PlusIcon size={16} />
             {t('tasks.newTask')}
@@ -145,7 +145,7 @@ function GroupingMenu({ value, onChange }: { value: Grouping; onChange: (g: Grou
 
 const projectsOf = (tasks: Task[]) => {
   const map = new Map<string, Project>();
-  for (const t of tasks) map.set(t.project.id, t.project);
+  for (const t of tasks) if (t.project) map.set(t.project.id, t.project);
   return [...map.values()];
 };
 
@@ -239,7 +239,7 @@ function FilterPopover({
                   />
                   <span className="flex-1">{p.name}</span>
                   <span className="text-[10.5px] font-normal text-dim">
-                    {tasks.filter((x) => x.project.id === p.id).length}
+                    {tasks.filter((x) => x.project?.id === p.id).length}
                   </span>
                 </label>
               );

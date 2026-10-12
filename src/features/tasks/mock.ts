@@ -1,62 +1,155 @@
 import { addDays, type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
-import type { Person, Project, Task, TaskStatus } from './types';
+import { absenceOf, isAbsentOn } from './absences';
+import { currentUserId, people, projects } from './directory';
+import type { HistoryEntry, Person, Project, TaskDetail, TaskStatus } from './types';
+
+export { currentUserId, people, projects };
 
 /**
  * ЗАГЛУШКА задач до появления бэкенда: задачи из макета Figma.
- * Сроки задаются СМЕЩЕНИЕМ от сегодняшнего дня, чтобы «Просрочено 1 дн» оставалось
- * верным в любой день. Имена вымышленные (см. CLAUDE.md, раздел «Данные»).
+ * Сроки и время событий задаются СМЕЩЕНИЕМ от сегодняшнего дня, чтобы «Просрочено 1 дн»
+ * оставалось верным в любой день. Число подзадач, комментариев и переносов на карточке
+ * считается из тех же списков, что открываются в задаче.
+ * Имена вымышленные (см. CLAUDE.md, раздел «Данные»).
  */
 
-export const people = {
-  ad: { id: 'u-ad', name: 'Айбек Дуйшеев', short: 'А. Дуйшеев', tone: 'blue' },
-  nb: { id: 'u-nb', name: 'Нурлан Бакиров', short: 'Н. Бакиров', tone: 'red' },
-  dt: { id: 'u-dt', name: 'Дамира Токтосунова', short: 'Д. Токтосунова', tone: 'purple' },
-  ka: { id: 'u-ka', name: 'Канат Асанов', short: 'К. Асанов', tone: 'amber' },
-  me: { id: 'u-me', name: 'Мээрим Эсенова', short: 'М. Эсенова', tone: 'green' },
-} satisfies Record<string, Person>;
+type Seed = {
+  title: string;
+  status: TaskStatus;
+  project: Project | null;
+  author: Person;
+  assignee?: Person;
+  /** Смещение срока от сегодня в днях; null — без срока */
+  dueIn: number | null;
+  priority?: TaskDetail['priority'];
+  fromEmail?: boolean;
+  attachments?: number;
+  escalationHours?: number;
+  description?: string;
+  knowledgeLink?: string;
+  /** Подзадачи: [название, сделано, исполнитель] или число — сгенерировать */
+  subtasks?: number | [string, boolean, Person | null][];
+  /** Комментарии: [автор, смещение в часах назад, текст] или число — сгенерировать */
+  comments?: number | [Person, number, string][];
+  /** Переносы срока: [смещение «было», смещение «стало», кто] относительно срока */
+  reschedules?: [number, number, Person][];
+  reminderDays?: number;
+};
 
-/** Текущий пользователь заглушки — Айбек Дуйшеев */
-export const currentUserId = people.ad.id;
-
-export const projects = {
-  antidoping: { id: 'p-antidoping', name: 'Антидопинг 2026', tone: 'green' },
-  accreditation: { id: 'p-accreditation', name: 'Аккредитация', tone: 'violet' },
-  legal: { id: 'p-legal', name: 'Правовая база 2026', tone: 'gold' },
-  asian: { id: 'p-asian', name: 'Азиатские игры 2026', tone: 'blue' },
-  international: { id: 'p-international', name: 'Международные связи', tone: 'orange' },
-  partners: { id: 'p-partners', name: 'Партнёры и спонсоры', tone: 'purple' },
-  grants: { id: 'p-grants', name: 'Гранты и заявки', tone: 'cyan' },
-} satisfies Record<string, Project>;
-
-type Seed = Partial<Task> &
-  Pick<Task, 'title' | 'status' | 'project' | 'author'> & {
-    /** Смещение срока от сегодня в днях; null — без срока */
-    dueIn: number | null;
-  };
+/** Момент времени в Бишкеке: день со смещением и время HH:MM → ISO */
+export const atBishkek = (day: IsoDate, time: string) => `${day}T${time}:00+06:00`;
 
 let counter = 400;
+let seq = 0;
+const nextId = (prefix: string) => `${prefix}-${++seq}`;
 
-function make(seed: Seed, today: IsoDate): Task {
+const genericComments = [
+  'Посмотрел, по срокам успеваем.',
+  'Добавил данные из прошлогоднего отчёта.',
+  'Нужна подпись генерального секретаря.',
+  'Согласовал с департаментом, можно двигаться дальше.',
+];
+
+function make(seed: Seed, today: IsoDate): TaskDetail {
   counter += 1;
-  const { dueIn, ...rest } = seed;
+  const createdDay = addDays(today, -12);
+  const createdAt = atBishkek(createdDay, '16:02');
+  const due = seed.dueIn === null ? null : addDays(today, seed.dueIn);
+  const assignee = seed.assignee ?? null;
+
+  const subtaskCount = typeof seed.subtasks === 'number' ? seed.subtasks : 0;
+  const subtaskItems = Array.isArray(seed.subtasks)
+    ? seed.subtasks.map(([title, done, who]) => ({ id: nextId('s'), title, done, assignee: who }))
+    : Array.from({ length: subtaskCount }, (_, i) => ({
+        id: nextId('s'),
+        title: `Шаг ${i + 1}`,
+        done: i < Math.floor(subtaskCount / 2),
+        assignee,
+      }));
+
+  const commentCount = typeof seed.comments === 'number' ? seed.comments : 0;
+  const commentItems = Array.isArray(seed.comments)
+    ? seed.comments.map(([author, hoursAgo, text]) => ({
+        id: nextId('c'),
+        author,
+        at: new Date(Date.parse(atBishkek(today, '09:00')) - hoursAgo * 3_600_000).toISOString(),
+        text,
+      }))
+    : Array.from({ length: commentCount }, (_, i) => ({
+        id: nextId('c'),
+        author: i % 2 === 0 ? (assignee ?? seed.author) : seed.author,
+        at: atBishkek(addDays(today, -commentCount + i), '10:30'),
+        text: genericComments[i % genericComments.length],
+      }));
+
+  const rescheduleLog =
+    due && seed.reschedules
+      ? seed.reschedules.map(([from, to, by]) => ({
+          from: addDays(due, from),
+          to: addDays(due, to),
+          by,
+        }))
+      : [];
+
+  const escalatedAt = seed.escalationHours ? atBishkek(addDays(today, -1), '14:20') : null;
+
+  // Журнал изменений: новые сверху. Записи только добавляются
+  const history: HistoryEntry[] = [];
+  if (escalatedAt)
+    history.push({ id: nextId('h'), kind: 'escalation', text: 'escalation', at: escalatedAt });
+  const moves = rescheduleLog.slice().reverse();
+  for (const [i, r] of moves.entries()) {
+    history.push({
+      id: nextId('h'),
+      kind: 'due',
+      text: `${r.from}|${r.to}`,
+      at: atBishkek(addDays(createdDay, 5 + moves.length - i), '09:14'),
+    });
+  }
+  history.push({
+    id: nextId('h'),
+    kind: 'created',
+    text: seed.fromEmail ? 'email' : 'manual',
+    at: createdAt,
+  });
+
+  // Заместитель — если исполнитель сейчас в отпуске
+  const absence = absenceOf(assignee?.id, today);
+  const deputy = absence && isAbsentOn(absence, today) ? absence.deputy : null;
+
   return {
     id: `t-${counter}`,
     code: `ЗД-2026-${String(counter).padStart(4, '0')}`,
-    assignee: null,
-    priority: 'normal',
-    subtasks: 0,
-    comments: 0,
-    attachments: 0,
-    fromEmail: false,
-    reschedules: 0,
-    escalationHours: null,
-    deputy: null,
-    due: dueIn === null ? null : addDays(today, dueIn),
-    ...rest,
+    title: seed.title,
+    status: seed.status,
+    project: seed.project,
+    due,
+    assignee,
+    author: seed.author,
+    priority: seed.priority ?? 'normal',
+    subtasks: subtaskItems.length,
+    comments: commentItems.length,
+    attachments: seed.attachments ?? 0,
+    fromEmail: seed.fromEmail ?? false,
+    reschedules: rescheduleLog.length,
+    escalationHours: seed.escalationHours ?? null,
+    deputy,
+    description: seed.description ?? '',
+    knowledgeLink: seed.knowledgeLink ?? null,
+    subtaskItems,
+    commentItems,
+    history,
+    rescheduleLog,
+    reminderDays: seed.reminderDays ?? null,
+    escalatedAt,
+    source: seed.fromEmail
+      ? { kind: 'email', mailbox: 'info@olympic.kg', at: createdAt }
+      : { kind: 'manual' },
+    department: 'Административный',
   };
 }
 
-const { ad, nb, dt, ka, me } = people;
+const { ad, nb, dt, ka, me, ju } = people;
 const p = projects;
 
 /** 20 задач департамента: 6 в очереди, 4 в работе, 2 на проверке, 8 готово */
@@ -71,7 +164,7 @@ function departmentSeeds(): Seed[] {
       dueIn: -1,
       fromEmail: true,
       attachments: 2,
-      reschedules: 1,
+      reschedules: [[-3, 0, ka]],
       priority: 'high',
     },
     {
@@ -127,11 +220,38 @@ function departmentSeeds(): Seed[] {
       author: ad,
       assignee: nb,
       dueIn: 9,
+      fromEmail: true,
       escalationHours: 4,
-      reschedules: 2,
       priority: 'high',
-      subtasks: 4,
-      comments: 5,
+      description:
+        'Устав НОК КР действует только на русском языке. По требованию Минюста нужен официальный перевод на государственный язык до конца сентября. Перевод делает привлечённый специалист, юридическую сверку — наш юрист.',
+      knowledgeLink: 'Порядок официального перевода документов',
+      subtasks: [
+        ['Передать текст устава переводчику', true, ad],
+        ['Черновой перевод главы 1–4', true, nb],
+        ['Юридическая сверка терминов', false, ju],
+        ['Утверждение на Исполкоме', false, null],
+      ],
+      comments: [
+        [ka, 70, 'Переводчик подтвердил сроки, текст передан.'],
+        [ad, 52, 'Приложил глоссарий МОК к задаче.'],
+        [nb, 46, 'Начал главу 3, по главам 1–2 вопросов нет.'],
+        [
+          nb,
+          22,
+          'Черновик главы 1–4 готов. Термины «Исполком» и «Генеральная ассамблея» перевёл по глоссарию МОК, нужна сверка.',
+        ],
+        [
+          ju,
+          19,
+          'Посмотрю до конца недели. По статье 12 будет расхождение с формулировкой Минюста.',
+        ],
+      ],
+      reschedules: [
+        [-17, -8, ad],
+        [-8, 0, nb],
+      ],
+      reminderDays: 2,
     },
     {
       title: 'Смета на Азиатские игры 2026',
@@ -171,7 +291,6 @@ function departmentSeeds(): Seed[] {
       project: p.antidoping,
       author: ad,
       assignee: me,
-      deputy: nb,
       dueIn: 16,
       subtasks: 3,
       comments: 7,
@@ -270,16 +389,17 @@ const archiveTitles = [
   'Подготовка пресс-релиза',
 ];
 const archiveProjects = Object.values(projects);
-const archivePeople = Object.values(people);
+const archivePeople = [ad, nb, dt, ka, me];
 
 export function createMockTasks(today: IsoDate = todayInBishkek()) {
   counter = 400;
+  seq = 0;
   const department = departmentSeeds().map((seed) => make(seed, today));
   const archive = Array.from({ length: ARCHIVE_SIZE }, (_, i) =>
     make(
       {
         title: `${archiveTitles[i % archiveTitles.length]} № ${i + 1}`,
-        status: 'done' as TaskStatus,
+        status: 'done',
         project: archiveProjects[i % archiveProjects.length],
         author: archivePeople[(i + 1) % archivePeople.length],
         assignee: archivePeople[i % archivePeople.length],

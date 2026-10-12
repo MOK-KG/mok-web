@@ -24,13 +24,18 @@ function sortTasks(tasks: Task[], status: TaskStatus) {
   return status === 'done' ? sorted.reverse() : sorted;
 }
 
-function groupTasks(tasks: Task[], grouping: Grouping, noAssignee: string): TaskGroup[] {
+function groupTasks(
+  tasks: Task[],
+  grouping: Grouping,
+  noAssignee: string,
+  noProject: string,
+): TaskGroup[] {
   if (grouping === 'none') return [{ key: 'all', label: null, tasks }];
   const map = new Map<string, TaskGroup>();
   for (const task of tasks) {
     const [key, label] =
       grouping === 'project'
-        ? [task.project.id, task.project.name]
+        ? [task.project?.id ?? 'none', task.project?.name ?? noProject]
         : [task.assignee?.id ?? 'none', task.assignee?.short ?? noAssignee];
     const group = map.get(key) ?? { key, label, tasks: [] };
     group.tasks.push(task);
@@ -47,10 +52,11 @@ type Props = {
   inProgressAll: number;
   /** Включены фильтр или поиск */
   filtered: boolean;
+  onOpen: (id: string) => void;
 };
 
 /** Канбан-доска: 4 колонки, перетаскивание карточек между ними */
-export function Board({ tasks, grouping, canDrag, inProgressAll, filtered }: Props) {
+export function Board({ tasks, grouping, canDrag, inProgressAll, filtered, onOpen }: Props) {
   const { t } = useTranslation();
   const move = useMoveTask();
   const [active, setActive] = useState<Task | null>(null);
@@ -58,7 +64,10 @@ export function Board({ tasks, grouping, canDrag, inProgressAll, filtered }: Pro
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor),
+    // Перетаскивание с клавиатуры — пробелом; Enter открывает карточку
+    useSensor(KeyboardSensor, {
+      keyboardCodes: { start: ['Space'], cancel: ['Escape'], end: ['Space', 'Enter'] },
+    }),
   );
 
   const byStatus = useMemo(() => {
@@ -118,12 +127,18 @@ export function Board({ tasks, grouping, canDrag, inProgressAll, filtered }: Pro
             key={status}
             status={status}
             total={byStatus[status].length}
-            groups={groupTasks(byStatus[status], grouping, t('tasks.group.noAssignee'))}
+            groups={groupTasks(
+              byStatus[status],
+              grouping,
+              t('tasks.group.noAssignee'),
+              t('tasks.group.noProject'),
+            )}
             dragActive={active !== null}
             blocked={status === 'in_progress' && inProgressFull && active?.status !== 'in_progress'}
             canDrag={canDrag}
             filtered={filtered}
             limitReached={inProgressFull}
+            onOpen={onOpen}
           />
         ))}
       </div>

@@ -48,7 +48,8 @@ export function applyFilters(
   const query = search.trim().toLocaleLowerCase('ru');
   return tasks.filter(
     (t) =>
-      (filters.projects.length === 0 || filters.projects.includes(t.project.id)) &&
+      (filters.projects.length === 0 ||
+        (t.project !== null && filters.projects.includes(t.project.id))) &&
       (filters.due.length === 0 || filters.due.some((d) => matchesDue(t, d, today))) &&
       (query === '' || t.title.toLocaleLowerCase('ru').includes(query)),
   );

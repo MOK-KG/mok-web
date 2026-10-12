@@ -88,13 +88,15 @@ function Meta({
 
 type Props = {
   task: Task;
+  /** Открыть карточку задачи (клик или Enter) */
+  onOpen?: (id: string) => void;
   draggable?: boolean;
   /** Карточка в слое перетаскивания */
   overlay?: boolean;
 };
 
 /** Мини-карточка задачи на доске (макет Figma: card/*) */
-export function TaskCard({ task, draggable = false, overlay = false }: Props) {
+export function TaskCard({ task, onOpen, draggable = false, overlay = false }: Props) {
   const drag = useDraggable({ id: task.id, data: { task }, disabled: !draggable || overlay });
   return (
     <CardView
@@ -104,6 +106,7 @@ export function TaskCard({ task, draggable = false, overlay = false }: Props) {
       setRef={drag.setNodeRef}
       attributes={draggable ? drag.attributes : undefined}
       listeners={draggable ? drag.listeners : undefined}
+      onOpen={overlay ? undefined : onOpen}
     />
   );
 }
@@ -115,8 +118,10 @@ function CardView({
   setRef,
   attributes,
   listeners,
+  onOpen,
 }: {
   task: Task;
+  onOpen?: (id: string) => void;
   overlay: boolean;
   dragging: boolean;
   setRef: (el: HTMLElement | null) => void;
@@ -142,14 +147,30 @@ function CardView({
       {stripeClass && (
         <span aria-hidden className={`absolute inset-y-0 left-0 w-[2.5px] ${stripeClass}`} />
       )}
-      <p className="flex items-center gap-[5px] text-[10px] font-medium tracking-[0.2px] text-faint">
-        <span
-          aria-hidden
-          className={`size-[6px] rounded-full ${toneClasses[task.project.tone].dot}`}
-        />
-        {task.project.name}
-      </p>
-      <h3 className="mt-[5px] text-[12.5px] font-medium leading-[17px] text-text">{task.title}</h3>
+      {task.project && (
+        <p className="flex items-center gap-[5px] text-[10px] font-medium tracking-[0.2px] text-faint">
+          <span
+            aria-hidden
+            className={`size-[6px] rounded-full ${toneClasses[task.project.tone].dot}`}
+          />
+          {task.project.name}
+        </p>
+      )}
+      <h3 className="mt-[5px] text-[12.5px] font-medium leading-[17px] text-text">
+        {onOpen ? (
+          // Кнопка растянута на всю карточку: клик и Enter открывают задачу,
+          // перетаскивание остаётся на самой карточке
+          <button
+            type="button"
+            onClick={() => onOpen(task.id)}
+            className="text-left outline-none after:absolute after:inset-0 after:rounded-[10px] focus-visible:after:ring-2 focus-visible:after:ring-info"
+          >
+            {task.title}
+          </button>
+        ) : (
+          task.title
+        )}
+      </h3>
       <div className="mt-[9px] flex flex-wrap gap-[6px]">
         <DueChips task={task} />
       </div>
