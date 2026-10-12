@@ -46,5 +46,29 @@
     "language": "Язык",
     "dark": "Тёмная",
     "light": "Светлая"
+  },
+  "holidays": {
+    "newYearHolidays": "Новогодние каникулы",
+    "christmas": "Рождество Христово",
+    "womensDay": "Международный женский день",
+    "nooruz": "Нооруз",
+    "mayHolidays": "Майские каникулы",
+    "constitutionDay": "День Конституции",
+    "victoryDay": "День Победы",
+    "independenceDay": "День независимости",
+    "orozoAit": "Орозо айт",
+    "kurmanAit": "Курман айт"
+  },
+  "deadline": {
+    "today": "Срок сегодня",
+    "overdue_one": "Просрочено на {{count}} день",
+    "overdue_few": "Просрочено на {{count}} дня",
+    "overdue_many": "Просрочено на {{count}} дней",
+    "overdue_other": "Просрочено на {{count}} дня",
+    "left_one": "Остался {{count}} день",
+    "left_few": "Осталось {{count}} дня",
+    "left_many": "Осталось {{count}} дней",
+    "left_other": "Осталось {{count}} дня",
+    "notWorkingDay": "Срок выпадает на нерабочий день"
   }
 }

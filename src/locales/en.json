@@ -46,5 +46,25 @@
     "language": "Language",
     "dark": "Dark",
     "light": "Light"
+  },
+  "holidays": {
+    "newYearHolidays": "New Year holidays",
+    "christmas": "Orthodox Christmas",
+    "womensDay": "International Women's Day",
+    "nooruz": "Nooruz",
+    "mayHolidays": "May holidays",
+    "constitutionDay": "Constitution Day",
+    "victoryDay": "Victory Day",
+    "independenceDay": "Independence Day",
+    "orozoAit": "Orozo Ait",
+    "kurmanAit": "Kurman Ait"
+  },
+  "deadline": {
+    "today": "Due today",
+    "overdue_one": "Overdue by {{count}} day",
+    "overdue_other": "Overdue by {{count}} days",
+    "left_one": "{{count}} day left",
+    "left_other": "{{count}} days left",
+    "notWorkingDay": "The deadline falls on a non-working day"
   }
 }

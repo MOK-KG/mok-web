@@ -53,8 +53,16 @@ react-hook-form, zod, i18next, date-fns, dnd-kit, Biome, Vitest. Менедже�
 
 ## Даты
 
-Самая частая ошибка — даты. Проверяй день недели и рабочие дни по производственному календарю КР:
-дедлайн не должен выпадать на выходной, «просрочено N дней» не может стоять у даты в будущем.
+Самая частая ошибка — даты. Только через `src/shared/lib/workDays.ts`, своих расчётов не пиши:
+
+- Дата без времени — строка `YYYY-MM-DD` (`IsoDate`), не `Date`: иначе сдвиг на сутки по поясу
+- «Сегодня» — `todayInBishkek()` (UTC+6), не `new Date()`
+- Рабочие дни — `isWorkingDay`, `addWorkingDays`, `workingDaysBetween` по календарю КР
+  (`src/shared/config/workCalendar.ts`, приказ Минтруда)
+- Срок — `deadlineState()`: дедлайн только на рабочий день (`isValidDeadline`),
+  «просрочено N дней» невозможно у даты в будущем
+- Формат — `formatIsoDate()`, с днём недели; «N дней» — через формы числа i18next (`deadline.*`)
+- Новый год календаря вносится по приказу Минтруда, тест сверяет норму рабочих дней по месяцам
 
 ## Проверки приёмки
 
@@ -71,8 +79,10 @@ react-hook-form, zod, i18next, date-fns, dnd-kit, Biome, Vitest. Менедже�
 - Отступ 2 пробела, одинарные кавычки, точка с запятой, строка до 100 символов (Biome)
 - Компоненты в `src/features/`, переиспользуемое в `src/shared/ui/`
 - Типы API генерируются из OpenAPI командой `pnpm api:sync`, руками не пишутся
-- Токены из `src/shared/config/tokens.ts`, цвета в коде не хардкодятся.
-  Файл продублирован в web и mobile — правь оба
+- Токены из `src/shared/config/tokens.ts`, цвета в коде не хардкодятся
+- Продублированы в web и mobile и должны совпадать побайтно — правь оба:
+  `shared/config/{tokens,i18n,links,workCalendar}.ts`, `shared/lib/{workDays,date}.ts`, `locales/*.json`.
+  Тесты общих файлов живут в web
 - Тексты интерфейса только через i18next, ключи во всех трёх файлах `src/locales/` (ru, ky, en)
 
 ## Перед коммитом

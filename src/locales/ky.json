@@ -46,5 +46,25 @@
     "language": "Тил",
     "dark": "Караңгы",
     "light": "Жарык"
+  },
+  "holidays": {
+    "newYearHolidays": "Жаңы жылдык каникулдар",
+    "christmas": "Ыйса пайгамбардын туулган күнү",
+    "womensDay": "Аялдардын эл аралык күнү",
+    "nooruz": "Нооруз",
+    "mayHolidays": "Май каникулдары",
+    "constitutionDay": "Конституция күнү",
+    "victoryDay": "Жеңиш күнү",
+    "independenceDay": "Көз карандысыздык күнү",
+    "orozoAit": "Орозо айт",
+    "kurmanAit": "Курман айт"
+  },
+  "deadline": {
+    "today": "Мөөнөт бүгүн",
+    "overdue_one": "{{count}} күнгө кечиктирилди",
+    "overdue_other": "{{count}} күнгө кечиктирилди",
+    "left_one": "{{count}} күн калды",
+    "left_other": "{{count}} күн калды",
+    "notWorkingDay": "Мөөнөт иш эмес күнгө туура келет"
   }
 }
