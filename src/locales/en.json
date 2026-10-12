@@ -1,0 +1,15 @@
+{
+  "app": {
+    "title": "NOC KR · Internal platform"
+  },
+  "demo": {
+    "greeting": "Welcome to the National Olympic Committee platform",
+    "today": "Today: {{date}}"
+  },
+  "settings": {
+    "theme": "Theme",
+    "language": "Language",
+    "dark": "Dark",
+    "light": "Light"
+  }
+}
