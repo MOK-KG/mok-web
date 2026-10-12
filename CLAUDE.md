@@ -90,7 +90,7 @@ react-hook-form, zod, i18next, date-fns, dnd-kit, Biome, Vitest. Менедже�
 - Типы API генерируются из OpenAPI командой `pnpm api:sync`, руками не пишутся
 - Токены из `src/shared/config/tokens.ts`, цвета в коде не хардкодятся
 - Продублированы в web и mobile и должны совпадать побайтно — правь оба:
-  `shared/config/{tokens,i18n,links,workCalendar,permissions}.ts`, `shared/lib/{workDays,date}.ts`, `locales/*.json`.
+  `shared/config/{tokens,i18n,links,workCalendar,permissions}.ts`, `shared/lib/{workDays,date,text}.ts`, `locales/*.json`.
   Тесты общих файлов живут в web
 - Тексты интерфейса только через i18next, ключи во всех трёх файлах `src/locales/` (ru, ky, en)
 

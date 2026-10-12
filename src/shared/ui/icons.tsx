@@ -109,3 +109,67 @@ export const BellIcon = icon(
   16,
   `<g transform="translate(-8 -8)"><path d="M20 18.3333V14.6667C20 13.6058 19.5786 12.5884 18.8284 11.8382C18.0783 11.0881 17.0609 10.6667 16 10.6667C14.9391 10.6667 13.9217 11.0881 13.1716 11.8382C12.4214 12.5884 12 13.6058 12 14.6667V18.3333L10.6667 20.3333H21.3333L20 18.3333Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.6667 22.3333H17.3333" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></g>`,
 );
+export const PlusIcon = icon(
+  16,
+  `<path d="M8 3.33333V12.6667M3.33333 8H12.6667" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const FilterIcon = icon(
+  16,
+  `<path d="M2.33333 3.33333H13.6667L9.33333 8.66667V12.6667L6.66667 11.3333V8.66667L2.33333 3.33333Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const SearchIcon = icon(
+  16,
+  `<path d="M7.33333 12C9.91066 12 12 9.91066 12 7.33333C12 4.756 9.91066 2.66667 7.33333 2.66667C4.756 2.66667 2.66667 4.756 2.66667 7.33333C2.66667 9.91066 4.756 12 7.33333 12Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.8 10.8L14 14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const GroupIcon = icon(
+  16,
+  `<path d="M6 3.33333H3.33333C2.96514 3.33333 2.66667 3.63181 2.66667 4V6.66667C2.66667 7.03486 2.96514 7.33333 3.33333 7.33333H6C6.36819 7.33333 6.66667 7.03486 6.66667 6.66667V4C6.66667 3.63181 6.36819 3.33333 6 3.33333Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.6667 3.33333H10C9.63181 3.33333 9.33333 3.63181 9.33333 4V6.66667C9.33333 7.03486 9.63181 7.33333 10 7.33333H12.6667C13.0349 7.33333 13.3333 7.03486 13.3333 6.66667V4C13.3333 3.63181 13.0349 3.33333 12.6667 3.33333Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 9.33333H3.33333C2.96514 9.33333 2.66667 9.63181 2.66667 10V12C2.66667 12.3682 2.96514 12.6667 3.33333 12.6667H6C6.36819 12.6667 6.66667 12.3682 6.66667 12V10C6.66667 9.63181 6.36819 9.33333 6 9.33333Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.6667 9.33333H10C9.63181 9.33333 9.33333 9.63181 9.33333 10V12C9.33333 12.3682 9.63181 12.6667 10 12.6667H12.6667C13.0349 12.6667 13.3333 12.3682 13.3333 12V10C13.3333 9.63181 13.0349 9.33333 12.6667 9.33333Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const MailLargeIcon = icon(
+  18,
+  `<path d="M14.25 3.75H3.75C2.92157 3.75 2.25 4.42157 2.25 5.25V12.75C2.25 13.5784 2.92157 14.25 3.75 14.25H14.25C15.0784 14.25 15.75 13.5784 15.75 12.75V5.25C15.75 4.42157 15.0784 3.75 14.25 3.75Z" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.25 5.25L9 9.75L15.75 5.25" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const ArrowRightIcon = icon(
+  14,
+  `<path d="M2.91667 7H11.0833M7.58333 10.5L11.0833 7L7.58333 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const MailSmallIcon = icon(
+  12,
+  `<path d="M9.5 2.5H2.5C1.94772 2.5 1.5 2.94772 1.5 3.5V8.5C1.5 9.05228 1.94772 9.5 2.5 9.5H9.5C10.0523 9.5 10.5 9.05228 10.5 8.5V3.5C10.5 2.94772 10.0523 2.5 9.5 2.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M1.5 3.5L6 6.5L10.5 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const PaperclipIcon = icon(
+  12,
+  `<path d="M10.5 5.5L6 10C5.51857 10.3611 4.92305 10.5364 4.32278 10.4937C3.7225 10.4511 3.15776 10.1933 2.73223 9.76777C2.3067 9.34224 2.04895 8.7775 2.00629 8.17722C1.96363 7.57695 2.13893 6.98143 2.5 6.5L7 2C7.33152 1.66848 7.78116 1.48223 8.25 1.48223C8.71884 1.48223 9.16848 1.66848 9.5 2C9.83152 2.33152 10.0178 2.78116 10.0178 3.25C10.0178 3.71884 9.83152 4.16848 9.5 4.5L5 9C4.80109 9.19891 4.5313 9.31066 4.25 9.31066C3.9687 9.31066 3.69891 9.19891 3.5 9C3.30109 8.80109 3.18934 8.5313 3.18934 8.25C3.18934 7.9687 3.30109 7.69891 3.5 7.5L7.5 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const RescheduleIcon = icon(
+  12,
+  `<path d="M6 10.5C8.48528 10.5 10.5 8.48528 10.5 6C10.5 3.51472 8.48528 1.5 6 1.5C3.51472 1.5 1.5 3.51472 1.5 6C1.5 8.48528 3.51472 10.5 6 10.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 3.5V6L8 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const SubtasksIcon = icon(
+  12,
+  `<path d="M2 3H10M2 6H7M2 9H5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const CommentIcon = icon(
+  12,
+  `<path d="M2 2.5H10V8H4.5L2 10V2.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const BoltSmallIcon = icon(
+  13,
+  `<path d="M7.04167 1.08333L2.16667 7.58333H5.41667L4.875 11.9167L9.75 5.41667H6.5L7.04167 1.08333Z" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const PlaneIcon = icon(
+  13,
+  `<path d="M1.08333 6.5L11.9167 2.16667L7.58333 13L6.5 8.66667L1.08333 6.5Z" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const CheckboxCheckIcon = icon(
+  11,
+  `<path d="M2.29167 5.72917L4.35417 7.79167L8.70833 3.4375" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const CloseIcon = icon(
+  15,
+  `<path d="M3.75 3.75L11.25 11.25M11.25 3.75L3.75 11.25" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const CloseSmallIcon = icon(
+  11,
+  `<path d="M2.75 2.75L8.25 8.25M8.25 2.75L2.75 8.25" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);

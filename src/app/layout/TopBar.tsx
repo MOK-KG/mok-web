@@ -214,7 +214,7 @@ function ThemeMenu() {
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger
-        className={`${control} w-8 ${theme === 'dark' ? 'text-brand-gold' : 'text-warning'}`}
+        className={`${control} w-8 ${theme === 'dark' ? '!text-brand-gold' : '!text-warning'}`}
         aria-label={t('shell.theme')}
       >
         <MoonIcon size={16} />

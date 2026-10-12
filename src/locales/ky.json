@@ -108,5 +108,63 @@
     "mainNav": "Негизги меню",
     "unread_one": "{{count}} окула элек",
     "unread_other": "{{count}} окула элек"
+  },
+  "tasks": {
+    "tabs": {
+      "mine": "Меники",
+      "department": "Департаменттики",
+      "createdByMe": "Мен койгондор",
+      "completed": "Аякталгандар"
+    },
+    "status": {
+      "queue": "Кезек",
+      "in_progress": "Иште",
+      "review": "Текшерүүдө",
+      "done": "Даяр"
+    },
+    "group": {
+      "none": "Топтобой",
+      "project": "Долбоор боюнча",
+      "assignee": "Аткаруучу боюнча",
+      "noAssignee": "Аткаруучусуз"
+    },
+    "search": "Издөө",
+    "filter": "Чыпка",
+    "newTask": "Жаңы тапшырма",
+    "comingSoon": "Кийинки этапта пайда болот",
+    "shownOf": "{{total}} ичинен {{shown}}",
+    "limit": "чек",
+    "limitReached": "«Иште» чеги — {{limit}} тапшырма. Жаңысын алуу үчүн бирөөнү бүтүрүңүз.",
+    "showAll": "Баарын көрсөтүү ({{count}})",
+    "dropHere": "Бул жерге жылдыруу",
+    "empty": "Тапшырма жок",
+    "overdue": "{{count}} күн кечикти",
+    "noDue": "Мөөнөтсүз",
+    "doneChip": "Даяр",
+    "today": "бүгүн",
+    "inDays_one": "{{date}} · {{count}} күн",
+    "inDays_other": "{{date}} · {{count}} күн",
+    "escalation": "Эскалация · билдирме {{hours}} саат ачылган жок",
+    "deputy": "Аткаруучу өргүүдө · орун басары {{name}}",
+    "fromEmail": "Каттан түзүлгөн",
+    "subtasks": "Бөлүк тапшырмалар",
+    "comments": "Комментарийлер",
+    "attachments": "Тиркемелер",
+    "reschedules": "Мөөнөт {{count}} жолу жылдырылды",
+    "filterLabel": "Чыпка:",
+    "filterProject": "Долбоор",
+    "filterDue": "Мөөнөт",
+    "dueOverdue": "Кечиккен",
+    "dueWeek": "Ушул аптада",
+    "dueNone": "Мөөнөтсүз",
+    "reset": "Тазалоо",
+    "apply": "Колдонуу",
+    "removeFilter": "«{{name}}» чыпкасын алып салуу",
+    "filteredOf": "{{total}} тапшырманын {{shown}}",
+    "queueTitle": "Почта кезеги · {{ready}} түзүүгө даяр, {{manual}} кол менен иреттөө керек",
+    "queueText": "info@olympic.kg · тапшырма ырастагандан кийин гана түзүлөт",
+    "queueOpen": "Иреттөө",
+    "board": "Тапшырмалар тактасы",
+    "moved": "Тапшырма «{{status}}» тизмесине жылдырылды"
   }
 }

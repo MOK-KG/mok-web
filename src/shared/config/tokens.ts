@@ -35,7 +35,34 @@ export type ThemeColorName =
   | 'warning-line'
   | 'popover'
   | 'popover-active'
-  | 'row-highlight';
+  | 'row-highlight'
+  | 'column'
+  | 'chip'
+  | 'chip-text'
+  | 'danger-chip'
+  | 'warning-chip'
+  | 'warning-text'
+  | 'info-chip'
+  | 'info-text'
+  | 'muted-chip'
+  | 'tone-blue'
+  | 'tone-amber'
+  | 'tone-red'
+  | 'tone-purple'
+  | 'tone-green'
+  | 'tone-violet'
+  | 'tone-orange'
+  | 'tone-gold'
+  | 'tone-cyan'
+  | 'tone-blue-bg'
+  | 'tone-amber-bg'
+  | 'tone-red-bg'
+  | 'tone-purple-bg'
+  | 'tone-green-bg'
+  | 'tone-violet-bg'
+  | 'tone-orange-bg'
+  | 'tone-gold-bg'
+  | 'tone-cyan-bg';
 
 export const themes: Record<ThemeName, Record<ThemeColorName, string>> = {
   dark: {
@@ -63,6 +90,35 @@ export const themes: Record<ThemeName, Record<ThemeColorName, string>> = {
     popover: '#1A2438',
     'popover-active': '#25334E',
     'row-highlight': 'rgba(255, 255, 255, 0.025)',
+    // Из макета Figma (доска задач)
+    column: '#0B1220',
+    chip: '#1A2436',
+    'chip-text': '#5A6474',
+    'danger-chip': '#2A1215',
+    'warning-chip': '#221E0C',
+    'warning-text': '#FBBF24',
+    'info-chip': '#131E30',
+    'info-text': '#7FA8D9',
+    'muted-chip': '#141C2C',
+    // Оттенки проектов и аватаров: цвет и фон
+    'tone-blue': '#5B9BF3',
+    'tone-blue-bg': '#1E3A5F',
+    'tone-amber': '#FBBF24',
+    'tone-amber-bg': '#3F2E1E',
+    'tone-red': '#F08080',
+    'tone-red-bg': '#3F1E24',
+    'tone-purple': '#D48BE0',
+    'tone-purple-bg': '#3A1E3F',
+    'tone-green': '#4ADE80',
+    'tone-green-bg': '#1E3F2A',
+    'tone-violet': '#A78BFA',
+    'tone-violet-bg': '#2A2346',
+    'tone-orange': '#FB923C',
+    'tone-orange-bg': '#3F2A1E',
+    'tone-gold': '#F7C948',
+    'tone-gold-bg': '#3A3315',
+    'tone-cyan': '#22D3EE',
+    'tone-cyan-bg': '#163A40',
   },
   light: {
     canvas: '#EDF1F7',
@@ -89,10 +145,54 @@ export const themes: Record<ThemeName, Record<ThemeColorName, string>> = {
     popover: '#FFFFFF',
     'popover-active': '#EDF1F6',
     'row-highlight': 'rgba(10, 22, 40, 0.03)',
+    // Из макета Figma (доска задач)
+    column: '#F5F8FC',
+    chip: '#EFF2F7',
+    'chip-text': '#5A6474',
+    'danger-chip': '#FEE2E2',
+    'warning-chip': '#FEF3C7',
+    'warning-text': '#B45309',
+    'info-chip': '#DBEAFE',
+    'info-text': '#1D4ED8',
+    'muted-chip': '#F4F6F9',
+    // Оттенки проектов и аватаров: цвет и фон
+    'tone-blue': '#1D4ED8',
+    'tone-blue-bg': '#DBEAFE',
+    'tone-amber': '#B45309',
+    'tone-amber-bg': '#FEF3C7',
+    'tone-red': '#B91C1C',
+    'tone-red-bg': '#FEE2E2',
+    'tone-purple': '#7E22CE',
+    'tone-purple-bg': '#F3E8FF',
+    'tone-green': '#16A34A',
+    'tone-green-bg': '#DCFCE7',
+    'tone-violet': '#7C3AED',
+    'tone-violet-bg': '#EDE9FE',
+    'tone-orange': '#EA580C',
+    'tone-orange-bg': '#FFEDD5',
+    'tone-gold': '#CA8A04',
+    'tone-gold-bg': '#FEF9C3',
+    'tone-cyan': '#0891B2',
+    'tone-cyan-bg': '#CFFAFE',
   },
 };
 
 export const defaultTheme: ThemeName = 'dark';
+
+/** Оттенки для проектов и аватаров (классы text-tone-*, bg-tone-*-bg) */
+export const toneNames = [
+  'blue',
+  'amber',
+  'red',
+  'purple',
+  'green',
+  'violet',
+  'orange',
+  'gold',
+  'cyan',
+] as const;
+
+export type Tone = (typeof toneNames)[number];
 
 /** Имя CSS-переменной для цвета темы: canvas → --color-canvas */
 export const colorVar = (name: ThemeColorName) => `--color-${name}`;

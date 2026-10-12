@@ -108,5 +108,63 @@
     "mainNav": "Main menu",
     "unread_one": "{{count}} unread",
     "unread_other": "{{count}} unread"
+  },
+  "tasks": {
+    "tabs": {
+      "mine": "Mine",
+      "department": "Department",
+      "createdByMe": "Created by me",
+      "completed": "Completed"
+    },
+    "status": {
+      "queue": "Queue",
+      "in_progress": "In progress",
+      "review": "In review",
+      "done": "Done"
+    },
+    "group": {
+      "none": "No grouping",
+      "project": "By project",
+      "assignee": "By assignee",
+      "noAssignee": "Unassigned"
+    },
+    "search": "Search",
+    "filter": "Filter",
+    "newTask": "New task",
+    "comingSoon": "Coming in the next stage",
+    "shownOf": "{{shown}} of {{total}}",
+    "limit": "limit",
+    "limitReached": "The “In progress” limit is {{limit}} tasks. Finish one to take a new one.",
+    "showAll": "Show all {{count}}",
+    "dropHere": "Move here",
+    "empty": "No tasks",
+    "overdue": "Overdue {{count}} d",
+    "noDue": "No deadline",
+    "doneChip": "Done",
+    "today": "today",
+    "inDays_one": "{{date}} · {{count}} day",
+    "inDays_other": "{{date}} · {{count}} days",
+    "escalation": "Escalation · notification not opened for {{hours}} hours",
+    "deputy": "Assignee on leave · deputy {{name}}",
+    "fromEmail": "Created from an email",
+    "subtasks": "Subtasks",
+    "comments": "Comments",
+    "attachments": "Attachments",
+    "reschedules": "Deadline moved {{count}} times",
+    "filterLabel": "Filter:",
+    "filterProject": "Project",
+    "filterDue": "Deadline",
+    "dueOverdue": "Overdue",
+    "dueWeek": "This week",
+    "dueNone": "No deadline",
+    "reset": "Reset",
+    "apply": "Apply",
+    "removeFilter": "Remove filter “{{name}}”",
+    "filteredOf": "{{shown}} of {{total}} tasks",
+    "queueTitle": "Mail queue · {{ready}} ready to create, {{manual}} need manual review",
+    "queueText": "info@olympic.kg · a task is created only after confirmation",
+    "queueOpen": "Review",
+    "board": "Task board",
+    "moved": "Task moved to “{{status}}”"
   }
 }

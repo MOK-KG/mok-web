@@ -6,6 +6,7 @@ import { useCan, useSession } from '@/features/auth';
 import { useNavCounters } from '@/features/notifications/api';
 import { workDomain } from '@/shared/config/links';
 import type { Section } from '@/shared/config/permissions';
+import { initials } from '@/shared/lib/text';
 import {
   AccessIcon,
   CalendarIcon,
@@ -38,13 +39,6 @@ const mainItems: NavItem[] = [
   { section: 'files', path: '/files', Icon: FilesIcon },
 ];
 const adminItems: NavItem[] = [{ section: 'access', path: '/access', Icon: AccessIcon }];
-
-export const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? '')
-    .join('');
 
 type Props = { collapsed: boolean; onToggle: () => void };
 

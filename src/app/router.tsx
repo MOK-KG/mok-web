@@ -1,8 +1,14 @@
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-dom';
 import { AuthGate, LoginPage, PendingPage, RequirePermission } from '@/features/auth';
 import { SectionPage } from '@/features/sections/SectionPage';
 import { type Section, sections } from '@/shared/config/permissions';
 import { AppLayout, type RouteHandle } from './layout/AppLayout';
+
+// Разделы грузятся отдельными чанками — только когда их открывают
+const TasksPage = lazy(() =>
+  import('@/features/tasks/TasksPage').then((m) => ({ default: m.TasksPage })),
+);
 
 /** Пути разделов меню */
 export const sectionPaths: Record<Section, string> = {
@@ -22,7 +28,7 @@ const sectionRoutes: RouteObject[] = (Object.keys(sections) as Section[]).map((s
   handle: { section } satisfies RouteHandle,
   element: (
     <RequirePermission permission={sections[section]}>
-      <SectionPage />
+      <Suspense fallback={null}>{section === 'tasks' ? <TasksPage /> : <SectionPage />}</Suspense>
     </RequirePermission>
   ),
 }));
