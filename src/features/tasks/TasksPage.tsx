@@ -6,7 +6,9 @@ import { Board, type Grouping } from './board/Board';
 import { QueueBanner } from './board/QueueBanner';
 import { ActiveFilters, Toolbar } from './board/Toolbar';
 import { applyFilters, emptyFilters, hasFilters, type TaskFilters } from './filters';
+import type { Letter } from './mailQueue';
 import { NewTaskModal } from './modal/NewTaskModal';
+import { QueueModal } from './modal/QueueModal';
 import { TaskModal } from './modal/TaskModal';
 import type { TaskTab } from './types';
 
@@ -19,6 +21,9 @@ export function TasksPage() {
   const { can } = useCan();
   const [params, setParams] = useSearchParams();
   const [creating, setCreating] = useState(false);
+  const [queueOpen, setQueueOpen] = useState(false);
+  // Письмо, которое оформляют задачей вручную
+  const [manualLetter, setManualLetter] = useState<Letter | null>(null);
   // Открытая задача — в адресе (?task=ID): ссылкой можно поделиться
   const openTaskId = params.get('task');
   const openTask = (id: string) => setParams((p) => ({ ...Object.fromEntries(p), task: id }));
@@ -50,7 +55,7 @@ export function TasksPage() {
       />
       <ActiveFilters filters={filters} onChange={setFilters} tasks={all} shown={visible.length} />
       <Can permission="tasks.create">
-        <QueueBanner />
+        <QueueBanner onOpen={() => setQueueOpen(true)} />
       </Can>
       <div className="overflow-x-auto pb-2">
         <Board
@@ -63,7 +68,28 @@ export function TasksPage() {
         />
       </div>
       <TaskModal taskId={openTaskId} onClose={closeTask} />
-      <NewTaskModal open={creating} onClose={() => setCreating(false)} onOpenTask={openTask} />
+      <NewTaskModal
+        open={creating}
+        letter={manualLetter}
+        onClose={() => {
+          setCreating(false);
+          setManualLetter(null);
+        }}
+        onOpenTask={openTask}
+      />
+      <QueueModal
+        open={queueOpen}
+        onClose={() => setQueueOpen(false)}
+        onOpenTask={(id) => {
+          setQueueOpen(false);
+          openTask(id);
+        }}
+        onManual={(letter) => {
+          setQueueOpen(false);
+          setManualLetter(letter);
+          setCreating(true);
+        }}
+      />
     </div>
   );
 }

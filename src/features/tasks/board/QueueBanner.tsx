@@ -3,7 +3,7 @@ import { ArrowRightIcon, MailLargeIcon } from '@/shared/ui/icons';
 import { useMailQueueSummary } from '../api';
 
 /** Полоса очереди из почты над доской (макет Figma: «Очередь из почты») */
-export function QueueBanner() {
+export function QueueBanner({ onOpen }: { onOpen: () => void }) {
   const { t } = useTranslation();
   const { data } = useMailQueueSummary();
   if (!data || data.ready + data.manual === 0) return null;
@@ -22,9 +22,8 @@ export function QueueBanner() {
       </div>
       <button
         type="button"
-        disabled
-        title={t('tasks.comingSoon')}
-        className="flex h-[30px] items-center gap-2 rounded-8 border border-warning-line px-[13px] text-[12px] font-semibold tracking-[-0.1px] text-warning-text disabled:cursor-not-allowed"
+        onClick={onOpen}
+        className="flex h-[30px] items-center gap-2 rounded-8 border border-warning-line px-[13px] text-[12px] font-semibold tracking-[-0.1px] text-warning-text hover:opacity-90"
       >
         {t('tasks.queueOpen')}
         <ArrowRightIcon size={14} />

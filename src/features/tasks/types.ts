@@ -11,6 +11,8 @@ export type Person = {
   /** Короткое имя для карточек: «Н. Бакиров» */
   short: string;
   tone: Tone;
+  /** Подразделение: «Медицинский отдел» */
+  unit?: string;
 };
 
 export type Project = {

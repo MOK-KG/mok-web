@@ -273,3 +273,35 @@ export const MenuIcon = icon(
   16,
   `<path d="M2.66667 4H13.3333M2.66667 8H13.3333M2.66667 12H13.3333" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
 );
+export const MailHugeIcon = icon(
+  20,
+  `<path d="M15.8333 4.16667H4.16667C3.24619 4.16667 2.5 4.91286 2.5 5.83333V14.1667C2.5 15.0871 3.24619 15.8333 4.16667 15.8333H15.8333C16.7538 15.8333 17.5 15.0871 17.5 14.1667V5.83333C17.5 4.91286 16.7538 4.16667 15.8333 4.16667Z" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.5 5.83333L10 10.8333L17.5 5.83333" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const MailLetterIcon = icon(
+  15,
+  `<path d="M11.875 3.125H3.125C2.43464 3.125 1.875 3.68464 1.875 4.375V10.625C1.875 11.3154 2.43464 11.875 3.125 11.875H11.875C12.5654 11.875 13.125 11.3154 13.125 10.625V4.375C13.125 3.68464 12.5654 3.125 11.875 3.125Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M1.875 4.375L7.5 8.125L13.125 4.375" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const CheckMiniIcon = icon(
+  11,
+  `<path d="M2.29167 5.72917L4.35417 7.79167L8.70833 3.4375" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const AlertMiniIcon = icon(
+  11,
+  `<path d="M5.5 1.83333L9.625 9.16667H1.375L5.5 1.83333Z" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 4.58333V6.41667M5.5 7.79167H5.50458" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const FileIcon = icon(
+  15,
+  `<path d="M13.125 6.875L7.5 12.5C6.89821 12.9513 6.15381 13.1705 5.40347 13.1171C4.65313 13.0638 3.9472 12.7416 3.41529 12.2097C2.88338 11.6778 2.56119 10.9719 2.50786 10.2215C2.45454 9.47119 2.67366 8.72679 3.125 8.125L8.75 2.5C9.1644 2.0856 9.72645 1.85279 10.3125 1.85279C10.8986 1.85279 11.4606 2.0856 11.875 2.5C12.2894 2.9144 12.5222 3.47645 12.5222 4.0625C12.5222 4.64855 12.2894 5.2106 11.875 5.625L6.25 11.25C6.00136 11.4986 5.66413 11.6383 5.3125 11.6383C4.96087 11.6383 4.62364 11.4986 4.375 11.25C4.12636 11.0014 3.98667 10.6641 3.98667 10.3125C3.98667 9.96087 4.12636 9.62364 4.375 9.375L9.375 4.375" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const SparkleIcon = icon(
+  14,
+  `<path d="M7 1.75L8.05 4.78333L11.0833 5.83333L8.05 6.88333L7 9.91667L5.95 6.88333L2.91667 5.83333L5.95 4.78333L7 1.75Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const EditMediumIcon = icon(
+  16,
+  `<path d="M2.66667 13.3333H5.33333L13.3333 5.33333L10.6667 2.66667L2.66667 10.6667V13.3333Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const RejectIcon = icon(
+  17,
+  `<path d="M4.25 4.25L12.75 12.75M12.75 4.25L4.25 12.75" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);

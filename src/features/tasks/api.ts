@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { addDays, type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
+import { createMockQueue, type Letter, type Suggestion } from './mailQueue';
 import { atBishkek, createMockTasks, currentUserId, people } from './mock';
 import {
   type HistoryKind,
@@ -17,6 +18,17 @@ import {
  * меняются только функции fetch*, хуки и интерфейс остаются.
  */
 let store = createMockTasks();
+let queue: Letter[] = createMockQueue();
+
+/** Журнал действий (заглушка): только добавляется, записи не меняются и не удаляются */
+export type JournalEntry = {
+  at: string;
+  author: string;
+  action: 'mailRejected' | 'mailAccepted';
+  details: string;
+};
+const journal: JournalEntry[] = [];
+export const journalEntries = (): readonly JournalEntry[] => journal;
 
 const delay = (ms: number) =>
   new Promise((r) => setTimeout(r, import.meta.env.MODE === 'test' ? 0 : ms));
@@ -24,6 +36,8 @@ const delay = (ms: number) =>
 /** Сброс заглушки (для тестов) */
 export function resetTasksMock() {
   store = createMockTasks();
+  queue = createMockQueue();
+  journal.length = 0;
 }
 
 function tasksFor(tab: TaskTab): Task[] {
@@ -95,13 +109,96 @@ export function useMoveTask() {
   });
 }
 
-/** ЗАГЛУШКА очереди из почты: сколько писем готовы к созданию и сколько разобрать вручную */
+export const mailQueueKey = ['mailQueue'] as const;
+
+/** Сколько писем разобрано (есть предложение) и сколько нужно оформить вручную */
+export const queueSummary = () => ({
+  ready: queue.filter((l) => l.suggestion).length,
+  manual: queue.filter((l) => !l.suggestion).length,
+});
+
 export function useMailQueueSummary() {
   return useQuery({
-    queryKey: ['mailQueue', 'summary'],
-    queryFn: async () => ({ ready: 3, manual: 1 }),
+    queryKey: [...mailQueueKey, 'summary'],
+    queryFn: async () => queueSummary(),
   });
 }
+
+export function useMailQueue() {
+  return useQuery({
+    queryKey: [...mailQueueKey, 'list'],
+    queryFn: async () => {
+      await delay(80);
+      return structuredClone(queue);
+    },
+  });
+}
+
+/** Создать задачу из предложения модели; письмо уходит из очереди */
+export async function createFromLetter(letterId: string, suggestion: Suggestion) {
+  const letter = queue.find((l) => l.id === letterId);
+  if (!letter) throw new Error('not-found');
+  if (!suggestion.assignee || !suggestion.due) throw new Error('incomplete');
+  const task = await createTask({
+    title: suggestion.title,
+    description: letter.body,
+    assignee: suggestion.assignee,
+    due: suggestion.due,
+    project: suggestion.project,
+    priority: suggestion.priority,
+    attachments: letter.attachments.length,
+    letter,
+  });
+  queue = queue.filter((l) => l.id !== letterId);
+  journal.unshift({
+    at: now(),
+    author: me().short,
+    action: 'mailAccepted',
+    details: `${letter.subject} → ${task.code}`,
+  });
+  return task;
+}
+
+/** Отклонить письмо с причиной — причина и автор попадают в журнал */
+export async function rejectLetter(letterId: string, reason: string) {
+  await delay(60);
+  const letter = queue.find((l) => l.id === letterId);
+  if (!letter) throw new Error('not-found');
+  if (reason.trim().length < 5) throw new Error('reason-required');
+  queue = queue.filter((l) => l.id !== letterId);
+  journal.unshift({
+    at: now(),
+    author: me().short,
+    action: 'mailRejected',
+    details: `${letter.subject}: ${reason.trim()}`,
+  });
+}
+
+/** Письмо оформили задачей вручную — убрать из очереди */
+export function consumeLetter(letterId: string) {
+  queue = queue.filter((l) => l.id !== letterId);
+}
+
+function useQueueMutation<V, R>(fn: (vars: V) => Promise<R>) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSettled: () => {
+      client.invalidateQueries({ queryKey: mailQueueKey });
+      client.invalidateQueries({ queryKey: tasksKey });
+    },
+  });
+}
+
+export const useCreateFromLetter = () =>
+  useQueueMutation(({ letterId, suggestion }: { letterId: string; suggestion: Suggestion }) =>
+    createFromLetter(letterId, suggestion),
+  );
+
+export const useRejectLetter = () =>
+  useQueueMutation(({ letterId, reason }: { letterId: string; reason: string }) =>
+    rejectLetter(letterId, reason),
+  );
 
 // ——— Карточка задачи ———
 
@@ -175,10 +272,13 @@ export type NewTaskInput = {
   project: Project | null;
   priority: Task['priority'];
   attachments: number;
+  /** Письмо из очереди, из которого создана задача */
+  letter?: Letter;
 };
 
 /** Новая задача попадает в «Очередь»; в журнал — запись о создании */
 export async function createTask(input: NewTaskInput): Promise<TaskDetail> {
+  const { letter: _letter, ...rest } = input;
   await delay(120);
   const number = 400 + store.department.length + store.archive.length + seq + 1;
   const task: TaskDetail = {
@@ -188,7 +288,7 @@ export async function createTask(input: NewTaskInput): Promise<TaskDetail> {
     author: me(),
     subtasks: 0,
     comments: 0,
-    fromEmail: false,
+    fromEmail: input.letter !== undefined,
     reschedules: 0,
     escalationHours: null,
     deputy: null,
@@ -199,11 +299,14 @@ export async function createTask(input: NewTaskInput): Promise<TaskDetail> {
     rescheduleLog: [],
     reminderDays: null,
     escalatedAt: null,
-    source: { kind: 'manual' },
+    source: input.letter
+      ? { kind: 'email', mailbox: 'info@olympic.kg', at: input.letter.receivedAt }
+      : { kind: 'manual' },
     department: 'Административный',
-    ...input,
+    ...rest,
   };
-  log(task, 'created', 'manual');
+  log(task, 'created', input.letter ? 'email' : 'manual');
+  if (input.letter) consumeLetter(input.letter.id);
   store.department.unshift(task);
   return structuredClone(task);
 }
@@ -212,7 +315,10 @@ export function useCreateTask() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: createTask,
-    onSuccess: () => client.invalidateQueries({ queryKey: tasksKey }),
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: tasksKey });
+      client.invalidateQueries({ queryKey: mailQueueKey });
+    },
   });
 }
 

@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { useSession } from '@/features/auth';
 import { formatIsoDate } from '@/shared/lib/date';
 import { initials } from '@/shared/lib/text';
-import { dayKind, diffDays, todayInBishkek } from '@/shared/lib/workDays';
+import { diffDays, todayInBishkek } from '@/shared/lib/workDays';
 import {
   ArrowSmallIcon,
   AttachLargeIcon,
@@ -22,7 +22,9 @@ import {
 } from '@/shared/ui/icons';
 import { absenceOf } from '../absences';
 import { defaultDue, findSimilar, useCreateTask } from '../api';
+import { type DueProblem, dueProblem } from '../deadline';
 import { people, projects } from '../directory';
+import type { Letter } from '../mailQueue';
 import type { Person, Task } from '../types';
 import { toneClasses } from '../ui';
 
@@ -39,18 +41,18 @@ const schema = z
   })
   .superRefine((v, ctx) => {
     if (!v.due) return;
-    if (diffDays(todayInBishkek(), v.due) < 0) {
-      ctx.addIssue({ code: 'custom', path: ['due'], message: 'errorDuePast' });
-      return;
-    }
-    // Срок — только рабочий день по производственному календарю КР
-    const kind = dayKind(v.due);
-    if (kind.kind === 'holiday') {
-      ctx.addIssue({ code: 'custom', path: ['due'], message: `errorDueHoliday|${kind.holiday}` });
-    } else if (kind.kind === 'weekend') {
-      ctx.addIssue({ code: 'custom', path: ['due'], message: 'errorDueWeekend' });
-    }
+    // Срок — не в прошлом и только рабочий день по производственному календарю КР
+    const problem = dueProblem(v.due);
+    if (problem) ctx.addIssue({ code: 'custom', path: ['due'], message: dueMessage(problem) });
   });
+
+/** Ключ ошибки срока для перевода newTask.* (праздник — через «|») */
+export const dueMessage = (p: DueProblem) =>
+  p.code === 'past'
+    ? 'errorDuePast'
+    : p.code === 'weekend'
+      ? 'errorDueWeekend'
+      : `errorDueHoliday|${p.holiday}`;
 
 type FormValues = z.infer<typeof schema>;
 
@@ -76,10 +78,12 @@ type Props = {
   onClose: () => void;
   /** Открыть задачу (похожую или только что созданную) */
   onOpenTask: (id: string) => void;
+  /** Письмо из очереди, которое оформляют задачей вручную: тема и текст подставляются */
+  letter?: Letter | null;
 };
 
 /** Окно «Новая задача» (макет Figma). Дубли и отпуск предупреждают, но не блокируют создание */
-export function NewTaskModal({ open, onClose, onOpenTask }: Props) {
+export function NewTaskModal({ open, onClose, onOpenTask, letter }: Props) {
   const { t } = useTranslation();
   return (
     <Dialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
@@ -89,7 +93,7 @@ export function NewTaskModal({ open, onClose, onOpenTask }: Props) {
           aria-describedby={undefined}
           className="fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100vh-48px)] w-[min(760px,calc(100vw-48px))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-18 border border-line bg-panel shadow-[0_20px_60px_rgba(0,0,0,0.5)]"
         >
-          {open && <NewTaskForm onClose={onClose} onOpenTask={onOpenTask} />}
+          {open && <NewTaskForm onClose={onClose} onOpenTask={onOpenTask} letter={letter} />}
           <Dialog.Close
             aria-label={t('taskCard.close')}
             className="absolute right-[27px] top-[23px] flex size-8 items-center justify-center rounded-8 text-faint hover:bg-row-highlight hover:text-text"
@@ -102,7 +106,7 @@ export function NewTaskModal({ open, onClose, onOpenTask }: Props) {
   );
 }
 
-function NewTaskForm({ onClose, onOpenTask }: Omit<Props, 'open'>) {
+function NewTaskForm({ onClose, onOpenTask, letter }: Omit<Props, 'open'>) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
   const department = useSession().data?.user.department;
@@ -113,8 +117,8 @@ function NewTaskForm({ onClose, onOpenTask }: Omit<Props, 'open'>) {
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      title: '',
-      description: '',
+      title: letter?.subject ?? '',
+      description: letter?.body ?? '',
       assigneeId: '',
       due: defaultDue(),
       projectId: '',
@@ -144,7 +148,8 @@ function NewTaskForm({ onClose, onOpenTask }: Omit<Props, 'open'>) {
       due: v.due,
       project: projectList.find((p) => p.id === v.projectId) ?? null,
       priority: v.priority,
-      attachments: files.length,
+      attachments: files.length + (letter?.attachments.length ?? 0),
+      letter: letter ?? undefined,
     });
     onClose();
     onOpenTask(task.id);

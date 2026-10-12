@@ -9,6 +9,7 @@ import {
   useMarkAllRead,
   useNotifications,
 } from '@/features/notifications/api';
+import { useMailQueueSummary } from '@/features/tasks/api';
 import { type Language, languageLabels, languages } from '@/shared/config/i18n';
 import { formatIsoDate, relativeShort } from '@/shared/lib/date';
 import { todayInBishkek } from '@/shared/lib/workDays';
@@ -144,6 +145,12 @@ function Notifications() {
 function NotificationRow({ notification: n }: { notification: AppNotification }) {
   const { t } = useTranslation();
   const kind = kinds[n.kind];
+  const queue = useMailQueueSummary().data;
+  // Число писем в очереди — по факту очереди, а не из текста уведомления
+  const queueCount = queue ? queue.ready + queue.manual : 0;
+  if (n.kind === 'mailQueue' && queueCount === 0) return null;
+  const title =
+    n.kind === 'mailQueue' ? t('mailQueue.mailQueueNote', { count: queueCount }) : n.title;
   return (
     <li
       className={`relative flex gap-2 border-b border-line px-4 py-[14px] last:border-b-0 ${
@@ -157,7 +164,7 @@ function NotificationRow({ notification: n }: { notification: AppNotification })
         <kind.Icon size={16} />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[12px] font-medium leading-4 tracking-[-0.1px] text-text">{n.title}</p>
+        <p className="text-[12px] font-medium leading-4 tracking-[-0.1px] text-text">{title}</p>
         <p className="mt-[2px] text-[11px] leading-4 text-faint">{n.text}</p>
       </div>
       <time dateTime={n.at} className="shrink-0 text-[10px] text-dim">

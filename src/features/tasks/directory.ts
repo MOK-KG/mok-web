@@ -6,13 +6,43 @@ import type { Person, Project } from './types';
  */
 
 export const people = {
-  ad: { id: 'u-ad', name: 'Айбек Дуйшеев', short: 'А. Дуйшеев', tone: 'blue' },
-  nb: { id: 'u-nb', name: 'Нурлан Бакиров', short: 'Н. Бакиров', tone: 'red' },
-  dt: { id: 'u-dt', name: 'Дамира Токтосунова', short: 'Д. Токтосунова', tone: 'purple' },
-  ka: { id: 'u-ka', name: 'Канат Асанов', short: 'К. Асанов', tone: 'amber' },
-  me: { id: 'u-me', name: 'Мээрим Эсенова', short: 'М. Эсенова', tone: 'green' },
+  ad: { id: 'u-ad', name: 'Айбек Дуйшеев', short: 'А. Дуйшеев', tone: 'blue', unit: 'Секретариат' },
+  nb: {
+    id: 'u-nb',
+    name: 'Нурлан Бакиров',
+    short: 'Н. Бакиров',
+    tone: 'red',
+    unit: 'Юридический отдел',
+  },
+  dt: {
+    id: 'u-dt',
+    name: 'Дамира Токтосунова',
+    short: 'Д. Токтосунова',
+    tone: 'purple',
+    unit: 'Медицинский отдел',
+  },
+  ka: {
+    id: 'u-ka',
+    name: 'Канат Асанов',
+    short: 'К. Асанов',
+    tone: 'amber',
+    unit: 'Отдел аккредитации',
+  },
+  me: {
+    id: 'u-me',
+    name: 'Мээрим Эсенова',
+    short: 'М. Эсенова',
+    tone: 'green',
+    unit: 'Медицинский отдел',
+  },
   // В макете — «Ю. Ведущий юрист» (должность вместо имени); берём вымышленное имя
-  ju: { id: 'u-ju', name: 'Юлиана Ведерникова', short: 'Ю. Ведерникова', tone: 'violet' },
+  ju: {
+    id: 'u-ju',
+    name: 'Юлиана Ведерникова',
+    short: 'Ю. Ведерникова',
+    tone: 'violet',
+    unit: 'Юридический отдел',
+  },
 } satisfies Record<string, Person>;
 
 /** Текущий пользователь заглушки — Айбек Дуйшеев */

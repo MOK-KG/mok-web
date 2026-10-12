@@ -1,4 +1,11 @@
-import { deadlineState, type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
+import type { HolidayKey } from '@/shared/config/workCalendar';
+import {
+  dayKind,
+  deadlineState,
+  diffDays,
+  type IsoDate,
+  todayInBishkek,
+} from '@/shared/lib/workDays';
 import type { Task } from './types';
 
 /**
@@ -24,4 +31,21 @@ export function urgencyOf(task: Pick<Task, 'due' | 'status'>, today: IsoDate = t
   if (days <= SOON_DAYS) return { urgency: 'soon' as const, days };
   if (days <= WEEK_DAYS) return { urgency: 'week' as const, days };
   return { urgency: 'later' as const, days };
+}
+
+/**
+ * Можно ли поставить срок на эту дату: не в прошлом и только рабочий день по календарю КР.
+ * null — можно.
+ */
+export type DueProblem =
+  | { code: 'past' }
+  | { code: 'weekend' }
+  | { code: 'holiday'; holiday: HolidayKey };
+
+export function dueProblem(due: IsoDate, today: IsoDate = todayInBishkek()): DueProblem | null {
+  if (diffDays(today, due) < 0) return { code: 'past' };
+  const kind = dayKind(due);
+  if (kind.kind === 'holiday') return { code: 'holiday', holiday: kind.holiday };
+  if (kind.kind === 'weekend') return { code: 'weekend' };
+  return null;
 }
