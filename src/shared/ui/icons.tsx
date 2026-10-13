@@ -133,6 +133,10 @@ export const ArrowRightIcon = icon(
   14,
   `<path d="M2.91667 7H11.0833M7.58333 10.5L11.0833 7L7.58333 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
 );
+export const LogoutIcon = icon(
+  18,
+  `<path d="M6.75 15.375H4.125C3.29657 15.375 2.625 14.7034 2.625 13.875V4.125C2.625 3.29657 3.29657 2.625 4.125 2.625H6.75" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 12.75L15.75 9L12 5.25M15.75 9H6.75" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
 export const MailSmallIcon = icon(
   12,
   `<path d="M9.5 2.5H2.5C1.94772 2.5 1.5 2.94772 1.5 3.5V8.5C1.5 9.05228 1.94772 9.5 2.5 9.5H9.5C10.0523 9.5 10.5 9.05228 10.5 8.5V3.5C10.5 2.94772 10.0523 2.5 9.5 2.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M1.5 3.5L6 6.5L10.5 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,

@@ -1,8 +1,9 @@
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import type { ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router-dom';
-import { useCan, useSession } from '@/features/auth';
+import { useCan, useSession, useSignOut } from '@/features/auth';
 import { useNavCounters } from '@/features/notifications/api';
 import { workDomain } from '@/shared/config/links';
 import type { Section } from '@/shared/config/permissions';
@@ -16,6 +17,7 @@ import {
   EmblemIcon,
   FilesIcon,
   KnowledgeIcon,
+  LogoutIcon,
   SidebarCollapseIcon,
   SidebarExpandIcon,
   TasksIcon,
@@ -47,7 +49,6 @@ export function Sidebar({ collapsed, onToggle }: Props) {
   const { t } = useTranslation();
   const { canOpen } = useCan();
   const counters = useNavCounters();
-  const user = useSession().data?.user;
 
   const renderItem = ({ section, path, Icon, counter }: NavItem) => {
     if (!canOpen(section)) return null;
@@ -168,11 +169,30 @@ export function Sidebar({ collapsed, onToggle }: Props) {
       </button>
       {divider}
 
-      <div className={`flex h-11 items-center gap-2 ${collapsed ? 'justify-center' : 'px-2'}`}>
+      <UserMenu collapsed={collapsed} />
+    </aside>
+  );
+}
+
+/** Профиль внизу меню: по нажатию — почта и «Выйти» */
+function UserMenu({ collapsed }: { collapsed: boolean }) {
+  const { t } = useTranslation();
+  const user = useSession().data?.user;
+  const signOut = useSignOut();
+  if (!user) return null;
+
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger
+        aria-label={t('shell.userMenu', { name: user.name })}
+        className={`flex h-11 items-center gap-2 rounded-9 text-left outline-none hover:bg-row-highlight focus-visible:outline focus-visible:outline-2 focus-visible:outline-info data-[state=open]:bg-row-highlight ${
+          collapsed ? 'mx-auto w-11 justify-center' : 'px-2'
+        }`}
+      >
         <span className="flex size-[30px] shrink-0 items-center justify-center rounded-full bg-control text-[11px] font-semibold text-info">
-          {user ? initials(user.name) : ''}
+          {initials(user.name)}
         </span>
-        {!collapsed && user && (
+        {!collapsed && (
           <span className="min-w-0 leading-none">
             <span className="block truncate text-[11.5px] font-medium tracking-[-0.1px] text-text">
               {user.name}
@@ -180,7 +200,29 @@ export function Sidebar({ collapsed, onToggle }: Props) {
             <span className="mt-[3px] block truncate text-[10px] text-faint">{user.position}</span>
           </span>
         )}
-      </div>
-    </aside>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          side={collapsed ? 'right' : 'top'}
+          align="start"
+          sideOffset={8}
+          className="z-50 w-[220px] rounded-11 border border-line bg-popover p-[5px] shadow-[0_8px_28px_rgba(0,0,0,0.35)]"
+        >
+          <DropdownMenu.Label className="px-3 pb-2 pt-[7px]">
+            <span className="block truncate text-[12px] font-medium text-text">{user.name}</span>
+            <span className="mt-[2px] block truncate text-[11px] text-faint">{user.email}</span>
+          </DropdownMenu.Label>
+          <DropdownMenu.Separator className="mx-1 my-1 h-px bg-line" />
+          <DropdownMenu.Item
+            disabled={signOut.isPending}
+            onSelect={() => signOut.mutate()}
+            className="flex h-[34px] cursor-pointer items-center gap-2 rounded-[7px] px-3 text-[12px] tracking-[-0.1px] text-sub outline-none data-[disabled]:opacity-50 data-[highlighted]:bg-popover-active data-[highlighted]:text-text"
+          >
+            <LogoutIcon size={15} />
+            {t('auth.signOut')}
+          </DropdownMenu.Item>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   );
 }

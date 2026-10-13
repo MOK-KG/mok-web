@@ -99,6 +99,7 @@
     "days": "{{count}} дн"
   },
   "shell": {
+    "userMenu": "Меню пользователя {{name}}",
     "orgShort": "НОК КР",
     "collapse": "Свернуть",
     "expand": "Развернуть",

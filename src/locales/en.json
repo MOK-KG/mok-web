@@ -95,6 +95,7 @@
     "days": "{{count}} d"
   },
   "shell": {
+    "userMenu": "User menu: {{name}}",
     "orgShort": "NOC KR",
     "collapse": "Collapse",
     "expand": "Expand",

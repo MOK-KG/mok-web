@@ -28,6 +28,11 @@ export function useSignOut() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: authApi.signOut,
-    onSuccess: () => queryClient.setQueryData(sessionQueryKey, null),
+    onSuccess: () => {
+      queryClient.setQueryData(sessionQueryKey, null);
+      // Данные прежнего пользователя не должны достаться следующему на этом устройстве.
+      // Не clear(): экран входа подписан на запрос сессии и должен увидеть null
+      queryClient.removeQueries({ predicate: (q) => q.queryKey[0] !== sessionQueryKey[0] });
+    },
   });
 }

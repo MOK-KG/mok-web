@@ -68,6 +68,32 @@ describe('авторизация', () => {
     await waitFor(() => container.textContent?.includes('Айбек Дуйшеев') ?? false);
   });
 
+  it('«Выйти» в меню профиля завершает сессию и ведёт на вход', async () => {
+    vi.stubEnv('VITE_AUTH_MOCK', 'active');
+    const router = await render('/login');
+    await waitFor(() => container.textContent?.includes('Продолжить с Google') ?? false);
+    click('Продолжить с Google');
+    await waitFor(() => router.state.location.pathname === '/');
+    const userMenu = () =>
+      container.querySelector<HTMLButtonElement>('[aria-label^="Меню пользователя"]');
+    await waitFor(() => !!userMenu());
+    const trigger = userMenu();
+    // Radix открывает меню с клавиатуры (в jsdom нет pointer-событий)
+    act(() => {
+      trigger?.focus();
+      trigger?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    });
+    const item = () =>
+      [...document.querySelectorAll('[role="menuitem"]')].find((el) =>
+        el.textContent?.includes('Выйти'),
+      ) as HTMLElement | undefined;
+    await waitFor(() => !!item());
+    expect(document.body.textContent).toContain('a.duysheyev@olympic.kg');
+    act(() => item()?.click());
+    await waitFor(() => router.state.location.pathname === '/login');
+    expect(sessionStorage.getItem('nok.mockSession')).toBeNull();
+  });
+
   it('вход без роли ведёт на «Аккаунт на проверке»', async () => {
     vi.stubEnv('VITE_AUTH_MOCK', 'pending');
     const router = await render('/login');

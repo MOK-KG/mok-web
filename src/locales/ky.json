@@ -95,6 +95,7 @@
     "days": "{{count}} күн"
   },
   "shell": {
+    "userMenu": "Колдонуучунун менюсу: {{name}}",
     "orgShort": "КР УОК",
     "collapse": "Жыйноо",
     "expand": "Жайып көрсөтүү",
