@@ -26,8 +26,18 @@ server {
     try_files $uri =404;
   }
 
-  # TODO: когда появится бэкенд — проксировать /api на него или задать VITE_API_URL
-  # location /api/ { proxy_pass http://backend:8000/; }
+  # Бэкенд на том же домене: cookie сессии и OAuth state живут на dashboard.olympic.kg.
+  # BACKEND_URL (например http://<контейнер бэкенда>:8000) подставляется при старте контейнера;
+  # имя резолвится в момент запроса через DNS Docker, поэтому nginx стартует и без бэкенда
+  location ~ ^/(api/|google$|admin/|static/|openapi\.json$) {
+    resolver 127.0.0.11 valid=10s ipv6=off;
+    set $backend ${BACKEND_URL};
+    proxy_pass $backend;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_read_timeout 60s;
+  }
 
   # SPA: все остальные пути отдаёт index.html, маршрутизацию делает React Router
   location / {

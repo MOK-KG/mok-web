@@ -15,7 +15,9 @@ ENV VITE_API_URL=$VITE_API_URL VITE_AUTH_MOCK=$VITE_AUTH_MOCK
 RUN pnpm build
 
 FROM nginx:1.29-alpine
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# envsubst подставляет только BACKEND_URL — переменные nginx ($host, $uri) не трогает
+ENV NGINX_ENVSUBST_FILTER=^BACKEND_URL$ BACKEND_URL=http://backend:8000
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://127.0.0.1/health || exit 1
