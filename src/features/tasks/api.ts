@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ApiError } from '@/shared/api/errors';
+import type { FeedbackMeta } from '@/shared/api/feedback';
 import { addDays, type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
 import { createMockQueue, type Letter, type Suggestion } from './mailQueue';
 import { atBishkek, createMockTasks, currentUserId, people } from './mock';
@@ -85,9 +87,10 @@ export function useTabCounts() {
   });
 }
 
-export class WipLimitError extends Error {
+/** Как ответит бэкенд: 409 с кодом wip_limit — текст ошибки возьмётся из errors.code.* */
+export class WipLimitError extends ApiError {
   constructor() {
-    super('wip-limit');
+    super(409, 'wip-limit', { code: 'wip_limit' });
   }
 }
 
@@ -179,10 +182,11 @@ export function consumeLetter(letterId: string) {
   queue = queue.filter((l) => l.id !== letterId);
 }
 
-function useQueueMutation<V, R>(fn: (vars: V) => Promise<R>) {
+function useQueueMutation<V, R>(fn: (vars: V) => Promise<R>, meta?: FeedbackMeta) {
   const client = useQueryClient();
   return useMutation({
     mutationFn: fn,
+    meta,
     onSettled: () => {
       client.invalidateQueries({ queryKey: mailQueueKey });
       client.invalidateQueries({ queryKey: tasksKey });
@@ -191,13 +195,21 @@ function useQueueMutation<V, R>(fn: (vars: V) => Promise<R>) {
 }
 
 export const useCreateFromLetter = () =>
-  useQueueMutation(({ letterId, suggestion }: { letterId: string; suggestion: Suggestion }) =>
-    createFromLetter(letterId, suggestion),
+  useQueueMutation(
+    ({ letterId, suggestion }: { letterId: string; suggestion: Suggestion }) =>
+      createFromLetter(letterId, suggestion),
+    {
+      successMessage: (task: TaskDetail) => ({
+        key: 'mailQueue.created',
+        params: { code: task.code },
+      }),
+    },
   );
 
 export const useRejectLetter = () =>
-  useQueueMutation(({ letterId, reason }: { letterId: string; reason: string }) =>
-    rejectLetter(letterId, reason),
+  useQueueMutation(
+    ({ letterId, reason }: { letterId: string; reason: string }) => rejectLetter(letterId, reason),
+    { successMessage: 'mailQueue.rejected' },
   );
 
 // ——— Карточка задачи ———
@@ -315,6 +327,12 @@ export function useCreateTask() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: createTask,
+    meta: {
+      successMessage: (task: TaskDetail) => ({
+        key: 'newTask.created',
+        params: { title: task.title },
+      }),
+    },
     onSuccess: () => {
       client.invalidateQueries({ queryKey: tasksKey });
       client.invalidateQueries({ queryKey: mailQueueKey });

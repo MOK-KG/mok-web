@@ -1,5 +1,11 @@
+import { ApiError } from './errors';
+import { createApiClient, type RequestOptions } from './request';
+
+export { ApiError } from './errors';
+
 /**
- * HTTP-клиент. Типы API будут генерироваться из OpenAPI командой `pnpm api:sync`
+ * HTTP-клиент web: сессия — в cookie (credentials: include).
+ * Типы API будут генерироваться из OpenAPI командой `pnpm api:sync`
  * в src/shared/api/schema.d.ts, когда появится бэкенд.
  */
 const baseUrl = import.meta.env.VITE_API_URL || '/api';
@@ -9,18 +15,13 @@ const tunnelHeaders: Record<string, string> = baseUrl.includes('.ngrok')
   ? { 'ngrok-skip-browser-warning': '1' }
   : {};
 
+const base = createApiClient({
+  baseUrl,
+  credentials: 'include',
+  headers: () => tunnelHeaders,
+});
+
 const safeMethods = ['GET', 'HEAD', 'OPTIONS'];
-
-export class ApiError extends Error {
-  readonly status: number;
-
-  constructor(status: number, message: string) {
-    super(message);
-    this.status = status;
-  }
-}
-
-export const apiUrl = (path: string) => `${baseUrl}${path}`;
 
 /**
  * CSRF-токен Django для изменяющих запросов. Бэкенд может быть на другом домене, и cookie
@@ -29,7 +30,8 @@ export const apiUrl = (path: string) => `${baseUrl}${path}`;
 let csrfToken: Promise<string> | null = null;
 
 function getCsrfToken(): Promise<string> {
-  csrfToken ??= request<{ csrfToken: string }>('/auth/csrf')
+  csrfToken ??= base
+    .get<{ csrfToken: string }>('/auth/csrf')
     .then((res) => res.csrfToken)
     .catch((error) => {
       csrfToken = null;
@@ -38,26 +40,36 @@ function getCsrfToken(): Promise<string> {
   return csrfToken;
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(apiUrl(path), {
-    ...init,
-    headers: { 'Content-Type': 'application/json', ...tunnelHeaders, ...init?.headers },
-    credentials: 'include',
-  });
-  if (!res.ok) throw new ApiError(res.status, res.statusText);
-  return res.status === 204 ? (undefined as T) : res.json();
-}
+async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const method = (options.method ?? 'GET').toUpperCase();
+  if (safeMethods.includes(method)) return base.request<T>(path, options);
 
-export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const method = (init?.method ?? 'GET').toUpperCase();
-  if (safeMethods.includes(method)) return request<T>(path, init);
-
-  const headers = { ...init?.headers, 'X-CSRFToken': await getCsrfToken() };
+  const headers = {
+    ...(options.headers as Record<string, string> | undefined),
+    'X-CSRFToken': await getCsrfToken(),
+  };
   try {
-    return await request<T>(path, { ...init, headers });
+    return await base.request<T>(path, { ...options, headers });
   } catch (error) {
     // Токен меняется при входе и выходе — следующий запрос возьмёт свежий
     if (error instanceof ApiError && error.status === 403) csrfToken = null;
     throw error;
   }
 }
+
+const withBody =
+  (method: string) =>
+  <T>(path: string, body?: unknown, options?: RequestOptions) =>
+    request<T>(path, { ...options, method, body });
+
+export const api = {
+  url: base.url,
+  request,
+  get: <T>(path: string, options?: RequestOptions) =>
+    request<T>(path, { ...options, method: 'GET' }),
+  post: withBody('POST'),
+  put: withBody('PUT'),
+  patch: withBody('PATCH'),
+  delete: <T>(path: string, options?: RequestOptions) =>
+    request<T>(path, { ...options, method: 'DELETE' }),
+};

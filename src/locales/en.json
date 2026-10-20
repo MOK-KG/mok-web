@@ -100,6 +100,8 @@
     "collapse": "Collapse",
     "expand": "Expand",
     "notifications": "Notifications",
+    "back": "Back",
+    "more": "More",
     "readAll": "Mark all as read",
     "notificationSettings": "Notification settings",
     "noNotifications": "No new notifications",
@@ -163,6 +165,10 @@
     "apply": "Apply",
     "removeFilter": "Remove filter “{{name}}”",
     "filteredOf": "{{shown}} of {{total}} tasks",
+    "clearFilters": "Clear all",
+    "filtersCleared": "Filters cleared",
+    "undo": "Undo",
+    "groupingHint": "Group cards on the board",
     "queueTitle": "Mail queue · {{ready}} parsed, {{manual}} to create manually",
     "queueText": "info@olympic.kg · a task is created only after confirmation",
     "queueOpen": "Review",
@@ -311,8 +317,32 @@
     "empty": "The queue is empty — all emails are processed",
     "selectLetter": "Choose an email on the left",
     "created": "Task {{code}} created",
+    "rejected": "Letter rejected; the reason is recorded in the log",
     "notFilled": "Fill in the fields marked “fill in”",
     "mailQueueNote_one": "{{count}} email in the mail queue",
     "mailQueueNote_other": "{{count}} emails in the mail queue"
+  },
+  "errors": {
+    "unknown": "Something went wrong. Please try again.",
+    "network": "No connection to the server. Check your internet.",
+    "timeout": "The server is taking too long. Please try again.",
+    "badRequest": "The request was not accepted. Check the data you entered.",
+    "sessionExpired": "Your session has expired — sign in again.",
+    "forbidden": "You don’t have permission to do this.",
+    "notFound": "Not found — it may have been changed already.",
+    "conflict": "The data changed while you were editing. Refresh and try again.",
+    "tooLarge": "The file is too large.",
+    "validation": "Check the form fields.",
+    "rateLimited": "Too many requests. Wait a minute.",
+    "server": "Server error. We’re aware — please try later.",
+    "requestId": "Request ID: {{id}}",
+    "code": {
+      "wip_limit": "The “In progress” column is already at its limit.",
+      "deadline_not_working_day": "The deadline falls on a non-working day."
+    }
+  },
+  "toast": {
+    "close": "Dismiss message",
+    "region": "Messages"
   }
 }

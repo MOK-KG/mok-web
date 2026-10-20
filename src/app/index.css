@@ -12,3 +12,26 @@
     @apply bg-canvas font-sans text-text antialiased;
   }
 }
+
+/* Появление тоста; без анимации, если пользователь просил меньше движения */
+@layer utilities {
+  .toast-enter {
+    animation: toast-enter 180ms ease-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .toast-enter {
+      animation: none;
+    }
+  }
+}
+
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

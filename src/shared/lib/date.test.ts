@@ -1,11 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import i18n from '@/app/i18n';
-import { formatIsoDate } from './date';
+import { formatIsoDate, isoToLocalDate, localDateToIso } from './date';
 
 describe('форматирование дат и сроков', () => {
   it('IsoDate с днём недели, без сдвига по часовому поясу', () => {
     expect(formatIsoDate('2026-10-12', 'EEEEEE, d MMMM yyyy', 'ru')).toBe('пн, 12 октября 2026');
     expect(formatIsoDate('2026-10-12', 'EEE, d MMM yyyy', 'en')).toBe('Mon, 12 Oct 2026');
+  });
+
+  it('IsoDate ↔ локальная дата нативного календаря без сдвига на сутки', () => {
+    const local = isoToLocalDate('2026-12-31');
+    expect([local.getFullYear(), local.getMonth(), local.getDate()]).toEqual([2026, 11, 31]);
+    expect(localDateToIso(local)).toBe('2026-12-31');
+    // Время внутри дня (iOS отдаёт выбранный день с текущим временем) не меняет дату
+    expect(localDateToIso(new Date(2026, 0, 5, 23, 59))).toBe('2026-01-05');
   });
 
   it('формы числа в русском', async () => {

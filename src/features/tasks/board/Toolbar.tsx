@@ -3,6 +3,7 @@ import * as Popover from '@radix-ui/react-popover';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Can } from '@/features/auth';
+import { toast } from '@/shared/lib/toast';
 import {
   CheckboxCheckIcon,
   CheckIcon,
@@ -14,7 +15,15 @@ import {
   PlusIcon,
   SearchIcon,
 } from '@/shared/ui/icons';
-import { type DueFilter, dueFilters, hasFilters, matchesDue, type TaskFilters } from '../filters';
+import { Tooltip } from '@/shared/ui/Tooltip';
+import {
+  type DueFilter,
+  dueFilters,
+  emptyFilters,
+  hasFilters,
+  matchesDue,
+  type TaskFilters,
+} from '../filters';
 import type { Project, Task, TaskTab } from '../types';
 import { taskTabs } from '../types';
 import { toneClasses } from '../ui';
@@ -112,11 +121,14 @@ function GroupingMenu({ value, onChange }: { value: Grouping; onChange: (g: Grou
   const options: Grouping[] = ['none', 'project', 'assignee'];
   return (
     <DropdownMenu.Root>
-      <DropdownMenu.Trigger className={`${field} w-[186px] hover:text-text`}>
-        <GroupIcon size={16} className="shrink-0" />
-        <span className="flex-1 text-left">{t(`tasks.group.${value}`)}</span>
-        <ChevronDownIcon size={13} />
-      </DropdownMenu.Trigger>
+      {/* На кнопке видно только текущее значение — подсказка объясняет, что она меняет */}
+      <Tooltip content={t('tasks.groupingHint')}>
+        <DropdownMenu.Trigger className={`${field} w-[186px] hover:text-text`}>
+          <GroupIcon size={16} className="shrink-0" />
+          <span className="flex-1 text-left">{t(`tasks.group.${value}`)}</span>
+          <ChevronDownIcon size={13} />
+        </DropdownMenu.Trigger>
+      </Tooltip>
       <DropdownMenu.Portal>
         <DropdownMenu.Content
           align="start"
@@ -297,7 +309,10 @@ function FilterPopover({
   );
 }
 
-/** Строка активных фильтров: «Фильтр: [Антидопинг ×] … 9 из 20 задач» */
+/**
+ * Строка активных фильтров: «Фильтр: [Антидопинг ×] … 9 из 20 задач · Сбросить все».
+ * «Сбросить все» можно отменить из тоста — набор фильтров собирали руками
+ */
 export function ActiveFilters({
   filters,
   onChange,
@@ -314,6 +329,29 @@ export function ActiveFilters({
   const projects = projectsOf(tasks).filter((p) => filters.projects.includes(p.id));
   const chip =
     'flex h-6 items-center gap-[6px] rounded-6 border border-line bg-control pl-[9px] pr-[6px] text-[11px] font-medium tracking-[-0.1px] text-text';
+  const remove = (name: string, next: TaskFilters) => {
+    const label = t('tasks.removeFilter', { name });
+    return (
+      <Tooltip content={label}>
+        <button
+          type="button"
+          aria-label={label}
+          onClick={() => onChange(next)}
+          className="text-faint hover:text-text"
+        >
+          <CloseSmallIcon size={11} />
+        </button>
+      </Tooltip>
+    );
+  };
+  const clearAll = () => {
+    const previous = filters;
+    onChange(emptyFilters);
+    toast.info({
+      title: t('tasks.filtersCleared'),
+      action: { label: t('tasks.undo'), onPress: () => onChange(previous) },
+    });
+  };
   return (
     <div className="flex flex-wrap items-center gap-[7px] pl-1">
       <span className="text-[11.5px] text-faint">{t('tasks.filterLabel')}</span>
@@ -321,34 +359,25 @@ export function ActiveFilters({
         <span key={p.id} className={chip}>
           <span aria-hidden className={`size-[6px] rounded-full ${toneClasses[p.tone].dot}`} />
           {p.name}
-          <button
-            type="button"
-            aria-label={t('tasks.removeFilter', { name: p.name })}
-            onClick={() =>
-              onChange({ ...filters, projects: filters.projects.filter((x) => x !== p.id) })
-            }
-            className="text-faint hover:text-text"
-          >
-            <CloseSmallIcon size={11} />
-          </button>
+          {remove(p.name, { ...filters, projects: filters.projects.filter((x) => x !== p.id) })}
         </span>
       ))}
       {filters.due.map((d) => (
         <span key={d} className={chip}>
           {t(dueLabel[d])}
-          <button
-            type="button"
-            aria-label={t('tasks.removeFilter', { name: t(dueLabel[d]) })}
-            onClick={() => onChange({ ...filters, due: filters.due.filter((x) => x !== d) })}
-            className="text-faint hover:text-text"
-          >
-            <CloseSmallIcon size={11} />
-          </button>
+          {remove(t(dueLabel[d]), { ...filters, due: filters.due.filter((x) => x !== d) })}
         </span>
       ))}
       <span className="ml-1 text-[11.5px] text-dim">
         {t('tasks.filteredOf', { shown, total: tasks.length })}
       </span>
+      <button
+        type="button"
+        onClick={clearAll}
+        className="text-[11.5px] font-medium text-info hover:underline"
+      >
+        {t('tasks.clearFilters')}
+      </button>
     </div>
   );
 }

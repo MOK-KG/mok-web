@@ -1,4 +1,4 @@
-import { ApiError, apiFetch, apiUrl } from '@/shared/api/client';
+import { ApiError, api } from '@/shared/api/client';
 import { isMockEnabled, mockApi, mockOutcome } from './mock';
 import type { Session, SignInError } from './types';
 
@@ -11,7 +11,7 @@ export const authApi = {
   async getSession(): Promise<Session | null> {
     if (isMockEnabled()) return mockApi.getSession();
     try {
-      return await apiFetch<Session>('/auth/me');
+      return await api.get<Session>('/auth/me');
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) return null;
       throw error;
@@ -22,12 +22,12 @@ export const authApi = {
     const outcome = mockOutcome();
     if (outcome) return mockApi.startGoogleSignIn(outcome);
     const returnTo = `${window.location.origin}/login`;
-    window.location.assign(apiUrl(`/auth/google/start?returnTo=${encodeURIComponent(returnTo)}`));
+    window.location.assign(api.url('/auth/google/start', { returnTo }));
   },
 
   async signOut(): Promise<void> {
     if (isMockEnabled()) return mockApi.signOut();
-    await apiFetch<void>('/auth/logout', { method: 'POST' });
+    await api.post<void>('/auth/logout');
   },
 };
 
