@@ -16,9 +16,17 @@ export const formatDate = (date: Date | number, pattern = 'd MMMM yyyy', lang?: 
  * По умолчанию с днём недели: «пт, 13 ноября 2026».
  */
 export function formatIsoDate(date: IsoDate, pattern = 'EEEEEE, d MMMM yyyy', lang?: string) {
-  const [y, m, d] = date.split('-').map(Number);
-  return format(new Date(y, m - 1, d), pattern, { locale: localeFor(lang) });
+  return format(isoToLocalDate(date), pattern, { locale: localeFor(lang) });
 }
+
+/** IsoDate → локальная полночь того же дня (для нативного выбора даты и форматирования) */
+export function isoToLocalDate(date: IsoDate): Date {
+  const [y, m, d] = date.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/** День, выбранный в нативном календаре (локальное время), → IsoDate того же дня */
+export const localDateToIso = (date: Date): IsoDate => format(date, 'yyyy-MM-dd');
 
 /**
  * Короткое относительное время для лент: «12 мин», «3 ч», «вчера», «2 дн».

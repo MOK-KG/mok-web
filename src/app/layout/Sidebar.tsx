@@ -1,5 +1,4 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import * as Tooltip from '@radix-ui/react-tooltip';
 import type { ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router-dom';
@@ -22,6 +21,7 @@ import {
   SidebarExpandIcon,
   TasksIcon,
 } from '@/shared/ui/icons';
+import { Tooltip } from '@/shared/ui/Tooltip';
 
 type NavItem = {
   section: Section;
@@ -99,23 +99,9 @@ export function Sidebar({ collapsed, onToggle }: Props) {
     );
     return (
       <li key={section} className={collapsed ? 'flex justify-center' : undefined}>
-        {collapsed ? (
-          <Tooltip.Root>
-            <Tooltip.Trigger asChild>{link}</Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Content
-                side="right"
-                sideOffset={10}
-                className="rounded-8 border border-line bg-popover px-[10px] py-[6px] text-[12px] font-medium text-text shadow-[0_8px_28px_rgba(0,0,0,0.35)]"
-              >
-                {label}
-                {count ? ` · ${count}` : ''}
-              </Tooltip.Content>
-            </Tooltip.Portal>
-          </Tooltip.Root>
-        ) : (
-          link
-        )}
+        <Tooltip content={collapsed ? `${label}${count ? ` · ${count}` : ''}` : null} side="right">
+          {link}
+        </Tooltip>
       </li>
     );
   };

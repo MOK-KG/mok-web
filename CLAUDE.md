@@ -43,6 +43,19 @@ react-hook-form, zod, i18next, date-fns, dnd-kit, Biome, Vitest. Менедже�
 - Не добавляй права на удаление журнала, сотрудников, задач, документов — их нет намеренно
 - Матрица ролей в `permissions.ts` — заглушка для mock, настоящая на бэкенде (`../docs/roli.md`)
 
+## Запросы, ошибки, сообщения
+
+- Запросы — `api.get/post/put/patch/delete` из `src/shared/api/client.ts`, не голый `fetch`.
+  Ошибка — `ApiError`: `status` (0 — нет сети или тайм-аут), `code` бэкенда, `fields`, `requestId`
+- Что сказать пользователю, описывает мутация: `meta: { successMessage, errorMessage }`.
+  Тосты показывает общий обработчик (`src/shared/api/feedback.ts`) — не вызывай `toast` в `onError`.
+  Ошибка мутации — тост по умолчанию; `errorMessage: false` — экран показывает её сам.
+  Ошибка загрузки — без тоста, экран показывает состояние сам
+- Тексты ошибок — `errors.*`; новый код бэкенда — ключ `errors.code.<код>` и `knownErrorCodes`
+- Тост вручную — `toast.success/error/info/warning` из `src/shared/lib/toast.ts`
+- Подсказка — `Tooltip` из `src/shared/ui/Tooltip.tsx`; на мобильном — по долгому нажатию.
+  Подсказка не заменяет `aria-label` / `accessibilityLabel` у кнопок-иконок
+
 ## Удаление
 
 Почти ничего нельзя удалять:
@@ -90,8 +103,10 @@ react-hook-form, zod, i18next, date-fns, dnd-kit, Biome, Vitest. Менедже�
 - Типы API генерируются из OpenAPI командой `pnpm api:sync`, руками не пишутся
 - Токены из `src/shared/config/tokens.ts`, цвета в коде не хардкодятся
 - Продублированы в web и mobile и должны совпадать побайтно — правь оба:
-  `shared/config/{tokens,i18n,links,workCalendar,permissions}.ts`, `shared/lib/{workDays,date,text}.ts`,
-  `features/tasks/{types,directory,absences,mock,deadline,filters,list,ui}.ts`, `locales/*.json`.
+  `shared/config/{tokens,i18n,links,workCalendar,permissions}.ts`, `shared/lib/{workDays,date,text,toast}.ts`,
+  `shared/api/{errors,request,feedback}.ts`,
+  `features/tasks/{types,directory,absences,mock,deadline,filters,list,ui,mailQueue}.ts`,
+  `features/notifications/api.ts`, `locales/*.json`.
   Тесты общих файлов живут в web
 - Иконки: `shared/ui/icons.tsx` в web — источник; в mobile тот же набор путей (react-native-svg)
 - Тексты интерфейса только через i18next, ключи во всех трёх файлах `src/locales/` (ru, ky, en)
