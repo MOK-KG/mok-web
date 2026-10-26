@@ -46,6 +46,16 @@ export type ThemeColorName =
   | 'info-text'
   | 'muted-chip'
   | 'info-line'
+  | 'nav-panel'
+  | 'nav-active'
+  | 'row-match'
+  | 'notice-info'
+  | 'notice-info-title'
+  | 'notice-info-text'
+  | 'success-chip'
+  | 'muted-soft'
+  | 'warning-strong'
+  | 'warning-muted'
   | 'tone-blue'
   | 'tone-amber'
   | 'tone-red'
@@ -102,6 +112,17 @@ export const themes: Record<ThemeName, Record<ThemeColorName, string>> = {
     'info-text': '#7FA8D9',
     'muted-chip': '#141C2C',
     'info-line': 'rgba(91, 155, 243, 0.28)',
+    // Из макета Figma (база знаний)
+    'nav-panel': '#0B1220',
+    'nav-active': '#18243D',
+    'row-match': '#101A2C',
+    'notice-info': '#0F1A2E',
+    'notice-info-title': '#9DC4F5',
+    'notice-info-text': '#6E86A8',
+    'success-chip': '#0E2418',
+    'muted-soft': '#141024',
+    'warning-strong': '#F7D97A',
+    'warning-muted': '#A69B6E',
     // Оттенки проектов и аватаров: цвет и фон
     'tone-blue': '#5B9BF3',
     'tone-blue-bg': '#1E3A5F',
@@ -158,6 +179,17 @@ export const themes: Record<ThemeName, Record<ThemeColorName, string>> = {
     'info-text': '#1D4ED8',
     'muted-chip': '#F4F6F9',
     'info-line': 'rgba(37, 99, 235, 0.3)',
+    // Из макета Figma (база знаний)
+    'nav-panel': '#FFFFFF',
+    'nav-active': '#EEF4FF',
+    'row-match': '#F7FAFD',
+    'notice-info': '#EFF6FF',
+    'notice-info-title': '#1E40AF',
+    'notice-info-text': '#3B6FA8',
+    'success-chip': '#DCFCE7',
+    'muted-soft': '#F5F8FC',
+    'warning-strong': '#92400E',
+    'warning-muted': '#A16207',
     // Оттенки проектов и аватаров: цвет и фон
     'tone-blue': '#1D4ED8',
     'tone-blue-bg': '#DBEAFE',

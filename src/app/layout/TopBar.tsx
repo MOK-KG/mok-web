@@ -37,12 +37,12 @@ const menuContent =
 const menuItem =
   'flex h-[34px] cursor-pointer items-center gap-2 rounded-[7px] px-3 text-[12px] tracking-[-0.1px] text-sub outline-none data-[highlighted]:bg-popover-active data-[highlighted]:text-text data-[state=checked]:bg-popover-active data-[state=checked]:font-medium data-[state=checked]:text-text';
 
-/** Шапка раздела: заголовок, подпись, уведомления, язык, тема */
-export function TopBar({ title }: { title: string }) {
+/** Шапка раздела: заголовок, подпись (по умолчанию «департамент · дата»), уведомления, язык, тема */
+export function TopBar({ title, subtitle: custom }: { title: string; subtitle?: string | null }) {
   const { i18n } = useTranslation();
   const user = useSession().data?.user;
   const today = formatIsoDate(todayInBishkek(), 'EEEE, d MMMM', i18n.language);
-  const subtitle = [user?.department, today].filter(Boolean).join(' · ');
+  const subtitle = custom ?? [user?.department, today].filter(Boolean).join(' · ');
 
   return (
     <header className="flex h-14 items-center justify-between gap-4 rounded-14 border border-line bg-panel px-5 shadow-[0_2px_10px_rgba(10,22,40,0.05)]">

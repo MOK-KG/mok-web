@@ -309,3 +309,43 @@ export const RejectIcon = icon(
   17,
   `<path d="M4.25 4.25L12.75 12.75M12.75 4.25L4.25 12.75" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`,
 );
+export const ClearIcon = icon(
+  12,
+  `<path d="M3 3L6 6M6 6L9 9M6 6L9 3M6 6L3 9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const ShieldCheckIcon = icon(
+  16,
+  `<path d="M8 2.33333L13 4.2V7.8C13 10.8667 10.8667 12.7333 8 13.3333C5.13333 12.7333 3 10.8667 3 7.8V4.2L8 2.33333Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.33333 8L7.66667 9.33333L10 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const FolderIcon = icon(
+  17,
+  `<path d="M2.125 4.95833C2.125 4.58261 2.27426 4.22228 2.53993 3.9566C2.80561 3.69092 3.16594 3.54167 3.54167 3.54167H6.375L7.79167 4.95833H13.4583C13.8341 4.95833 14.1944 5.10759 14.4601 5.37327C14.7257 5.63894 14.875 5.99928 14.875 6.375V12.0417C14.875 12.4174 14.7257 12.7777 14.4601 13.0434C14.1944 13.3091 13.8341 13.4583 13.4583 13.4583H3.54167C3.16594 13.4583 2.80561 13.3091 2.53993 13.0434C2.27426 12.7777 2.125 12.4174 2.125 12.0417V4.95833Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const LockIcon = icon(
+  17,
+  `<path d="M4.60417 7.4375H12.3958C13.1782 7.4375 13.8125 8.07176 13.8125 8.85417V13.1042C13.8125 13.8866 13.1782 14.5208 12.3958 14.5208H4.60417C3.82176 14.5208 3.1875 13.8866 3.1875 13.1042V8.85417C3.1875 8.07176 3.82176 7.4375 4.60417 7.4375Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.66667 7.4375V4.95833C5.66667 4.20689 5.96518 3.48622 6.49653 2.95486C7.02788 2.42351 7.74855 2.125 8.5 2.125C9.25145 2.125 9.97212 2.42351 10.5035 2.95486C11.0348 3.48622 11.3333 4.20689 11.3333 4.95833V7.4375" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const TasksMiniIcon = icon(
+  13,
+  `<path d="M2.54583 2.4375H3.95417C4.31315 2.4375 4.60417 2.72851 4.60417 3.0875V9.9125C4.60417 10.2715 4.31315 10.5625 3.95417 10.5625H2.54583C2.18685 10.5625 1.89583 10.2715 1.89583 9.9125V3.0875C1.89583 2.72851 2.18685 2.4375 2.54583 2.4375Z" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.06667 2.4375H7.475C7.83398 2.4375 8.125 2.72851 8.125 3.0875V7.20417C8.125 7.56315 7.83398 7.85417 7.475 7.85417H6.06667C5.70768 7.85417 5.41667 7.56315 5.41667 7.20417V3.0875C5.41667 2.72851 5.70768 2.4375 6.06667 2.4375Z" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5875 2.4375H10.4542C10.8132 2.4375 11.1042 2.72851 11.1042 3.0875V5.0375C11.1042 5.39649 10.8132 5.6875 10.4542 5.6875H9.5875C9.22852 5.6875 8.9375 5.39649 8.9375 5.0375V3.0875C8.9375 2.72851 9.22852 2.4375 9.5875 2.4375Z" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const DocMiniIcon = icon(
+  13,
+  `<path d="M3.52083 1.625H7.3125L10.0208 4.33333V11.375H3.52083V1.625Z" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.3125 1.625V4.33333H10.0208" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const ChevronLeftIcon = icon(
+  16,
+  `<path d="M10 4L6 8L10 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const CheckBadgeIcon = icon(
+  12,
+  `<path d="M2.5 6.25L4.75 8.5L9.5 3.75" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const TasksSmallIcon = icon(
+  14,
+  `<path d="M2.74167 2.625H4.25833C4.64493 2.625 4.95833 2.9384 4.95833 3.325V10.675C4.95833 11.0616 4.64493 11.375 4.25833 11.375H2.74167C2.35507 11.375 2.04167 11.0616 2.04167 10.675V3.325C2.04167 2.9384 2.35507 2.625 2.74167 2.625Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.53333 2.625H8.05C8.4366 2.625 8.75 2.9384 8.75 3.325V7.75833C8.75 8.14493 8.4366 8.45833 8.05 8.45833H6.53333C6.14673 8.45833 5.83333 8.14493 5.83333 7.75833V3.325C5.83333 2.9384 6.14673 2.625 6.53333 2.625Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.325 2.625H11.2583C11.6449 2.625 11.9583 2.9384 11.9583 3.325V5.425C11.9583 5.8116 11.6449 6.125 11.2583 6.125H10.325C9.9384 6.125 9.625 5.8116 9.625 5.425V3.325C9.625 2.9384 9.9384 2.625 10.325 2.625Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
+export const DocSmallIcon = icon(
+  14,
+  `<path d="M3.79167 1.75H7.875L10.7917 4.66667V12.25H3.79167V1.75Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.875 1.75V4.66667H10.7917" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
+);

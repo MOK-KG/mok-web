@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useMatches } from 'react-router-dom';
 import type { Section } from '@/shared/config/permissions';
@@ -11,10 +11,22 @@ const COLLAPSED_KEY = 'nok.sidebarCollapsed';
 /** Раздел страницы — в handle маршрута: { section: 'tasks' } */
 export type RouteHandle = { section?: Section };
 
+const SubtitleContext = createContext<(subtitle: string | null) => void>(() => {});
+
+/** Подпись в шапке вместо «департамент · дата»: «64 статьи в 7 разделах» */
+export function usePageSubtitle(subtitle: string | null | undefined) {
+  const set = useContext(SubtitleContext);
+  useEffect(() => {
+    set(subtitle ?? null);
+    return () => set(null);
+  }, [set, subtitle]);
+}
+
 /** Каркас приложения: боковое меню слева, шапка и содержимое раздела справа */
 export function AppLayout() {
   const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(() => storage.get(COLLAPSED_KEY) === '1');
+  const [subtitle, setSubtitle] = useState<string | null>(null);
   const section = [...useMatches()]
     .reverse()
     .map((m) => (m.handle as RouteHandle | undefined)?.section)
@@ -30,9 +42,11 @@ export function AppLayout() {
     <div className="flex h-screen gap-4 bg-canvas p-4">
       <Sidebar collapsed={collapsed} onToggle={toggle} />
       <div className="flex min-w-0 flex-1 flex-col gap-[14px]">
-        <TopBar title={section ? t(`sections.${section}`) : t('app.title')} />
+        <TopBar title={section ? t(`sections.${section}`) : t('app.title')} subtitle={subtitle} />
         <main className="min-h-0 flex-1 overflow-auto">
-          <Outlet />
+          <SubtitleContext.Provider value={setSubtitle}>
+            <Outlet />
+          </SubtitleContext.Provider>
         </main>
       </div>
     </div>

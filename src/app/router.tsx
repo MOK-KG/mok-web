@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, type ReactElement, Suspense } from 'react';
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-dom';
 import { AuthGate, LoginPage, PendingPage, RequirePermission } from '@/features/auth';
 import { SectionPage } from '@/features/sections/SectionPage';
@@ -9,6 +9,21 @@ import { AppLayout, type RouteHandle } from './layout/AppLayout';
 const TasksPage = lazy(() =>
   import('@/features/tasks/TasksPage').then((m) => ({ default: m.TasksPage })),
 );
+const KnowledgePage = lazy(() =>
+  import('@/features/knowledge-base/KnowledgePage').then((m) => ({ default: m.KnowledgePage })),
+);
+const ArticleEditor = lazy(() =>
+  import('@/features/knowledge-base/ArticleEditor').then((m) => ({ default: m.ArticleEditor })),
+);
+const ArticlePage = lazy(() =>
+  import('@/features/knowledge-base/ArticlePage').then((m) => ({ default: m.ArticlePage })),
+);
+
+/** Готовые разделы; остальные пока — заглушка SectionPage */
+const sectionPages: Partial<Record<Section, () => ReactElement>> = {
+  tasks: () => <TasksPage />,
+  knowledge: () => <KnowledgePage />,
+};
 
 /** Пути разделов меню */
 export const sectionPaths: Record<Section, string> = {
@@ -23,15 +38,34 @@ export const sectionPaths: Record<Section, string> = {
 };
 
 // Разделы внутри каркаса. Без права — экран 403 по прямой ссылке (адрес не меняется)
-const sectionRoutes: RouteObject[] = (Object.keys(sections) as Section[]).map((section) => ({
-  ...(section === 'dashboard' ? { index: true } : { path: sectionPaths[section].slice(1) }),
-  handle: { section } satisfies RouteHandle,
-  element: (
-    <RequirePermission permission={sections[section]}>
-      <Suspense fallback={null}>{section === 'tasks' ? <TasksPage /> : <SectionPage />}</Suspense>
-    </RequirePermission>
-  ),
-}));
+const guarded = (section: Section, page: ReactElement) => (
+  <RequirePermission permission={sections[section]}>
+    <Suspense fallback={null}>{page}</Suspense>
+  </RequirePermission>
+);
+
+const sectionRoutes: RouteObject[] = [
+  ...(Object.keys(sections) as Section[]).map((section) => ({
+    ...(section === 'dashboard' ? { index: true } : { path: sectionPaths[section].slice(1) }),
+    handle: { section } satisfies RouteHandle,
+    element: guarded(section, sectionPages[section]?.() ?? <SectionPage />),
+  })),
+  {
+    path: 'knowledge/:articleId',
+    handle: { section: 'knowledge' } satisfies RouteHandle,
+    element: guarded('knowledge', <ArticlePage />),
+  },
+  // Редактор — только с правом knowledge.edit; без него по прямой ссылке — 403
+  ...['knowledge/new', 'knowledge/:articleId/edit'].map((path) => ({
+    path,
+    handle: { section: 'knowledge' } satisfies RouteHandle,
+    element: (
+      <RequirePermission permission="knowledge.edit">
+        {guarded('knowledge', <ArticleEditor />)}
+      </RequirePermission>
+    ),
+  })),
+];
 
 export const routes: RouteObject[] = [
   {
