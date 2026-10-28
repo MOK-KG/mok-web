@@ -14,6 +14,7 @@ import {
   ChevronLeftIcon,
   ClockIcon,
   DocSmallIcon,
+  DownloadIcon,
   EditMediumIcon,
   HistoryClockIcon,
   MoreIcon,
@@ -21,9 +22,17 @@ import {
 } from '@/shared/ui/icons';
 import { Tooltip } from '@/shared/ui/Tooltip';
 import { useArticle, useKnowledge, useMarkReviewed } from './api';
-import { Avatar, capsTitle, FreshnessBadge, useShortDate } from './parts';
+import { DocumentDialog } from './DocumentDialog';
+import {
+  Avatar,
+  capsTitle,
+  FreshnessBadge,
+  openAttachment,
+  useFileSize,
+  useShortDate,
+} from './parts';
 import { checkedAt, freshnessOf } from './search';
-import type { KbArticle, KbBlock, KbVersion } from './types';
+import type { KbArticle, KbBlock, KbRelatedDocument, KbVersion } from './types';
 
 const ATTACHMENTS_ID = 'attachments';
 
@@ -121,6 +130,7 @@ function ArticleBody({ article: current }: { article: KbArticle }) {
   // Блоки, которых нет в текущей версии: их потом изменили или убрали
   const currentBlocks = new Set(current.body.map((b) => JSON.stringify(b)));
   const review = useMarkReviewed(current.id);
+  const fileSize = useFileSize();
   const freshness = freshnessOf(checkedAt(current));
   const reviewedLater = current.reviewed && current.reviewed.date > current.updatedAt;
   const toc = [
@@ -207,7 +217,7 @@ function ArticleBody({ article: current }: { article: KbArticle }) {
         {old && (
           <div
             role="status"
-            className="mt-3 flex items-center gap-[10px] rounded-9 border border-info-line bg-info-chip px-[13px] py-[10px] text-[12px]"
+            className="mb-2 mt-3 flex items-center gap-[10px] rounded-9 border border-info-line bg-info-chip px-[13px] py-[10px] text-[12px]"
           >
             <HistoryClockIcon size={16} className="shrink-0 text-info" />
             <span className="min-w-0 flex-1 text-sub">
@@ -282,11 +292,31 @@ function ArticleBody({ article: current }: { article: KbArticle }) {
                 {a.attachments.map((f) => (
                   <li
                     key={f.id}
-                    className="flex h-10 items-center gap-[9px] rounded-8 border border-line bg-surface px-[13px]"
+                    className="group flex h-10 items-center rounded-8 border border-line bg-surface pr-[6px] hover:border-info-line"
                   >
-                    <AttachLargeIcon size={17} className="shrink-0 text-faint" />
-                    <span className="min-w-0 flex-1 truncate text-[12px] text-sub">{f.name}</span>
-                    <span className="text-[10.5px] tracking-[0.3px] text-dim">{f.ext}</span>
+                    <button
+                      type="button"
+                      onClick={() => openAttachment(f)}
+                      className="flex h-full min-w-0 flex-1 items-center gap-[9px] pl-[13px] text-left"
+                    >
+                      <AttachLargeIcon size={17} className="shrink-0 text-faint" />
+                      <span className="min-w-0 flex-1 truncate text-[12px] text-sub group-hover:text-text">
+                        {f.name}
+                      </span>
+                      <span className="pr-[7px] text-[10.5px] tracking-[0.3px] text-dim">
+                        {[f.ext, fileSize(f.size)].filter(Boolean).join(' · ')}
+                      </span>
+                    </button>
+                    <Tooltip content={t('knowledge.download')}>
+                      <button
+                        type="button"
+                        aria-label={`${t('knowledge.download')}: ${f.name}`}
+                        onClick={() => openAttachment(f, 'download')}
+                        className="flex size-7 shrink-0 items-center justify-center rounded-6 text-faint hover:bg-row-highlight hover:text-text"
+                      >
+                        <DownloadIcon size={15} />
+                      </button>
+                    </Tooltip>
                   </li>
                 ))}
               </ul>
@@ -381,6 +411,7 @@ function SidePanel({
 }) {
   const { t } = useTranslation();
   const location = useLocation();
+  const [openDoc, setOpenDoc] = useState<KbRelatedDocument | null>(null);
   const { can } = useCan();
   const shortDate = useShortDate();
   const card = 'flex rounded-8 border border-line bg-surface px-[11px] pt-[11px]';
@@ -483,16 +514,22 @@ function SidePanel({
           <ul className="mt-[10px] flex flex-col gap-2">
             {a.relatedDocuments.map((doc, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: номера документов в заглушке повторяются
-              <li key={i} className={`${card} gap-[6px] pb-[10px]`}>
-                <DocSmallIcon size={14} className="mt-[5px] shrink-0 text-faint" />
-                <span className="min-w-0">
-                  <span className="block truncate text-[11.5px] font-medium tracking-[-0.1px] text-text">
-                    {doc.number}
+              <li key={i}>
+                <button
+                  type="button"
+                  onClick={() => setOpenDoc(doc)}
+                  className={`${card} w-full gap-[6px] pb-[10px] text-left hover:border-info-line`}
+                >
+                  <DocSmallIcon size={14} className="mt-[5px] shrink-0 text-faint" />
+                  <span className="min-w-0">
+                    <span className="block truncate text-[11.5px] font-medium tracking-[-0.1px] text-text">
+                      {doc.number}
+                    </span>
+                    <span className="mt-[2px] block truncate text-[10.5px] text-dim">
+                      {doc.title}
+                    </span>
                   </span>
-                  <span className="mt-[2px] block truncate text-[10.5px] text-dim">
-                    {doc.title}
-                  </span>
-                </span>
+                </button>
               </li>
             ))}
           </ul>
@@ -536,6 +573,7 @@ function SidePanel({
           );
         })}
       </ol>
+      <DocumentDialog document={openDoc} onClose={() => setOpenDoc(null)} />
     </aside>
   );
 }

@@ -1,4 +1,5 @@
 import type { Person, TaskStatus } from '@/features/tasks/types';
+import type { RoleCode } from '@/shared/config/permissions';
 import type { IsoDate } from '@/shared/lib/workDays';
 
 /**
@@ -11,6 +12,8 @@ export type KbSection = {
   /** Статей в разделе всего — для закрытого раздела тоже */
   count: number;
   accessible: boolean;
+  /** Каким ролям раздел открыт; null — всем */
+  roles: RoleCode[] | null;
 };
 
 /** Блок текста статьи */
@@ -20,7 +23,8 @@ export type KbBlock =
   | { kind: 'list'; items: string[] }
   | { kind: 'note'; title: string; text: string };
 
-export type KbAttachment = { id: string; name: string; ext: string };
+/** Вложение; size — байты, null — размер неизвестен (файл из демо-данных) */
+export type KbAttachment = { id: string; name: string; ext: string; size: number | null };
 
 export type KbRelatedTask = {
   /** ID задачи в разделе «Задачи»; null — задачи нет среди доступных */

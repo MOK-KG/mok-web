@@ -21,6 +21,7 @@ import {
   TasksMiniIcon,
 } from '@/shared/ui/icons';
 import { Tooltip } from '@/shared/ui/Tooltip';
+import { AccessDialog } from './AccessDialog';
 import { useKnowledge, useKnowledgeSearch, useMoveSection } from './api';
 import { Avatar, capsTitle, FreshnessBadge, useShortDate } from './parts';
 import { SectionDialog } from './SectionDialog';
@@ -247,6 +248,7 @@ function SectionsNav({
   const editable = can('knowledge.edit');
   const [creating, setCreating] = useState(false);
   const [renaming, setRenaming] = useState<KbSection | null>(null);
+  const [access, setAccess] = useState<KbSection | null>(null);
   const move = useMoveSection();
   const closed = sections.filter((s) => !s.accessible);
   const item =
@@ -326,6 +328,16 @@ function SectionsNav({
                     {selected && stripe}
                     <FolderIcon size={17} className="shrink-0" />
                     <span className="truncate">{s.name}</span>
+                    {s.roles && (
+                      <Tooltip content={t('knowledge.openTo', { roles: s.roles.join(', ') })}>
+                        <span className="flex shrink-0 text-dim">
+                          <ShieldCheckIcon size={13} />
+                          <span className="sr-only">
+                            {t('knowledge.openTo', { roles: s.roles.join(', ') })}
+                          </span>
+                        </span>
+                      </Tooltip>
+                    )}
                     {count(s.count, editable)}
                   </button>
                   {editable && (
@@ -334,6 +346,7 @@ function SectionsNav({
                       first={i === 0}
                       last={i === sections.length - 1}
                       onRename={() => setRenaming(s)}
+                      onAccess={() => setAccess(s)}
                       onMove={(by) => move.mutate({ id: s.id, by })}
                     />
                   )}
@@ -353,6 +366,7 @@ function SectionsNav({
           );
         })}
       </ul>
+      <AccessDialog section={access} onClose={() => setAccess(null)} />
       <SectionDialog
         open={renaming !== null}
         section={renaming ?? undefined}
@@ -371,18 +385,20 @@ function SectionsNav({
   );
 }
 
-/** Меню раздела (право knowledge.edit): переименовать и сдвинуть. Удалять разделы нельзя */
+/** Меню раздела (право knowledge.edit): переименовать, доступ, сдвинуть. Удалять разделы нельзя */
 function SectionMenu({
   section,
   first,
   last,
   onRename,
+  onAccess,
   onMove,
 }: {
   section: KbSection;
   first: boolean;
   last: boolean;
   onRename: () => void;
+  onAccess: () => void;
   onMove: (by: -1 | 1) => void;
 }) {
   const { t } = useTranslation();
@@ -405,6 +421,9 @@ function SectionMenu({
         >
           <DropdownMenu.Item onSelect={onRename} className={row}>
             {t('knowledge.renameSection')}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item onSelect={onAccess} className={row}>
+            {t('knowledge.accessMenu')}
           </DropdownMenu.Item>
           <DropdownMenu.Item disabled={first} onSelect={() => onMove(-1)} className={row}>
             {t('knowledge.moveUp')}

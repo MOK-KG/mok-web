@@ -23,12 +23,13 @@ import {
 import { Tooltip } from '@/shared/ui/Tooltip';
 import {
   type ArticleDraft,
+  uploadAttachment,
   useArticle,
   useKnowledge,
   useLinkableDocuments,
   useSaveArticle,
 } from './api';
-import { capsTitle } from './parts';
+import { capsTitle, useFileSize } from './parts';
 import { SectionDialog } from './SectionDialog';
 import type {
   KbArticle,
@@ -79,7 +80,9 @@ const schemaFor = (editing: boolean) =>
     title: z.string().trim().min(3, 'errorTitle'),
     summary: z.string().trim().min(10, 'errorSummary').max(SUMMARY_MAX, 'errorSummary'),
     blocks: z.array(blockSchema).min(1, 'errorBody'),
-    attachments: z.array(z.object({ id: z.string(), name: z.string(), ext: z.string() })),
+    attachments: z.array(
+      z.object({ id: z.string(), name: z.string(), ext: z.string(), size: z.number().nullable() }),
+    ),
     relatedTasks: z.array(
       z.object({
         id: z.string().nullable(),
@@ -132,16 +135,6 @@ function toBlocks(fields: BlockField[]): KbBlock[] {
 }
 
 const emptyBlock = (kind: BlockKind): BlockField => ({ kind, anchor: '', text: '', title: '' });
-
-/** Файл → вложение: имя без расширения и расширение отдельно, как в карточке статьи */
-const toAttachment = (file: File): KbAttachment => {
-  const dot = file.name.lastIndexOf('.');
-  return {
-    id: `att-${crypto.randomUUID()}`,
-    name: dot > 0 ? file.name.slice(0, dot) : file.name,
-    ext: dot > 0 ? file.name.slice(dot + 1).toLowerCase() : '',
-  };
-};
 
 const sameDocument = (a: KbRelatedDocument, b: KbRelatedDocument) =>
   a.number === b.number && a.title === b.title;
@@ -636,7 +629,7 @@ const removeButton =
 const linkRow =
   'flex min-h-10 items-center gap-[9px] rounded-8 border border-line bg-surface py-[7px] pl-[13px] pr-2';
 
-/** Вложения: перетащить или выбрать файлы. Пока бэкенда нет, хранятся только имена */
+/** Вложения: перетащить или выбрать файлы — файл загружается сразу, в статье остаётся ID */
 function Attachments({
   value,
   onChange,
@@ -645,9 +638,10 @@ function Attachments({
   onChange: (list: KbAttachment[]) => void;
 }) {
   const { t } = useTranslation();
+  const fileSize = useFileSize();
   const input = useRef<HTMLInputElement>(null);
   const add = (files: FileList | null) =>
-    files && files.length > 0 && onChange([...value, ...Array.from(files, toAttachment)]);
+    files && files.length > 0 && onChange([...value, ...Array.from(files, uploadAttachment)]);
   const onDrop = (e: DragEvent) => {
     e.preventDefault();
     add(e.dataTransfer.files);
@@ -662,7 +656,9 @@ function Attachments({
             <li key={f.id} className={linkRow}>
               <AttachLargeIcon size={17} className="shrink-0 text-faint" />
               <span className="min-w-0 flex-1 truncate text-[12px] text-sub">{f.name}</span>
-              <span className="text-[10.5px] tracking-[0.3px] text-dim">{f.ext}</span>
+              <span className="text-[10.5px] tracking-[0.3px] text-dim">
+                {[f.ext, fileSize(f.size)].filter(Boolean).join(' · ')}
+              </span>
               <Tooltip content={t('knowledge.removeAttachment')}>
                 <button
                   type="button"

@@ -10,8 +10,10 @@ import { ApiError } from '@/shared/api/errors';
 import type { RoleCode } from '@/shared/config/permissions';
 import { addDays } from '@/shared/lib/workDays';
 import {
+  articlesWithDocument,
   createSection,
   fetchArticle,
+  fetchAttachment,
   fetchKnowledge,
   markReviewed,
   moveSection,
@@ -19,7 +21,10 @@ import {
   resetKnowledgeMock,
   saveArticle,
   searchKnowledge,
+  setSectionAccess,
+  uploadAttachment,
 } from './api';
+import { parseDocumentNumber } from './DocumentDialog';
 import { createMockKnowledge } from './mock';
 import { checkedAt, freshnessOf, matchesQuery, queryStems } from './search';
 
@@ -147,6 +152,51 @@ describe('база знаний (логика)', () => {
     expect(saved.versions[1].body).toHaveLength(6);
   });
 
+  it('доступ к разделу: закрытый для роли раздел виден, но статьи не приходят и не ищутся', () => {
+    resetKnowledgeMock(TODAY);
+    setSectionAccess('records', ['R6', 'R7']);
+    const r1 = fetchKnowledge(['R1']);
+    expect(r1.sections.find((s) => s.id === 'records')).toMatchObject({
+      accessible: false,
+      count: 14,
+      roles: ['R6', 'R7'],
+    });
+    expect(r1.articles.some((a) => a.sectionId === 'records')).toBe(false);
+    expect(searchKnowledge(QUERY, ['R1']).hidden.map((h) => h.sectionId)).toContain('records');
+    expect(() => fetchArticle('kb-1', ['R1'])).toThrow(ApiError);
+    expect(fetchKnowledge(['R7']).articles.some((a) => a.sectionId === 'records')).toBe(true);
+    expect(() => setSectionAccess('records', [])).toThrow(ApiError);
+    setSectionAccess('records', null);
+    expect(fetchArticle('kb-1', ['R1']).id).toBe('kb-1');
+  });
+
+  it('вложение: загруженный файл скачивается как есть, демо-вложение — текстовой заглушкой', () => {
+    resetKnowledgeMock(TODAY);
+    const file = new File(['%PDF-1.4'], 'Положение о закупках.PDF', { type: 'application/pdf' });
+    const attachment = uploadAttachment(file);
+    expect(attachment).toMatchObject({ name: 'Положение о закупках', ext: 'pdf', size: 8 });
+    expect(fetchAttachment(attachment)).toEqual({
+      blob: file,
+      fileName: 'Положение о закупках.pdf',
+    });
+    const demo = fetchAttachment(fetchArticle('kb-1', ['R1']).attachments[0]);
+    expect(demo.fileName).toBe('Глоссарий терминов МОК на трёх языках.docx.txt');
+  });
+
+  it('документ: тип и корреспондент из номера, статьи с документом — только доступные', () => {
+    expect(parseDocumentNumber('Вх. №2026-0884 · Минюст')).toEqual({
+      kind: 'incoming',
+      number: '№2026-0884',
+      party: 'Минюст',
+    });
+    expect(parseDocumentNumber('Приказ №58 · НОК КР').kind).toBe('order');
+    resetKnowledgeMock(TODAY);
+    const doc = fetchArticle('kb-1', ['R1']).relatedDocuments[0];
+    expect(articlesWithDocument(doc, ['R1']).map((a) => a.id)).toContain('kb-1');
+    setSectionAccess('records', ['R6']);
+    expect(articlesWithDocument(doc, ['R1']).map((a) => a.id)).not.toContain('kb-1');
+  });
+
   it('статья с вложениями и связями: счётчики в списке совпадают со связями', () => {
     resetKnowledgeMock(TODAY);
     const section = createSection('Закупки');
@@ -157,7 +207,7 @@ describe('база знаний (логика)', () => {
         title: 'Порядок закупок',
         summary: 'Кто согласует закупку и в какие сроки.',
         body: [{ kind: 'paragraph', text: 'Текст' }],
-        attachments: [{ id: 'att-x', name: 'Положение', ext: 'pdf' }],
+        attachments: [{ id: 'att-x', name: 'Положение', ext: 'pdf', size: 1200 }],
         relatedTasks: [{ id: null, title: 'Закупка ноутбуков', status: 'queue' }],
         relatedDocuments: [
           { number: 'Приказ №1', title: 'О закупках' },
@@ -270,6 +320,18 @@ describe('база знаний (экраны)', () => {
     await act(async () => back?.click());
     await waitFor(() => text().includes('Стандартный срок'));
     expect(text()).not.toContain('Версия 2 от');
+  });
+
+  it('связанный документ открывается карточкой', async () => {
+    await open('/knowledge/kb-1');
+    await waitFor(() => text().includes('Вх. №2026-0884'));
+    const card = [...container.querySelectorAll('button')].find((b) =>
+      b.textContent?.includes('Вх. №2026-0884'),
+    );
+    await act(async () => card?.click());
+    await waitFor(() => document.body.textContent?.includes('Статьи с этим документом') ?? false);
+    expect(document.body.textContent).toContain('Входящий');
+    expect(document.body.textContent).toContain('Корреспондент');
   });
 
   it('«Проверено, актуально» на устаревшей статье', async () => {

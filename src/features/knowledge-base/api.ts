@@ -25,6 +25,8 @@ import type {
  * а по прямой ссылке — ошибка 403.
  */
 let store = createMockKnowledge();
+/** Содержимое загруженных вложений (заглушка хранилища файлов): ID вложения → файл */
+const files = new Map<string, Blob>();
 
 const delay = (ms: number) =>
   new Promise((r) => setTimeout(r, import.meta.env.MODE === 'test' ? 0 : ms));
@@ -32,6 +34,7 @@ const delay = (ms: number) =>
 /** Сброс заглушки (для тестов) */
 export function resetKnowledgeMock(today?: string) {
   store = createMockKnowledge(today);
+  files.clear();
 }
 
 const isOpen = (sectionId: string, roles: RoleCode[]) => {
@@ -65,11 +68,12 @@ export type KnowledgeList = { sections: KbSection[]; articles: KbArticleSummary[
 
 export function fetchKnowledge(roles: RoleCode[]): KnowledgeList {
   return {
-    sections: store.sections.map(({ id, name, count }) => ({
+    sections: store.sections.map(({ id, name, count, openTo }) => ({
       id,
       name,
       count,
       accessible: isOpen(id, roles),
+      roles: openTo ? [...openTo] : null,
     })),
     articles: store.articles
       .filter((a) => isOpen(a.sectionId, roles))
@@ -163,9 +167,14 @@ export function createSection(name: string): KbSection {
     throw new ApiError(409, 'Duplicate section', { code: 'section_exists' });
   }
   const next = Math.max(0, ...store.sections.map((s) => Number(s.id.slice(4)) || 0)) + 1;
-  const section = { id: `sec-${next}`, name: clean, openTo: undefined, count: 0 };
+  const section = {
+    id: `sec-${next}`,
+    name: clean,
+    openTo: undefined as RoleCode[] | undefined,
+    count: 0,
+  };
   store.sections.push(section);
-  return { id: section.id, name: section.name, count: 0, accessible: true };
+  return { id: section.id, name: section.name, count: 0, accessible: true, roles: null };
 }
 
 /** Переименовать раздел: те же правила, что при создании; статьи остаются в разделе */
@@ -180,7 +189,13 @@ export function renameSection(id: string, name: string): KbSection {
     throw new ApiError(409, 'Duplicate section', { code: 'section_exists' });
   }
   section.name = clean;
-  return { id, name: clean, count: section.count, accessible: true };
+  return {
+    id,
+    name: clean,
+    count: section.count,
+    accessible: true,
+    roles: section.openTo ? [...section.openTo] : null,
+  };
 }
 
 /** Сдвинуть раздел в списке на одну позицию вверх (-1) или вниз (1) */
@@ -190,6 +205,29 @@ export function moveSection(id: string, by: -1 | 1) {
   if (from < 0 || to < 0 || to >= store.sections.length) return;
   const [section] = store.sections.splice(from, 1);
   store.sections.splice(to, 0, section);
+}
+
+/**
+ * Кому открыт раздел: null — всем ролям, иначе только перечисленным. Закрытый раздел
+ * остальные видят в списке, но его статьи не приходят, не ищутся и не считаются.
+ */
+export function setSectionAccess(id: string, roles: RoleCode[] | null) {
+  const section = store.sections.find((s) => s.id === id);
+  if (!section) throw new ApiError(404, 'Not found');
+  if (roles && roles.length === 0) throw new ApiError(400, 'No roles', { code: 'section_roles' });
+  section.openTo = roles ? [...new Set(roles)].sort() : undefined;
+}
+
+export function useSectionAccess() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, roles }: { id: string; roles: RoleCode[] | null }) => {
+      await delay(120);
+      setSectionAccess(id, roles);
+    },
+    meta: { successMessage: 'knowledge.accessSaved' },
+    onSuccess: () => client.invalidateQueries({ queryKey: knowledgeKey }),
+  });
 }
 
 export function useCreateSection() {
@@ -247,6 +285,61 @@ export function useLinkableDocuments() {
     queryFn: async () => {
       await delay(80);
       return structuredClone(documentPool);
+    },
+  });
+}
+
+/**
+ * Загрузить файл вложения. В заглушке файл живёт в памяти вкладки до перезагрузки;
+ * с бэкендом — загрузка в хранилище, в статье остаётся только ID.
+ */
+export function uploadAttachment(file: File): KbAttachment {
+  const dot = file.name.lastIndexOf('.');
+  const attachment = {
+    id: `att-${crypto.randomUUID()}`,
+    name: dot > 0 ? file.name.slice(0, dot) : file.name,
+    ext: dot > 0 ? file.name.slice(dot + 1).toLowerCase() : '',
+    size: file.size,
+  };
+  files.set(attachment.id, file);
+  return attachment;
+}
+
+/** Файл вложения. У вложений демо-данных файла нет — вместо него текстовая заглушка */
+export function fetchAttachment(attachment: KbAttachment): { blob: Blob; fileName: string } {
+  const file = files.get(attachment.id);
+  const full = attachment.ext ? `${attachment.name}.${attachment.ext}` : attachment.name;
+  if (file) return { blob: file, fileName: full };
+  return {
+    blob: new Blob(
+      [`${full}\n\nДемо-вложение: настоящий файл появится после подключения хранилища.\n`],
+      {
+        type: 'text/plain;charset=utf-8',
+      },
+    ),
+    fileName: `${full}.txt`,
+  };
+}
+
+/** Статьи (из доступных), где упомянут документ — для карточки документа */
+export function articlesWithDocument(doc: KbRelatedDocument, roles: RoleCode[]) {
+  return store.articles
+    .filter(
+      (a) =>
+        isOpen(a.sectionId, roles) &&
+        a.relatedDocuments.some((d) => d.number === doc.number && d.title === doc.title),
+    )
+    .map(toSummary);
+}
+
+export function useDocumentArticles(doc: KbRelatedDocument | null) {
+  const roles = useRoles();
+  return useQuery({
+    enabled: doc !== null,
+    queryKey: [...knowledgeKey, 'document', doc?.number, doc?.title, roles],
+    queryFn: async () => {
+      await delay(80);
+      return doc ? articlesWithDocument(doc, roles) : [];
     },
   });
 }

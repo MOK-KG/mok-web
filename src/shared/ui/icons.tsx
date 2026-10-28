@@ -349,3 +349,7 @@ export const DocSmallIcon = icon(
   14,
   `<path d="M3.79167 1.75H7.875L10.7917 4.66667V12.25H3.79167V1.75Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.875 1.75V4.66667H10.7917" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
 );
+export const DownloadIcon = icon(
+  16,
+  `<path d="M8 2.75V10.25M4.75 7L8 10.25L11.25 7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 13.25H13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`,
+);

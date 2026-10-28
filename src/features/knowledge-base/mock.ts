@@ -364,9 +364,14 @@ export function createMockKnowledge(today: IsoDate = todayInBishkek()) {
         body,
         attachments: isMain
           ? [
-              { id: 'att-1', name: 'Глоссарий терминов МОК на трёх языках', ext: 'docx' },
-              { id: 'att-2', name: 'Форма служебной записки на перевод', ext: 'docx' },
-              { id: 'att-3', name: 'Договор с бюро переводов 2026', ext: 'pdf' },
+              {
+                id: 'att-1',
+                name: 'Глоссарий терминов МОК на трёх языках',
+                ext: 'docx',
+                size: null,
+              },
+              { id: 'att-2', name: 'Форма служебной записки на перевод', ext: 'docx', size: null },
+              { id: 'att-3', name: 'Договор с бюро переводов 2026', ext: 'pdf', size: null },
             ]
           : [],
         relatedTasks,
