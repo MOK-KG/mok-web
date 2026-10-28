@@ -15,6 +15,9 @@ const KnowledgePage = lazy(() =>
 const ArticleEditor = lazy(() =>
   import('@/features/knowledge-base/ArticleEditor').then((m) => ({ default: m.ArticleEditor })),
 );
+const RolesPage = lazy(() =>
+  import('@/features/roles/RolesPage').then((m) => ({ default: m.RolesPage })),
+);
 const ArticlePage = lazy(() =>
   import('@/features/knowledge-base/ArticlePage').then((m) => ({ default: m.ArticlePage })),
 );
@@ -23,6 +26,7 @@ const ArticlePage = lazy(() =>
 const sectionPages: Partial<Record<Section, () => ReactElement>> = {
   tasks: () => <TasksPage />,
   knowledge: () => <KnowledgePage />,
+  access: () => <RolesPage />,
 };
 
 /** Пути разделов меню */

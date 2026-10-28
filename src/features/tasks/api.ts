@@ -26,11 +26,16 @@ let queue: Letter[] = createMockQueue();
 export type JournalEntry = {
   at: string;
   author: string;
-  action: 'mailRejected' | 'mailAccepted';
+  action: 'mailRejected' | 'mailAccepted' | 'roleChanged' | 'userInvited' | 'userDeactivated';
   details: string;
 };
 const journal: JournalEntry[] = [];
 export const journalEntries = (): readonly JournalEntry[] => journal;
+
+/** Записать действие в журнал (из других разделов: роли, приглашения, увольнения) */
+export function addJournalEntry(entry: Omit<JournalEntry, 'at'>) {
+  journal.push({ at: new Date().toISOString(), ...entry });
+}
 
 const delay = (ms: number) =>
   new Promise((r) => setTimeout(r, import.meta.env.MODE === 'test' ? 0 : ms));
@@ -368,3 +373,26 @@ export function findSimilar(title: string, limit = 2): Task[] {
 /** Ближайший рабочий день не раньше завтрашнего — срок по умолчанию */
 export const defaultDue = () => addDays(todayInBishkek(), 2);
 export { atBishkek };
+
+// ——— Для раздела «Роли и доступ» ———
+
+/** Незакрытые задачи сотрудника: сколько и сколько из них с эскалацией */
+export function activeTasksOf(personId: string) {
+  const tasks = store.department.filter((t) => t.assignee?.id === personId && t.status !== 'done');
+  return { count: tasks.length, escalated: tasks.filter((t) => t.escalationHours).length };
+}
+
+/**
+ * Увольнение: незакрытые задачи сотрудника переходят к `to`, в истории каждой задачи —
+ * запись о смене исполнителя. Автор задач и прошлые записи не меняются.
+ */
+export function reassignTasksOf(personId: string, to: Person): number {
+  const tasks = store.department.filter((t) => t.assignee?.id === personId && t.status !== 'done');
+  for (const task of tasks) {
+    const from = task.assignee as Person;
+    task.assignee = to;
+    task.deputy = null;
+    log(task, 'assignee', `${from.short}|${to.short}|deactivated`);
+  }
+  return tasks.length;
+}

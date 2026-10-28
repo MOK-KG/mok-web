@@ -82,7 +82,7 @@ describe('права доступа', () => {
   it('смена роли действует сразу, без перезагрузки', async () => {
     signInAs('R1');
     await render('/access');
-    await waitFor(() => text().includes('Раздел в разработке'));
+    await waitFor(() => text().includes('Пригласить'));
 
     // Администратор сменил роль на бэкенде; пользователь вернулся на вкладку
     mockApi.setRole('R3');

@@ -128,11 +128,9 @@ function AccessForm({ section, onClose }: { section: KbSection; onClose: () => v
                     {checked && <CheckboxCheckIcon size={10} />}
                   </span>
                   <span className="font-medium">{role}</span>
-                  {role === 'R6' && (
-                    <span className="truncate text-[10.5px] text-dim">
-                      {t('knowledge.roleRecords')}
-                    </span>
-                  )}
+                  <span className="truncate text-[10.5px] text-dim">
+                    {t(`access.roles.${role}`)}
+                  </span>
                   {myRoles.includes(role) && (
                     <span className="ml-auto text-[10px] text-dim">{t('knowledge.myRole')}</span>
                   )}

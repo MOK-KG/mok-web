@@ -421,6 +421,11 @@ function historyText(
       const [from, to] = entry.text.split('|');
       return t('taskCard.historyDue', { from: shortDate(from, lang), to: shortDate(to, lang) });
     }
+    case 'assignee': {
+      const [from, to, reason] = entry.text.split('|');
+      const text = t('taskCard.historyAssignee', { from, to });
+      return reason === 'deactivated' ? `${text} · ${t('taskCard.historyDeactivated')}` : text;
+    }
     case 'created':
       return entry.text === 'email'
         ? t('taskCard.historyCreatedEmail')
