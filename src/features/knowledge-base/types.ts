@@ -31,7 +31,19 @@ export type KbRelatedTask = {
 
 export type KbRelatedDocument = { number: string; title: string };
 
-export type KbVersion = { number: number; date: IsoDate; author: Person; change: string };
+/** Версия статьи: строка истории и текст, каким он был, — старую версию можно открыть */
+export type KbVersion = {
+  number: number;
+  date: IsoDate;
+  author: Person;
+  change: string;
+  title: string;
+  summary: string;
+  body: KbBlock[];
+};
+
+/** «Проверено, актуально»: текст не менялся, но его проверили — версия не добавляется */
+export type KbReview = { date: IsoDate; by: Person };
 
 /** Статья в списке */
 export type KbArticleSummary = {
@@ -41,6 +53,8 @@ export type KbArticleSummary = {
   summary: string;
   author: Person;
   updatedAt: IsoDate;
+  /** Последняя проверка без правок; null — не проверяли */
+  reviewed: KbReview | null;
   /** Связанных задач и документов — столько же, сколько в карточке статьи */
   tasksCount: number;
   documentsCount: number;

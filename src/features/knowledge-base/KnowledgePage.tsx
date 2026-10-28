@@ -1,9 +1,9 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { useDeferredValue, useMemo } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import { usePageSubtitle } from '@/app/layout/AppLayout';
-import { Can } from '@/features/auth';
+import { Can, useCan } from '@/features/auth';
 import type { Person } from '@/features/tasks/types';
 import {
   BookIcon,
@@ -13,15 +13,18 @@ import {
   FilterIcon,
   FolderIcon,
   LockIcon,
+  MoreIcon,
   PlusIcon,
+  PlusSmallIcon,
   SearchIcon,
   ShieldCheckIcon,
   TasksMiniIcon,
 } from '@/shared/ui/icons';
 import { Tooltip } from '@/shared/ui/Tooltip';
-import { useKnowledge, useKnowledgeSearch } from './api';
+import { useKnowledge, useKnowledgeSearch, useMoveSection } from './api';
 import { Avatar, capsTitle, FreshnessBadge, useShortDate } from './parts';
-import { freshnessOf, queryStems } from './search';
+import { SectionDialog } from './SectionDialog';
+import { checkedAt, freshnessOf, queryStems } from './search';
 import type { KbArticleSummary, KbFreshness, KbHiddenMatches, KbSection } from './types';
 
 type Filters = { freshness: Exclude<KbFreshness, null>[]; authors: string[] };
@@ -78,7 +81,7 @@ export function KnowledgePage() {
       articles.filter(
         (a) =>
           (filters.freshness.length === 0 ||
-            filters.freshness.includes(freshnessOf(a.updatedAt) as never)) &&
+            filters.freshness.includes(freshnessOf(checkedAt(a)) as never)) &&
           (filters.authors.length === 0 || filters.authors.includes(a.author.id)),
       ),
     [articles, filters.freshness, filters.authors],
@@ -240,6 +243,11 @@ function SectionsNav({
   onSelect: (id: string | null) => void;
 }) {
   const { t } = useTranslation();
+  const { can } = useCan();
+  const editable = can('knowledge.edit');
+  const [creating, setCreating] = useState(false);
+  const [renaming, setRenaming] = useState<KbSection | null>(null);
+  const move = useMoveSection();
   const closed = sections.filter((s) => !s.accessible);
   const item =
     'relative flex h-[38px] w-full items-center gap-[11px] rounded-8 px-3 text-left text-[12.5px] tracking-[-0.1px]';
@@ -253,8 +261,15 @@ function SectionsNav({
       className="absolute left-0 top-[9px] h-5 w-[2.5px] rounded-[1.5px] bg-brand-red"
     />
   );
-  const count = (n: number) => (
-    <span className="ml-auto text-[10.5px] font-normal text-dim">{n}</span>
+  // У раздела с меню число прячется под кнопкой «…», пока на строку наведены
+  const count = (n: number, menu = false) => (
+    <span
+      className={`ml-auto text-[10.5px] font-normal text-dim ${
+        menu ? 'group-focus-within:invisible group-hover:invisible' : ''
+      }`}
+    >
+      {n}
+    </span>
   );
 
   return (
@@ -262,9 +277,26 @@ function SectionsNav({
       aria-label={t('knowledge.sectionsTitle')}
       className="w-[280px] shrink-0 overflow-y-auto rounded-14 border border-line bg-nav-panel"
     >
-      <h2 className={`${capsTitle} border-b border-line px-[18px] pb-[14px] pt-[18px]`}>
-        {t('knowledge.sectionsTitle')}
-      </h2>
+      <div className="flex h-[45px] items-start justify-between border-b border-line pl-[18px] pr-[10px] pt-3">
+        <h2 className={`${capsTitle} mt-[6px]`}>{t('knowledge.sectionsTitle')}</h2>
+        <Can permission="knowledge.edit">
+          <Tooltip content={t('knowledge.newSection')}>
+            <button
+              type="button"
+              aria-label={t('knowledge.newSection')}
+              onClick={() => setCreating(true)}
+              className="flex size-6 items-center justify-center rounded-6 text-faint hover:bg-row-highlight hover:text-text"
+            >
+              <PlusSmallIcon size={12} />
+            </button>
+          </Tooltip>
+          <SectionDialog
+            open={creating}
+            onClose={() => setCreating(false)}
+            onCreated={(s) => onSelect(s.id)}
+          />
+        </Can>
+      </div>
       <ul className="px-[7px] pt-[10px]">
         <li>
           <button
@@ -279,22 +311,33 @@ function SectionsNav({
             {count(total)}
           </button>
         </li>
-        {sections.map((s) => {
+        {sections.map((s, i) => {
           const selected = current?.id === s.id;
           return (
-            <li key={s.id}>
+            <li key={s.id} className="group relative">
               {s.accessible ? (
-                <button
-                  type="button"
-                  aria-current={selected ? 'page' : undefined}
-                  onClick={() => onSelect(s.id)}
-                  className={`${item} ${stateOf(selected)}`}
-                >
-                  {selected && stripe}
-                  <FolderIcon size={17} className="shrink-0" />
-                  <span className="truncate">{s.name}</span>
-                  {count(s.count)}
-                </button>
+                <>
+                  <button
+                    type="button"
+                    aria-current={selected ? 'page' : undefined}
+                    onClick={() => onSelect(s.id)}
+                    className={`${item} ${stateOf(selected)}`}
+                  >
+                    {selected && stripe}
+                    <FolderIcon size={17} className="shrink-0" />
+                    <span className="truncate">{s.name}</span>
+                    {count(s.count, editable)}
+                  </button>
+                  {editable && (
+                    <SectionMenu
+                      section={s}
+                      first={i === 0}
+                      last={i === sections.length - 1}
+                      onRename={() => setRenaming(s)}
+                      onMove={(by) => move.mutate({ id: s.id, by })}
+                    />
+                  )}
+                </>
               ) : (
                 // Закрытый раздел виден, но не открывается
                 <Tooltip content={t('knowledge.closedSection')} side="right">
@@ -310,6 +353,12 @@ function SectionsNav({
           );
         })}
       </ul>
+      <SectionDialog
+        open={renaming !== null}
+        section={renaming ?? undefined}
+        onClose={() => setRenaming(null)}
+        onCreated={() => {}}
+      />
       {closed.length > 0 && (
         <p className="mx-[10px] mt-[10px] border-t border-line px-2 pb-4 pt-[13px] text-[10.5px] leading-[15px] text-dim">
           {t('knowledge.closedNote', {
@@ -319,6 +368,53 @@ function SectionsNav({
         </p>
       )}
     </nav>
+  );
+}
+
+/** Меню раздела (право knowledge.edit): переименовать и сдвинуть. Удалять разделы нельзя */
+function SectionMenu({
+  section,
+  first,
+  last,
+  onRename,
+  onMove,
+}: {
+  section: KbSection;
+  first: boolean;
+  last: boolean;
+  onRename: () => void;
+  onMove: (by: -1 | 1) => void;
+}) {
+  const { t } = useTranslation();
+  const row =
+    'flex h-[34px] cursor-pointer items-center rounded-[7px] px-3 text-[12px] text-sub outline-none data-[disabled]:pointer-events-none data-[highlighted]:bg-popover-active data-[highlighted]:text-text data-[disabled]:opacity-40';
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger
+        aria-label={`${t('knowledge.sectionMenu')}: ${section.name}`}
+        className="absolute right-[6px] top-[7px] flex size-6 items-center justify-center rounded-6 text-faint opacity-0 hover:bg-row-highlight hover:text-text focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100"
+      >
+        <MoreIcon size={14} />
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          align="start"
+          side="right"
+          sideOffset={6}
+          className="z-50 w-[200px] rounded-11 border border-line bg-popover p-[5px] shadow-[0_8px_28px_rgba(0,0,0,0.35)]"
+        >
+          <DropdownMenu.Item onSelect={onRename} className={row}>
+            {t('knowledge.renameSection')}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item disabled={first} onSelect={() => onMove(-1)} className={row}>
+            {t('knowledge.moveUp')}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item disabled={last} onSelect={() => onMove(1)} className={row}>
+            {t('knowledge.moveDown')}
+          </DropdownMenu.Item>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   );
 }
 
@@ -351,7 +447,7 @@ function ArticleRow({
         </span>
         {/* Метка не увеличивает высоту строки: в макете она ниже заголовка на 4 px */}
         <span className="absolute right-5 top-4">
-          <FreshnessBadge freshness={freshnessOf(a.updatedAt)} />
+          <FreshnessBadge freshness={freshnessOf(checkedAt(a))} />
         </span>
         <span className="mt-[6px] block pr-[120px] text-[12px] leading-[18px] text-faint">
           {a.summary}
@@ -479,7 +575,7 @@ function FilterMenu({
                 {box(checked)}
                 <span className="flex-1">{t(`knowledge.${f}`)}</span>
                 <span className="text-[10.5px] font-normal text-dim">
-                  {articles.filter((a) => freshnessOf(a.updatedAt) === f).length}
+                  {articles.filter((a) => freshnessOf(checkedAt(a)) === f).length}
                 </span>
               </DropdownMenu.CheckboxItem>
             );

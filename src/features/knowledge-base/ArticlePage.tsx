@@ -1,7 +1,7 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { usePageSubtitle } from '@/app/layout/AppLayout';
 import { Can, ForbiddenPage, useCan } from '@/features/auth';
 import type { TaskStatus } from '@/features/tasks/types';
@@ -10,18 +10,20 @@ import { formatIsoDate } from '@/shared/lib/date';
 import { toast } from '@/shared/lib/toast';
 import {
   AttachLargeIcon,
+  CheckIcon,
   ChevronLeftIcon,
   ClockIcon,
   DocSmallIcon,
   EditMediumIcon,
+  HistoryClockIcon,
   MoreIcon,
   TasksSmallIcon,
 } from '@/shared/ui/icons';
 import { Tooltip } from '@/shared/ui/Tooltip';
-import { useArticle, useKnowledge } from './api';
+import { useArticle, useKnowledge, useMarkReviewed } from './api';
 import { Avatar, capsTitle, FreshnessBadge, useShortDate } from './parts';
-import { freshnessOf } from './search';
-import type { KbArticle, KbBlock } from './types';
+import { checkedAt, freshnessOf } from './search';
+import type { KbArticle, KbBlock, KbVersion } from './types';
 
 const ATTACHMENTS_ID = 'attachments';
 
@@ -99,8 +101,28 @@ export function ArticlePage() {
   );
 }
 
-function ArticleBody({ article: a }: { article: KbArticle }) {
+/** Старая версия из ?version=N; текущая или неизвестная — null */
+function useViewedVersion(article: KbArticle): KbVersion | null {
+  const [params] = useSearchParams();
+  const number = Number(params.get('version'));
+  if (!number || number === article.version) return null;
+  return article.versions.find((v) => v.number === number) ?? null;
+}
+
+function ArticleBody({ article: current }: { article: KbArticle }) {
   const { t, i18n } = useTranslation();
+  const shortDate = useShortDate();
+  const location = useLocation();
+  const old = useViewedVersion(current);
+  // Старая версия — только для чтения: её текст на месте текущего, вложения и связи — текущие
+  const a: KbArticle = old
+    ? { ...current, title: old.title, summary: old.summary, body: old.body }
+    : current;
+  // Блоки, которых нет в текущей версии: их потом изменили или убрали
+  const currentBlocks = new Set(current.body.map((b) => JSON.stringify(b)));
+  const review = useMarkReviewed(current.id);
+  const freshness = freshnessOf(checkedAt(current));
+  const reviewedLater = current.reviewed && current.reviewed.date > current.updatedAt;
   const toc = [
     ...a.body.flatMap((b) => (b.kind === 'heading' ? [{ id: b.id, text: b.text }] : [])),
     ...(a.attachments.length > 0 ? [{ id: ATTACHMENTS_ID, text: t('knowledge.attachments') }] : []),
@@ -127,16 +149,33 @@ function ArticleBody({ article: a }: { article: KbArticle }) {
         className={`min-w-0 flex-1 rounded-14 border border-line bg-panel px-[23px] pb-6 pt-[23px] ${panelHeight}`}
       >
         <div className="flex min-h-7 items-start justify-between gap-3">
-          <FreshnessBadge freshness={freshnessOf(a.updatedAt)} large />
+          {!old && <FreshnessBadge freshness={freshness} large />}
           <div className="ml-auto flex items-center gap-2">
             <Can permission="knowledge.edit">
-              <Link
-                to={`/knowledge/${a.id}/edit`}
-                className="flex h-7 w-[92px] items-center justify-center gap-[5px] rounded-[7px] border border-line text-[11.5px] font-medium text-sub hover:text-text"
-              >
-                <EditMediumIcon size={16} />
-                {t('knowledge.edit')}
-              </Link>
+              {!old && freshness !== 'fresh' && (
+                <Tooltip content={t('knowledge.reviewHint')}>
+                  <button
+                    type="button"
+                    disabled={review.isPending}
+                    onClick={() => review.mutate()}
+                    className="flex h-7 items-center gap-[5px] rounded-[7px] border border-line px-[10px] text-[11.5px] font-medium text-sub hover:text-text disabled:opacity-60"
+                  >
+                    <CheckIcon size={14} />
+                    {t('knowledge.review')}
+                  </button>
+                </Tooltip>
+              )}
+            </Can>
+            <Can permission="knowledge.edit">
+              {!old && (
+                <Link
+                  to={`/knowledge/${a.id}/edit`}
+                  className="flex h-7 w-[92px] items-center justify-center gap-[5px] rounded-[7px] border border-line text-[11.5px] font-medium text-sub hover:text-text"
+                >
+                  <EditMediumIcon size={16} />
+                  {t('knowledge.edit')}
+                </Link>
+              )}
             </Can>
             <DropdownMenu.Root>
               <Tooltip content={t('knowledge.more')}>
@@ -165,6 +204,34 @@ function ArticleBody({ article: a }: { article: KbArticle }) {
           </div>
         </div>
 
+        {old && (
+          <div
+            role="status"
+            className="mt-3 flex items-center gap-[10px] rounded-9 border border-info-line bg-info-chip px-[13px] py-[10px] text-[12px]"
+          >
+            <HistoryClockIcon size={16} className="shrink-0 text-info" />
+            <span className="min-w-0 flex-1 text-sub">
+              <span className="font-semibold text-text">
+                {t('knowledge.viewingVersion', {
+                  number: old.number,
+                  date: formatIsoDate(old.date, 'd MMMM yyyy', i18n.language),
+                })}
+              </span>{' '}
+              · {old.author.short} — {old.change}
+              <span className="mt-[2px] block text-[11px] text-dim">
+                {t('knowledge.viewingVersionHint')}
+              </span>
+            </span>
+            <Link
+              to={location.pathname}
+              state={location.state}
+              className="shrink-0 rounded-[7px] border border-line px-[10px] py-[5px] text-[11.5px] font-medium text-sub hover:text-text"
+            >
+              {t('knowledge.toCurrentVersion', { number: current.version })}
+            </Link>
+          </div>
+        )}
+
         <h2 className="mt-[6px] text-[26px] font-semibold leading-[34px] tracking-[-0.6px] text-text">
           {a.title}
         </h2>
@@ -175,12 +242,23 @@ function ArticleBody({ article: a }: { article: KbArticle }) {
             ·
           </span>
           <span className="text-dim">
-            {t('knowledge.updated', {
-              date: formatIsoDate(a.updatedAt, 'd MMMM yyyy', i18n.language),
-            })}
+            {old
+              ? t('knowledge.versionFrom', { date: shortDate(old.date) })
+              : t('knowledge.updated', {
+                  date: formatIsoDate(a.updatedAt, 'd MMMM yyyy', i18n.language),
+                })}
           </span>
+          {!old && reviewedLater && current.reviewed && (
+            <span className="ml-2 text-dim">
+              ·{' '}
+              {t('knowledge.reviewedBy', {
+                date: shortDate(current.reviewed.date),
+                name: current.reviewed.by.short,
+              })}
+            </span>
+          )}
           <span className="ml-auto flex h-5 items-center rounded-[5px] bg-chip px-5 text-[10px] font-medium text-chip-text">
-            {t('knowledge.version', { number: a.version })}
+            {t('knowledge.version', { number: old?.number ?? a.version })}
           </span>
         </div>
         <hr className="mt-5 border-line" />
@@ -192,6 +270,7 @@ function ArticleBody({ article: a }: { article: KbArticle }) {
               key={i}
               block={block}
               first={i === 0}
+              changed={!!old && !currentBlocks.has(JSON.stringify(block))}
             />
           ))}
           {a.attachments.length > 0 && (
@@ -216,14 +295,30 @@ function ArticleBody({ article: a }: { article: KbArticle }) {
         </div>
       </article>
 
-      <SidePanel article={a} toc={toc} active={active} />
+      <SidePanel article={a} toc={toc} active={active} viewing={old?.number ?? a.version} />
     </div>
   );
 }
 
 const heading = 'mt-[22px] text-[15px] font-semibold tracking-[-0.2px] text-text';
 
-function Block({ block, first }: { block: KbBlock; first: boolean }) {
+/** Блок старой версии, который потом изменили, отмечен полосой слева */
+function Block({ block, first, changed }: { block: KbBlock; first: boolean; changed: boolean }) {
+  const { t } = useTranslation();
+  if (!changed) return <BlockContent block={block} first={first} />;
+  return (
+    <div className="relative">
+      <span
+        aria-hidden
+        className="absolute -left-[13px] bottom-0 top-0 w-[2.5px] rounded-[1.5px] bg-warning"
+      />
+      <span className="sr-only">{t('knowledge.changedLater')}: </span>
+      <BlockContent block={block} first={first} />
+    </div>
+  );
+}
+
+function BlockContent({ block, first }: { block: KbBlock; first: boolean }) {
   switch (block.kind) {
     case 'paragraph':
       return (
@@ -276,12 +371,16 @@ function SidePanel({
   article: a,
   toc,
   active,
+  viewing,
 }: {
   article: KbArticle;
   toc: { id: string; text: string }[];
   active: string | null;
+  /** Номер открытой версии */
+  viewing: number;
 }) {
   const { t } = useTranslation();
+  const location = useLocation();
   const { can } = useCan();
   const shortDate = useShortDate();
   const card = 'flex rounded-8 border border-line bg-surface px-[11px] pt-[11px]';
@@ -403,19 +502,39 @@ function SidePanel({
 
       <h2 className={`${capsTitle} px-[6px]`}>{t('knowledge.history')}</h2>
       <ol className="mt-[10px] px-[6px]">
-        {a.versions.map((v) => (
-          <li
-            key={v.number}
-            className="border-b border-line pb-[6px] pt-2 first:pt-0 last:border-b-0"
-          >
-            <p className="text-[11px] font-medium tracking-[-0.1px] text-sub">
-              {t('knowledge.versionItem', { number: v.number, date: shortDate(v.date) })}
-            </p>
-            <p className="mt-[2px] text-[10.5px] text-dim">
-              {v.author.short} — {v.change}
-            </p>
-          </li>
-        ))}
+        {a.versions.map((v) => {
+          const open = v.number === viewing;
+          return (
+            <li key={v.number} className="border-b border-line py-[2px] last:border-b-0">
+              <Link
+                to={
+                  v.number === a.version
+                    ? location.pathname
+                    : `${location.pathname}?version=${v.number}`
+                }
+                state={location.state}
+                aria-current={open ? 'page' : undefined}
+                className={`-mx-[6px] block rounded-[7px] px-[6px] py-[6px] ${
+                  open ? 'bg-nav-active' : 'hover:bg-row-highlight'
+                }`}
+              >
+                <span
+                  className={`block text-[11px] font-medium tracking-[-0.1px] ${
+                    open ? 'text-text' : 'text-sub'
+                  }`}
+                >
+                  {t('knowledge.versionItem', { number: v.number, date: shortDate(v.date) })}
+                  {v.number === a.version && (
+                    <span className="font-normal text-dim"> · {t('knowledge.currentVersion')}</span>
+                  )}
+                </span>
+                <span className="mt-[2px] block text-[10.5px] text-dim">
+                  {v.author.short} — {v.change}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
       </ol>
     </aside>
   );

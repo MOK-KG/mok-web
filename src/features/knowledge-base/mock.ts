@@ -265,7 +265,7 @@ const sectionSeeds: SectionSeed[] = [
   },
 ];
 
-const documentPool: KbRelatedDocument[] = [
+export const documentPool: KbRelatedDocument[] = [
   { number: 'Вх. №2026-0884 · Минюст', title: 'О предоставлении перевода устава' },
   { number: 'Исх. №2026-0412 · МОК', title: 'Ответ на запрос по программе солидарности' },
   { number: 'Вх. №2026-0731 · АНОК', title: 'Приглашение на Генеральную ассамблею' },
@@ -273,8 +273,8 @@ const documentPool: KbRelatedDocument[] = [
   { number: 'Исх. №2026-0390 · Минспорт', title: 'О календаре соревнований' },
 ];
 
-/** Подробная статья из макета */
-function mainBody(): KbBlock[] {
+/** Подробная статья из макета; withTerms: false — версия 2, до того как добавили сроки */
+function mainBody(withTerms = true): KbBlock[] {
   return [
     {
       kind: 'paragraph',
@@ -292,7 +292,9 @@ function mainBody(): KbBlock[] {
     { kind: 'heading', id: 'who', text: 'Кто заказывает и в какие сроки' },
     {
       kind: 'paragraph',
-      text: 'Перевод заказывает делопроизводство по служебной записке от департамента-инициатора. Стандартный срок — семь рабочих дней, срочный — три, с доплатой по договору.',
+      text: withTerms
+        ? 'Перевод заказывает делопроизводство по служебной записке от департамента-инициатора. Стандартный срок — семь рабочих дней, срочный — три, с доплатой по договору.'
+        : 'Перевод заказывает делопроизводство по служебной записке от департамента-инициатора.',
     },
     {
       kind: 'note',
@@ -304,7 +306,6 @@ function mainBody(): KbBlock[] {
 
 export function createMockKnowledge(today: IsoDate = todayInBishkek()) {
   const tasks = createMockTasks(today).department;
-  const taskId = (title: string) => tasks.find((t) => t.title === title)?.id ?? null;
   const taskPool: KbRelatedTask[] = tasks.map((t) => ({
     id: t.id,
     title: t.title,
@@ -327,22 +328,28 @@ export function createMockKnowledge(today: IsoDate = todayInBishkek()) {
       const author: Person = people[authorKey];
       const updatedAt = addDays(today, -daysAgo);
       const isMain = n === 1;
+      // Связи — только с задачами из раздела «Задачи», чтобы каждая открывалась
       const relatedTasks: KbRelatedTask[] = isMain
         ? [
-            {
-              id: taskId('Перевод устава на кыргызский язык'),
-              title: 'Перевод устава на кыргызский язык',
-              status: 'in_progress',
-            },
-            { id: null, title: 'Шаблон исходящего письма — сверка', status: 'review' },
-            { id: null, title: 'Договор с бюро переводов на 2027', status: 'queue' },
-          ]
+            'Перевод устава на кыргызский язык',
+            'Ответ федерации лёгкой атлетики по составу',
+            'Справка по лицензиям федераций для Исполкома',
+          ].flatMap((t) => taskPool.filter((task) => task.title === t))
         : Array.from({ length: tasksCount }, (_, i) => taskPool[(n + i) % taskPool.length]);
       const relatedDocuments = Array.from(
         { length: docsCount },
         (_, i) => documentPool[(isMain ? 0 : n + i) % documentPool.length],
       );
       const version = isMain ? 4 : 1 + (n % 3);
+      const body: KbBlock[] = isMain
+        ? mainBody()
+        : [
+            { kind: 'paragraph', text: summary },
+            ...(extra ? [{ kind: 'paragraph' as const, text: extra }] : []),
+          ];
+      // Ранние версии короче: без второго абзаца (в главной статье — без сроков заказа)
+      const earlier: KbBlock[] = isMain ? mainBody(false) : body.slice(0, 1);
+      const snapshot = (text: KbBlock[]) => ({ title, summary, body: text });
       articles.push({
         id: `kb-${n}`,
         sectionId: section.id,
@@ -350,15 +357,11 @@ export function createMockKnowledge(today: IsoDate = todayInBishkek()) {
         summary,
         author,
         updatedAt,
+        reviewed: null,
         tasksCount: relatedTasks.length,
         documentsCount: relatedDocuments.length,
         version,
-        body: isMain
-          ? mainBody()
-          : [
-              { kind: 'paragraph', text: summary },
-              ...(extra ? [{ kind: 'paragraph' as const, text: extra }] : []),
-            ],
+        body,
         attachments: isMain
           ? [
               { id: 'att-1', name: 'Глоссарий терминов МОК на трёх языках', ext: 'docx' },
@@ -370,20 +373,34 @@ export function createMockKnowledge(today: IsoDate = todayInBishkek()) {
         relatedDocuments,
         versions: isMain
           ? [
-              { number: 4, date: updatedAt, author: people.ka, change: 'добавлен глоссарий' },
+              {
+                number: 4,
+                date: updatedAt,
+                author: people.ka,
+                change: 'добавлен глоссарий',
+                ...snapshot(body),
+              },
               {
                 number: 3,
                 date: addDays(today, -24),
                 author: people.nb,
                 change: 'сроки заказа',
+                ...snapshot(body),
               },
-              { number: 2, date: addDays(today, -63), author: people.ka, change: 'форма записки' },
+              {
+                number: 2,
+                date: addDays(today, -63),
+                author: people.ka,
+                change: 'форма записки',
+                ...snapshot(earlier),
+              },
             ]
           : Array.from({ length: version }, (_, i) => ({
               number: version - i,
               date: addDays(updatedAt, -i * 30),
               author,
               change: version - i === 1 ? 'первая редакция' : 'уточнения',
+              ...snapshot(i === 0 ? body : earlier),
             })),
       });
     }

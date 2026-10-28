@@ -1,10 +1,14 @@
 import { diffDays, type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
-import type { KbArticle, KbBlock, KbFreshness } from './types';
+import type { KbArticle, KbArticleSummary, KbBlock, KbFreshness } from './types';
 
 /** Статья помечается «Актуально», если её обновили не раньше недели назад */
 export const FRESH_DAYS = 7;
 /** «Давно не обновляли» — с 30 дней без правок */
 export const STALE_DAYS = 30;
+
+/** С какой даты считать актуальность: последняя правка или проверка — что позже */
+export const checkedAt = (a: Pick<KbArticleSummary, 'updatedAt' | 'reviewed'>): IsoDate =>
+  a.reviewed && a.reviewed.date > a.updatedAt ? a.reviewed.date : a.updatedAt;
 
 export function freshnessOf(updatedAt: IsoDate, today: IsoDate = todayInBishkek()): KbFreshness {
   const age = diffDays(updatedAt, today);

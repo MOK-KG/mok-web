@@ -6,11 +6,22 @@ import i18n from '@/app/i18n';
 import { AppProviders } from '@/app/providers';
 import { routes } from '@/app/router';
 import { mockSessionFor } from '@/features/auth/mock';
+import { ApiError } from '@/shared/api/errors';
 import type { RoleCode } from '@/shared/config/permissions';
 import { addDays } from '@/shared/lib/workDays';
-import { fetchArticle, fetchKnowledge, resetKnowledgeMock, searchKnowledge } from './api';
+import {
+  createSection,
+  fetchArticle,
+  fetchKnowledge,
+  markReviewed,
+  moveSection,
+  renameSection,
+  resetKnowledgeMock,
+  saveArticle,
+  searchKnowledge,
+} from './api';
 import { createMockKnowledge } from './mock';
-import { freshnessOf, matchesQuery, queryStems } from './search';
+import { checkedAt, freshnessOf, matchesQuery, queryStems } from './search';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -68,6 +79,101 @@ describe('база знаний (логика)', () => {
       expect(a.tasksCount).toBe(a.relatedTasks.length);
       expect(a.documentsCount).toBe(a.relatedDocuments.length);
     }
+  });
+
+  it('новый раздел: открыт всем, пустой, название без повторов и не короче 3 символов', () => {
+    resetKnowledgeMock(TODAY);
+    const section = createSection('  Закупки   и   тендеры ');
+    expect(section).toMatchObject({ name: 'Закупки и тендеры', count: 0, accessible: true });
+    expect(fetchKnowledge(['R1']).sections.at(-1)).toEqual(section);
+    const codeOf = (name: string) => {
+      try {
+        createSection(name);
+      } catch (e) {
+        return e instanceof ApiError ? e.code : 'other';
+      }
+      return null;
+    };
+    expect(codeOf('закупки и ТЕНДЕРЫ')).toBe('section_exists');
+    expect(codeOf('делопроизводство')).toBe('section_exists');
+    expect(codeOf(' аб ')).toBe('section_name');
+  });
+
+  it('раздел переименовывается без повторов и сдвигается; статьи остаются в нём', () => {
+    resetKnowledgeMock(TODAY);
+    expect(renameSection('records', 'Документооборот')).toMatchObject({ count: 14 });
+    expect(() => renameSection('records', 'антидопинг')).toThrow(ApiError);
+    moveSection('records', 1);
+    const names = fetchKnowledge(['R1']).sections.map((s) => s.name);
+    expect(names.slice(0, 2)).toEqual(['Финансовые процессы', 'Документооборот']);
+    moveSection('records', -1);
+    moveSection('records', -1); // уже первый — не сдвигается
+    expect(fetchKnowledge(['R1']).sections[0].name).toBe('Документооборот');
+  });
+
+  it('«Проверено, актуально» снимает «Давно не обновляли», версия не добавляется', () => {
+    resetKnowledgeMock();
+    const stale = fetchKnowledge(['R1']).articles.find(
+      (a) => freshnessOf(checkedAt(a)) === 'stale',
+    );
+    if (!stale) throw new Error('нет устаревшей статьи');
+    const before = fetchArticle(stale.id, ['R1']);
+    const after = markReviewed(stale.id, ['R1']);
+    expect(freshnessOf(checkedAt(after))).toBe('fresh');
+    expect(after.updatedAt).toBe(before.updatedAt);
+    expect(after.versions).toHaveLength(before.versions.length);
+  });
+
+  it('каждая версия хранит свой текст; связанные задачи открываются', () => {
+    const { articles } = createMockKnowledge(TODAY);
+    for (const a of articles) {
+      expect(a.versions[0].body).toEqual(a.body);
+      for (const task of a.relatedTasks) expect(task.id).not.toBeNull();
+    }
+    resetKnowledgeMock(TODAY);
+    const saved = saveArticle(
+      'kb-1',
+      {
+        ...fetchArticle('kb-1', ['R1']),
+        change: 'сокращено',
+        body: [{ kind: 'paragraph', text: 'Коротко' }],
+      },
+      ['R1'],
+    );
+    expect(saved.versions[0]).toMatchObject({
+      number: 5,
+      body: [{ kind: 'paragraph', text: 'Коротко' }],
+    });
+    expect(saved.versions[1].body).toHaveLength(6);
+  });
+
+  it('статья с вложениями и связями: счётчики в списке совпадают со связями', () => {
+    resetKnowledgeMock(TODAY);
+    const section = createSection('Закупки');
+    const article = saveArticle(
+      null,
+      {
+        sectionId: section.id,
+        title: 'Порядок закупок',
+        summary: 'Кто согласует закупку и в какие сроки.',
+        body: [{ kind: 'paragraph', text: 'Текст' }],
+        attachments: [{ id: 'att-x', name: 'Положение', ext: 'pdf' }],
+        relatedTasks: [{ id: null, title: 'Закупка ноутбуков', status: 'queue' }],
+        relatedDocuments: [
+          { number: 'Приказ №1', title: 'О закупках' },
+          { number: 'Приказ №2', title: 'О тендерах' },
+        ],
+        change: 'первая редакция',
+      },
+      ['R7'],
+    );
+    const list = fetchKnowledge(['R7']);
+    expect(list.sections.find((s) => s.id === section.id)?.count).toBe(1);
+    expect(list.articles.find((a) => a.id === article.id)).toMatchObject({
+      tasksCount: 1,
+      documentsCount: 2,
+    });
+    expect(fetchArticle(article.id, ['R7']).attachments).toHaveLength(1);
   });
 });
 
@@ -150,6 +256,34 @@ describe('база знаний (экраны)', () => {
     expect(text()).toContain('Версия 4');
   });
 
+  it('старая версия открывается только для чтения, с отметкой изменённого', async () => {
+    await open('/knowledge/kb-1?version=2');
+    await waitFor(() => text().includes('Версия 2 от'));
+    expect(text()).not.toContain('Стандартный срок');
+    expect(text()).not.toContain('Править');
+    expect(
+      container.querySelector('a[aria-current="page"][href*="version=2"]')?.textContent,
+    ).toContain('Версия 2');
+    const back = [...container.querySelectorAll('a')].find((l) =>
+      l.textContent?.includes('К текущей версии 4'),
+    );
+    await act(async () => back?.click());
+    await waitFor(() => text().includes('Стандартный срок'));
+    expect(text()).not.toContain('Версия 2 от');
+  });
+
+  it('«Проверено, актуально» на устаревшей статье', async () => {
+    await open('/knowledge/kb-5');
+    await waitFor(() => text().includes('Давно не обновляли'));
+    const button = [...container.querySelectorAll('button')].find((b) =>
+      b.textContent?.includes('Проверено, актуально'),
+    );
+    await act(async () => button?.click());
+    await waitFor(() => text().includes('проверено'));
+    expect(text()).toContain('Актуально');
+    expect(text()).not.toContain('Давно не обновляли');
+  });
+
   it('статья закрытого раздела по прямой ссылке — 403, а не пустая страница', async () => {
     const legal = createMockKnowledge().articles.find((a) => a.sectionId === 'legal');
     await open(`/knowledge/${legal?.id}`);
@@ -165,8 +299,8 @@ const type = (el: HTMLInputElement | HTMLTextAreaElement | null | undefined, val
     el.dispatchEvent(new Event('input', { bubbles: true }));
   });
 };
-const button = (label: string) =>
-  [...container.querySelectorAll('button')].find((b) => b.textContent?.trim() === label);
+const button = (label: string, scope: ParentNode = container) =>
+  [...scope.querySelectorAll('button')].find((b) => b.textContent?.trim() === label);
 
 describe('редактор статьи', () => {
   afterEach(() => {
@@ -188,7 +322,7 @@ describe('редактор статьи', () => {
     );
     type(container.querySelector('textarea[name="blocks.0.text"]'), 'Справку выдаёт отдел кадров.');
     await act(async () => button('Опубликовать')?.click());
-    await waitFor(() => text().includes('История версий'));
+    await waitFor(() => !button('Опубликовать') && text().includes('История версий'));
     expect(container.querySelector('article h2')?.textContent).toBe('Порядок выдачи справок');
     expect(text()).toContain('Версия 1');
     expect(text()).toContain('первая редакция');
@@ -214,12 +348,37 @@ describe('редактор статьи', () => {
 
     type(container.querySelector('input[name="change"]'), 'добавлены сроки для МОК');
     await act(async () => button('Сохранить')?.click());
-    await waitFor(() => text().includes('История версий'));
+    // «История версий» есть и в редакторе — ждём, пока откроется сама статья
+    await waitFor(() => !button('Сохранить') && text().includes('История версий'));
     expect(text()).toContain('версия 5');
     expect(text()).toContain('Версия 5');
     expect(text()).toContain('А. Дуйшеев — добавлены сроки для МОК');
     // Якоря заголовков сохранились — содержание по-прежнему ведёт к ним
     expect(container.querySelector('#when')).not.toBeNull();
+    // Вложения и связи, которых не касались, при сохранении не теряются
+    expect(text()).toContain('Глоссарий терминов МОК на трёх языках');
+    expect(text()).toContain('Перевод устава на кыргызский язык');
+  });
+
+  it('новый раздел из списка разделов: создаётся и сразу открывается', async () => {
+    await open('/knowledge');
+    await waitFor(() => !!container.querySelector('button[aria-label="Новый раздел"]'));
+    await act(async () =>
+      container.querySelector<HTMLButtonElement>('button[aria-label="Новый раздел"]')?.click(),
+    );
+    await waitFor(() => !!document.querySelector('input[placeholder="Например: Закупки"]'));
+    type(document.querySelector('input[placeholder="Например: Закупки"]'), 'Делопроизводство');
+    await act(async () => button('Создать раздел', document.body)?.click());
+    await waitFor(
+      () => document.body.textContent?.includes('Раздел «Делопроизводство» уже есть') ?? false,
+    );
+
+    type(document.querySelector('input[placeholder="Например: Закупки"]'), 'Закупки');
+    await act(async () => button('Создать раздел', document.body)?.click());
+    await waitFor(() => text().includes('В разделе пока нет статей'));
+    expect(
+      container.querySelector('nav[aria-label="Разделы"] [aria-current="page"]')?.textContent,
+    ).toContain('Закупки');
   });
 
   it('без права knowledge.edit редактор по прямой ссылке — 403', async () => {

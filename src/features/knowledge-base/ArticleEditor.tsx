@@ -1,25 +1,43 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as Select from '@radix-ui/react-select';
-import { useEffect, useRef } from 'react';
+import { type DragEvent, useEffect, useRef, useState } from 'react';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { Link, useBlocker, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { usePageSubtitle } from '@/app/layout/AppLayout';
 import { ForbiddenPage } from '@/features/auth';
+import { useTasks } from '@/features/tasks/api';
 import { ApiError } from '@/shared/api/errors';
 import {
+  AttachLargeIcon,
   CheckIcon,
   ChevronDownIcon,
   ChevronLeftIcon,
   ChevronSmallIcon,
+  DocSmallIcon,
   PlusSmallIcon,
+  TasksSmallIcon,
   XIcon,
 } from '@/shared/ui/icons';
 import { Tooltip } from '@/shared/ui/Tooltip';
-import { type ArticleDraft, useArticle, useKnowledge, useSaveArticle } from './api';
+import {
+  type ArticleDraft,
+  useArticle,
+  useKnowledge,
+  useLinkableDocuments,
+  useSaveArticle,
+} from './api';
 import { capsTitle } from './parts';
-import type { KbArticle, KbBlock, KbSection } from './types';
+import { SectionDialog } from './SectionDialog';
+import type {
+  KbArticle,
+  KbAttachment,
+  KbBlock,
+  KbRelatedDocument,
+  KbRelatedTask,
+  KbSection,
+} from './types';
 
 const blockKinds = ['paragraph', 'heading', 'list', 'note'] as const;
 type BlockKind = (typeof blockKinds)[number];
@@ -28,6 +46,9 @@ type BlockKind = (typeof blockKinds)[number];
 type BlockField = { kind: BlockKind; anchor: string; text: string; title: string };
 
 const SUMMARY_MAX = 200;
+
+/** Значение пункта «Новый раздел» в списке разделов — не ID раздела */
+const NEW_SECTION = '__new__';
 
 const lines = (text: string) =>
   text
@@ -58,6 +79,15 @@ const schemaFor = (editing: boolean) =>
     title: z.string().trim().min(3, 'errorTitle'),
     summary: z.string().trim().min(10, 'errorSummary').max(SUMMARY_MAX, 'errorSummary'),
     blocks: z.array(blockSchema).min(1, 'errorBody'),
+    attachments: z.array(z.object({ id: z.string(), name: z.string(), ext: z.string() })),
+    relatedTasks: z.array(
+      z.object({
+        id: z.string().nullable(),
+        title: z.string(),
+        status: z.custom<KbRelatedTask['status']>(),
+      }),
+    ),
+    relatedDocuments: z.array(z.object({ number: z.string(), title: z.string() })),
     // Для новой статьи строка истории — «первая редакция», при правке её пишет автор
     change: editing ? z.string().trim().min(3, 'errorChange') : z.string(),
   });
@@ -103,6 +133,19 @@ function toBlocks(fields: BlockField[]): KbBlock[] {
 
 const emptyBlock = (kind: BlockKind): BlockField => ({ kind, anchor: '', text: '', title: '' });
 
+/** Файл → вложение: имя без расширения и расширение отдельно, как в карточке статьи */
+const toAttachment = (file: File): KbAttachment => {
+  const dot = file.name.lastIndexOf('.');
+  return {
+    id: `att-${crypto.randomUUID()}`,
+    name: dot > 0 ? file.name.slice(0, dot) : file.name,
+    ext: dot > 0 ? file.name.slice(dot + 1).toLowerCase() : '',
+  };
+};
+
+const sameDocument = (a: KbRelatedDocument, b: KbRelatedDocument) =>
+  a.number === b.number && a.title === b.title;
+
 /** Редактор статьи: /knowledge/new и /knowledge/:articleId/edit (право knowledge.edit) */
 export function ArticleEditor() {
   const { t } = useTranslation();
@@ -134,12 +177,19 @@ function EditorForm({ article, sections }: { article: KbArticle | null; sections
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const save = useSaveArticle(article?.id ?? null);
-  const open = sections.filter((s) => s.accessible);
+  const [sectionDialog, setSectionDialog] = useState(false);
+  // Созданный раздел виден в списке сразу, не дожидаясь перезагрузки разделов
+  const [created, setCreated] = useState<KbSection[]>([]);
+  const open = [
+    ...sections.filter((s) => s.accessible),
+    ...created.filter((c) => !sections.some((s) => s.id === c.id)),
+  ];
   const editing = article !== null;
 
   const {
     control,
     register,
+    setValue,
     handleSubmit,
     formState: { errors, isDirty, isSubmitting },
   } = useForm<FormValues>({
@@ -150,6 +200,9 @@ function EditorForm({ article, sections }: { article: KbArticle | null; sections
           title: article.title,
           summary: article.summary,
           blocks: article.body.map(toField),
+          attachments: article.attachments,
+          relatedTasks: article.relatedTasks,
+          relatedDocuments: article.relatedDocuments,
           change: '',
         }
       : {
@@ -157,6 +210,9 @@ function EditorForm({ article, sections }: { article: KbArticle | null; sections
           title: '',
           summary: '',
           blocks: [emptyBlock('paragraph')],
+          attachments: [],
+          relatedTasks: [],
+          relatedDocuments: [],
           change: '',
         },
   });
@@ -194,6 +250,9 @@ function EditorForm({ article, sections }: { article: KbArticle | null; sections
       title: v.title,
       summary: v.summary,
       body: toBlocks(v.blocks),
+      attachments: v.attachments,
+      relatedTasks: v.relatedTasks,
+      relatedDocuments: v.relatedDocuments,
       change: editing ? v.change : t('knowledge.firstVersion'),
     };
     const result = await save.mutateAsync(draft).catch(() => null);
@@ -282,7 +341,12 @@ function EditorForm({ article, sections }: { article: KbArticle | null; sections
                 control={control}
                 name="sectionId"
                 render={({ field }) => (
-                  <Select.Root value={field.value} onValueChange={field.onChange}>
+                  <Select.Root
+                    value={field.value}
+                    onValueChange={(v) =>
+                      v === NEW_SECTION ? setSectionDialog(true) : field.onChange(v)
+                    }
+                  >
                     <Select.Trigger
                       aria-labelledby="kb-section-label"
                       data-invalid={!!errors.sectionId}
@@ -298,6 +362,14 @@ function EditorForm({ article, sections }: { article: KbArticle | null; sections
                         className="z-[60] max-h-72 w-[var(--radix-select-trigger-width)] overflow-hidden rounded-11 border border-line bg-popover p-[5px] shadow-[0_8px_28px_rgba(0,0,0,0.35)]"
                       >
                         <Select.Viewport>
+                          <Select.Item
+                            value={NEW_SECTION}
+                            className="flex h-[34px] cursor-pointer items-center gap-2 rounded-[7px] px-3 text-[12px] font-medium text-info outline-none data-[highlighted]:bg-popover-active"
+                          >
+                            <PlusSmallIcon size={12} />
+                            <Select.ItemText>{t('knowledge.newSection')}</Select.ItemText>
+                          </Select.Item>
+                          <Select.Separator className="mx-1 my-[5px] h-px bg-line" />
                           {open.map((s) => (
                             <Select.Item
                               key={s.id}
@@ -317,6 +389,14 @@ function EditorForm({ article, sections }: { article: KbArticle | null; sections
                 )}
               />
               {error(errors.sectionId?.message)}
+              <SectionDialog
+                open={sectionDialog}
+                onClose={() => setSectionDialog(false)}
+                onCreated={(s) => {
+                  setCreated((c) => [...c, s]);
+                  setValue('sectionId', s.id, { shouldDirty: true, shouldValidate: true });
+                }}
+              />
             </div>
             <label>
               <span className="flex justify-between">
@@ -370,6 +450,22 @@ function EditorForm({ article, sections }: { article: KbArticle | null; sections
                 {t(`knowledge.block.${kind}`)}
               </button>
             ))}
+          </div>
+
+          <hr className="mt-6 border-line" />
+          <Attachments
+            value={(values.attachments ?? []) as KbAttachment[]}
+            onChange={(list) => setValue('attachments', list, { shouldDirty: true })}
+          />
+          <div className="mt-6 grid grid-cols-2 gap-[14px]">
+            <RelatedTasksField
+              value={(values.relatedTasks ?? []) as KbRelatedTask[]}
+              onChange={(list) => setValue('relatedTasks', list, { shouldDirty: true })}
+            />
+            <RelatedDocumentsField
+              value={(values.relatedDocuments ?? []) as KbRelatedDocument[]}
+              onChange={(list) => setValue('relatedDocuments', list, { shouldDirty: true })}
+            />
           </div>
 
           {editing && (
@@ -532,5 +628,232 @@ function BlockEditor({
       )}
       {invalid && <p className="mt-1 text-[11px] text-danger">{t('knowledge.errorBlock')}</p>}
     </li>
+  );
+}
+
+const removeButton =
+  'flex size-6 shrink-0 items-center justify-center rounded-6 text-faint hover:bg-row-highlight hover:text-text';
+const linkRow =
+  'flex min-h-10 items-center gap-[9px] rounded-8 border border-line bg-surface py-[7px] pl-[13px] pr-2';
+
+/** Вложения: перетащить или выбрать файлы. Пока бэкенда нет, хранятся только имена */
+function Attachments({
+  value,
+  onChange,
+}: {
+  value: KbAttachment[];
+  onChange: (list: KbAttachment[]) => void;
+}) {
+  const { t } = useTranslation();
+  const input = useRef<HTMLInputElement>(null);
+  const add = (files: FileList | null) =>
+    files && files.length > 0 && onChange([...value, ...Array.from(files, toAttachment)]);
+  const onDrop = (e: DragEvent) => {
+    e.preventDefault();
+    add(e.dataTransfer.files);
+  };
+
+  return (
+    <div className="mt-5">
+      <h3 className={capsTitle}>{t('knowledge.attachments')}</h3>
+      {value.length > 0 && (
+        <ul className="mt-3 flex flex-col gap-2">
+          {value.map((f) => (
+            <li key={f.id} className={linkRow}>
+              <AttachLargeIcon size={17} className="shrink-0 text-faint" />
+              <span className="min-w-0 flex-1 truncate text-[12px] text-sub">{f.name}</span>
+              <span className="text-[10.5px] tracking-[0.3px] text-dim">{f.ext}</span>
+              <Tooltip content={t('knowledge.removeAttachment')}>
+                <button
+                  type="button"
+                  aria-label={`${t('knowledge.removeAttachment')}: ${f.name}`}
+                  onClick={() => onChange(value.filter((a) => a.id !== f.id))}
+                  className={removeButton}
+                >
+                  <XIcon size={14} />
+                </button>
+              </Tooltip>
+            </li>
+          ))}
+        </ul>
+      )}
+      <button
+        type="button"
+        onClick={() => input.current?.click()}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={onDrop}
+        className="mt-3 flex h-11 w-full items-center gap-[7px] rounded-8 border border-dashed border-line px-[13px] text-left text-[12px] text-dim hover:border-info hover:text-sub"
+      >
+        <AttachLargeIcon size={17} className="shrink-0" />
+        {t('knowledge.attachHint')}
+      </button>
+      <input
+        ref={input}
+        type="file"
+        multiple
+        hidden
+        aria-label={t('knowledge.attachHint')}
+        onChange={(e) => {
+          add(e.target.files);
+          e.target.value = '';
+        }}
+      />
+    </div>
+  );
+}
+
+/** Выпадающий список «связать…»: выбор добавляет пункт, поле снова пустое */
+function LinkPicker({
+  placeholder,
+  empty,
+  options,
+  onPick,
+}: {
+  placeholder: string;
+  empty: string;
+  options: { value: string; label: string }[];
+  onPick: (value: string) => void;
+}) {
+  return (
+    <Select.Root value="" onValueChange={onPick} disabled={options.length === 0}>
+      <Select.Trigger
+        aria-label={placeholder}
+        className={`${fieldBox} mt-2 flex h-10 items-center gap-2 text-sub disabled:cursor-not-allowed disabled:opacity-60`}
+      >
+        <PlusSmallIcon size={12} className="shrink-0" />
+        <Select.Value placeholder={options.length > 0 ? placeholder : empty} />
+        <ChevronSmallIcon size={14} className="ml-auto text-faint" />
+      </Select.Trigger>
+      <Select.Portal>
+        <Select.Content
+          position="popper"
+          sideOffset={6}
+          className="z-[60] max-h-72 w-[var(--radix-select-trigger-width)] overflow-hidden rounded-11 border border-line bg-popover p-[5px] shadow-[0_8px_28px_rgba(0,0,0,0.35)]"
+        >
+          <Select.Viewport>
+            {options.map((o) => (
+              <Select.Item
+                key={o.value}
+                value={o.value}
+                className="flex min-h-[34px] cursor-pointer items-center rounded-[7px] px-3 py-[6px] text-[12px] text-sub outline-none data-[highlighted]:bg-popover-active data-[highlighted]:text-text"
+              >
+                <Select.ItemText>{o.label}</Select.ItemText>
+              </Select.Item>
+            ))}
+          </Select.Viewport>
+        </Select.Content>
+      </Select.Portal>
+    </Select.Root>
+  );
+}
+
+function RelatedTasksField({
+  value,
+  onChange,
+}: {
+  value: KbRelatedTask[];
+  onChange: (list: KbRelatedTask[]) => void;
+}) {
+  const { t } = useTranslation();
+  const tasks = useTasks('department');
+  const linked = new Set(value.map((r) => r.id));
+  const options = (tasks.data ?? [])
+    .filter((task) => !linked.has(task.id))
+    .map((task) => ({ value: task.id, label: task.title }));
+
+  return (
+    <div>
+      <h3 className={capsTitle}>{t('knowledge.relatedTasks')}</h3>
+      {value.length > 0 && (
+        <ul className="mt-3 flex flex-col gap-2">
+          {value.map((task, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: у задачи без доступа нет ID
+            <li key={`${task.id}-${i}`} className={linkRow}>
+              <TasksSmallIcon size={14} className="shrink-0 text-info" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[12px] text-text">{task.title}</span>
+                <span className="block text-[10.5px] text-dim">
+                  {t(`tasks.status.${task.status}`)}
+                </span>
+              </span>
+              <Tooltip content={t('knowledge.unlink')}>
+                <button
+                  type="button"
+                  aria-label={`${t('knowledge.unlink')}: ${task.title}`}
+                  onClick={() => onChange(value.filter((_, j) => j !== i))}
+                  className={removeButton}
+                >
+                  <XIcon size={14} />
+                </button>
+              </Tooltip>
+            </li>
+          ))}
+        </ul>
+      )}
+      <LinkPicker
+        placeholder={t('knowledge.linkTask')}
+        empty={t('knowledge.nothingToLink')}
+        options={options}
+        onPick={(id) => {
+          const task = tasks.data?.find((x) => x.id === id);
+          if (task) onChange([...value, { id: task.id, title: task.title, status: task.status }]);
+        }}
+      />
+    </div>
+  );
+}
+
+function RelatedDocumentsField({
+  value,
+  onChange,
+}: {
+  value: KbRelatedDocument[];
+  onChange: (list: KbRelatedDocument[]) => void;
+}) {
+  const { t } = useTranslation();
+  const documents = useLinkableDocuments();
+  const pool = documents.data ?? [];
+  const options = pool
+    .map((doc, i) => ({ doc, value: String(i) }))
+    .filter(({ doc }) => !value.some((v) => sameDocument(v, doc)))
+    .map(({ doc, value: v }) => ({ value: v, label: `${doc.number} — ${doc.title}` }));
+
+  return (
+    <div>
+      <h3 className={capsTitle}>{t('knowledge.relatedDocuments', { count: 2 })}</h3>
+      {value.length > 0 && (
+        <ul className="mt-3 flex flex-col gap-2">
+          {value.map((doc, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: номера документов в заглушке повторяются
+            <li key={i} className={linkRow}>
+              <DocSmallIcon size={14} className="shrink-0 text-faint" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[12px] text-text">{doc.number}</span>
+                <span className="block truncate text-[10.5px] text-dim">{doc.title}</span>
+              </span>
+              <Tooltip content={t('knowledge.unlink')}>
+                <button
+                  type="button"
+                  aria-label={`${t('knowledge.unlink')}: ${doc.number}`}
+                  onClick={() => onChange(value.filter((_, j) => j !== i))}
+                  className={removeButton}
+                >
+                  <XIcon size={14} />
+                </button>
+              </Tooltip>
+            </li>
+          ))}
+        </ul>
+      )}
+      <LinkPicker
+        placeholder={t('knowledge.linkDocument')}
+        empty={t('knowledge.nothingToLink')}
+        options={options}
+        onPick={(i) => {
+          const doc = pool[Number(i)];
+          if (doc) onChange([...value, doc]);
+        }}
+      />
+    </div>
   );
 }
