@@ -18,6 +18,14 @@ const ArticleEditor = lazy(() =>
 const RolesPage = lazy(() =>
   import('@/features/roles/RolesPage').then((m) => ({ default: m.RolesPage })),
 );
+const ChatPage = lazy(() =>
+  import('@/features/chat/ChatPage').then((m) => ({ default: m.ChatPage })),
+);
+const NotificationsPage = lazy(() =>
+  import('@/features/notifications/NotificationsPage').then((m) => ({
+    default: m.NotificationsPage,
+  })),
+);
 const ArticlePage = lazy(() =>
   import('@/features/knowledge-base/ArticlePage').then((m) => ({ default: m.ArticlePage })),
 );
@@ -27,6 +35,7 @@ const sectionPages: Partial<Record<Section, () => ReactElement>> = {
   tasks: () => <TasksPage />,
   knowledge: () => <KnowledgePage />,
   access: () => <RolesPage />,
+  chat: () => <ChatPage />,
 };
 
 /** Пути разделов меню */
@@ -58,6 +67,16 @@ const sectionRoutes: RouteObject[] = [
     path: 'knowledge/:articleId',
     handle: { section: 'knowledge' } satisfies RouteHandle,
     element: guarded('knowledge', <ArticlePage />),
+  },
+  // Уведомления — всем, у кого есть вход; это не раздел меню, а экран колокольчика
+  {
+    path: 'notifications',
+    handle: { titleKey: 'notifications.title' } satisfies RouteHandle,
+    element: (
+      <Suspense fallback={null}>
+        <NotificationsPage />
+      </Suspense>
+    ),
   },
   // Редактор — только с правом knowledge.edit; без него по прямой ссылке — 403
   ...['knowledge/new', 'knowledge/:articleId/edit'].map((path) => ({

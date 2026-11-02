@@ -21,7 +21,14 @@ export function TasksPage() {
   const { can } = useCan();
   const [params, setParams] = useSearchParams();
   const [creating, setCreating] = useState(false);
-  const [queueOpen, setQueueOpen] = useState(false);
+  // Очередь из почты открывается и по ссылке ?queue=1 — из уведомления «Разобрать»
+  const queueOpen = params.get('queue') === '1';
+  const setQueueOpen = (open: boolean) =>
+    setParams((p) => {
+      if (open) p.set('queue', '1');
+      else p.delete('queue');
+      return p;
+    });
   // Письмо, которое оформляют задачей вручную
   const [manualLetter, setManualLetter] = useState<Letter | null>(null);
   // Открытая задача — в адресе (?task=ID): ссылкой можно поделиться
@@ -80,10 +87,14 @@ export function TasksPage() {
       <QueueModal
         open={queueOpen}
         onClose={() => setQueueOpen(false)}
-        onOpenTask={(id) => {
-          setQueueOpen(false);
-          openTask(id);
-        }}
+        // Одним обновлением адреса: закрыть очередь и открыть задачу
+        onOpenTask={(id) =>
+          setParams((p) => {
+            p.delete('queue');
+            p.set('task', id);
+            return p;
+          })
+        }
         onManual={(letter) => {
           setQueueOpen(false);
           setManualLetter(letter);

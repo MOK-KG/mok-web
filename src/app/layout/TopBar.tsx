@@ -1,28 +1,24 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Popover from '@radix-ui/react-popover';
-import type { ComponentType } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useSession } from '@/features/auth';
+import { useMarkAllRead } from '@/features/notifications/api';
 import {
-  type AppNotification,
-  type NotificationKind,
-  useMarkAllRead,
-  useNotifications,
-} from '@/features/notifications/api';
-import { useMailQueueSummary } from '@/features/tasks/api';
+  type NotificationView,
+  notificationKinds,
+  useOpenNotification,
+  useVisibleNotifications,
+} from '@/features/notifications/parts';
 import { type Language, languageLabels, languages } from '@/shared/config/i18n';
 import { formatIsoDate, relativeShort } from '@/shared/lib/date';
 import { todayInBishkek } from '@/shared/lib/workDays';
 import {
-  AtSignIcon,
   BellIcon,
-  BoltIcon,
   CheckDoubleIcon,
   CheckIcon,
-  CheckSmallIcon,
   ChevronDownIcon,
-  ClockIcon,
-  MailIcon,
   MoonIcon,
   SettingsIcon,
 } from '@/shared/ui/icons';
@@ -40,6 +36,7 @@ const menuItem =
 /** Шапка раздела: заголовок, подпись (по умолчанию «департамент · дата»), уведомления, язык, тема */
 export function TopBar({ title, subtitle: custom }: { title: string; subtitle?: string | null }) {
   const { i18n } = useTranslation();
+  const { pathname } = useLocation();
   const user = useSession().data?.user;
   const today = formatIsoDate(todayInBishkek(), 'EEEE, d MMMM', i18n.language);
   const subtitle = custom ?? [user?.department, today].filter(Boolean).join(' · ');
@@ -52,7 +49,8 @@ export function TopBar({ title, subtitle: custom }: { title: string; subtitle?: 
         <p className="truncate text-[12px] tracking-[0.1px] text-faint">{subtitle}</p>
       </div>
       <div className="flex items-center gap-2">
-        <Notifications />
+        {/* На странице уведомлений колокольчик не нужен — как в макете */}
+        {pathname !== '/notifications' && <Notifications />}
         <LanguageMenu />
         <ThemeMenu />
       </div>
@@ -60,25 +58,20 @@ export function TopBar({ title, subtitle: custom }: { title: string; subtitle?: 
   );
 }
 
-const kinds: Record<
-  NotificationKind,
-  { Icon: ComponentType<{ size?: number }>; stripe: string; color: string }
-> = {
-  escalation: { Icon: BoltIcon, stripe: 'bg-warning', color: 'text-warning' },
-  overdue: { Icon: ClockIcon, stripe: 'bg-brand-red', color: 'text-brand-red' },
-  mailQueue: { Icon: MailIcon, stripe: 'bg-brand-gold', color: 'text-brand-gold' },
-  mention: { Icon: AtSignIcon, stripe: 'bg-info', color: 'text-info' },
-  done: { Icon: CheckSmallIcon, stripe: 'bg-success', color: 'text-success' },
-};
-
 function Notifications() {
   const { t } = useTranslation();
-  const { data = [] } = useNotifications();
+  const visible = useVisibleNotifications();
   const markAll = useMarkAllRead();
-  const unread = data.filter((n) => !n.read).length;
+  const unread = visible.filter((n) => !n.read).length;
+  const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
+  const go = (path: string) => {
+    setOpen(false);
+    navigate(path);
+  };
 
   return (
-    <Popover.Root>
+    <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger
         className={`${control} relative w-8`}
         aria-label={`${t('shell.notifications')}${unread ? `, ${t('shell.unread', { count: unread })}` : ''}`}
@@ -120,56 +113,85 @@ function Notifications() {
             )}
           </div>
           <ul className="max-h-[420px] overflow-y-auto border-y border-line">
-            {data.length === 0 && (
+            {visible.length === 0 && (
               <li className="px-4 py-6 text-center text-[12px] text-faint">
                 {t('shell.noNotifications')}
               </li>
             )}
-            {data.map((n) => (
-              <NotificationRow key={n.id} notification={n} />
+            {visible.map((n) => (
+              <NotificationRow key={n.id} notification={n} onOpened={() => setOpen(false)} />
             ))}
           </ul>
-          <button
-            type="button"
-            className="m-[10px] flex items-center gap-2 rounded-6 px-[5px] py-[6px] text-[11.5px] text-sub hover:text-text"
-          >
-            <SettingsIcon size={16} />
-            {t('shell.notificationSettings')}
-          </button>
+          <div className="flex items-center justify-between px-[10px] py-[10px]">
+            <button
+              type="button"
+              onClick={() => go('/notifications?settings=1')}
+              className="flex items-center gap-2 rounded-6 px-[5px] py-[6px] text-[11.5px] text-sub hover:text-text"
+            >
+              <SettingsIcon size={16} />
+              {t('shell.notificationSettings')}
+            </button>
+            <button
+              type="button"
+              onClick={() => go('/notifications')}
+              className="rounded-6 px-[5px] py-[6px] text-[11.5px] font-medium text-info hover:underline"
+            >
+              {t('notifications.showAll')}
+            </button>
+          </div>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
   );
 }
 
-function NotificationRow({ notification: n }: { notification: AppNotification }) {
+function NotificationRow({
+  notification: n,
+  onOpened,
+}: {
+  notification: NotificationView;
+  onOpened: () => void;
+}) {
   const { t } = useTranslation();
-  const kind = kinds[n.kind];
-  const queue = useMailQueueSummary().data;
-  // Число писем в очереди — по факту очереди, а не из текста уведомления
-  const queueCount = queue ? queue.ready + queue.manual : 0;
-  if (n.kind === 'mailQueue' && queueCount === 0) return null;
-  const title =
-    n.kind === 'mailQueue' ? t('mailQueue.mailQueueNote', { count: queueCount }) : n.title;
-  return (
-    <li
-      className={`relative flex gap-2 border-b border-line px-4 py-[14px] last:border-b-0 ${
-        n.read ? '' : 'bg-row-highlight'
-      }`}
-    >
+  const kind = notificationKinds[n.kind];
+  const openNotification = useOpenNotification();
+  const clickable = n.target !== null;
+  const content = (
+    <>
       {!n.read && (
         <span aria-hidden className={`absolute inset-y-0 left-0 w-[2.5px] ${kind.stripe}`} />
       )}
       <span className={`flex size-[22px] shrink-0 items-center justify-center ${kind.color}`}>
         <kind.Icon size={16} />
       </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-[12px] font-medium leading-4 tracking-[-0.1px] text-text">{title}</p>
-        <p className="mt-[2px] text-[11px] leading-4 text-faint">{n.text}</p>
-      </div>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[12px] font-medium leading-4 tracking-[-0.1px] text-text">
+          {n.shownTitle}
+        </span>
+        <span className="mt-[2px] block text-[11px] leading-4 text-faint">{n.shownText}</span>
+      </span>
       <time dateTime={n.at} className="shrink-0 text-[10px] text-dim">
         {relativeShort(n.at, t)}
       </time>
+    </>
+  );
+  const box = `relative flex w-full gap-2 px-4 py-[14px] text-left ${n.read ? '' : 'bg-row-highlight'}`;
+  return (
+    <li className="border-b border-line last:border-b-0">
+      {clickable ? (
+        <button
+          type="button"
+          onClick={() => {
+            openNotification(n);
+            onOpened();
+          }}
+          className={`${box} hover:bg-popover-active`}
+        >
+          {content}
+        </button>
+      ) : (
+        <div className={box}>{content}</div>
+      )}
     </li>
   );
 }

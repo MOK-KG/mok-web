@@ -8,8 +8,11 @@ import { TopBar } from './TopBar';
 
 const COLLAPSED_KEY = 'nok.sidebarCollapsed';
 
-/** Раздел страницы — в handle маршрута: { section: 'tasks' } */
-export type RouteHandle = { section?: Section };
+/**
+ * Раздел страницы — в handle маршрута: { section: 'tasks' }. Страница вне разделов меню
+ * (уведомления) задаёт заголовок ключом перевода: { titleKey: 'notifications.title' }
+ */
+export type RouteHandle = { section?: Section; titleKey?: string };
 
 const SubtitleContext = createContext<(subtitle: string | null) => void>(() => {});
 
@@ -27,10 +30,9 @@ export function AppLayout() {
   const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(() => storage.get(COLLAPSED_KEY) === '1');
   const [subtitle, setSubtitle] = useState<string | null>(null);
-  const section = [...useMatches()]
-    .reverse()
-    .map((m) => (m.handle as RouteHandle | undefined)?.section)
-    .find(Boolean);
+  const handles = [...useMatches()].reverse().map((m) => m.handle as RouteHandle | undefined);
+  const section = handles.map((h) => h?.section).find(Boolean);
+  const titleKey = handles.map((h) => h?.titleKey).find(Boolean);
 
   const toggle = () =>
     setCollapsed((c) => {
@@ -42,7 +44,10 @@ export function AppLayout() {
     <div className="flex h-screen gap-4 bg-canvas p-4">
       <Sidebar collapsed={collapsed} onToggle={toggle} />
       <div className="flex min-w-0 flex-1 flex-col gap-[14px]">
-        <TopBar title={section ? t(`sections.${section}`) : t('app.title')} subtitle={subtitle} />
+        <TopBar
+          title={titleKey ? t(titleKey) : section ? t(`sections.${section}`) : t('app.title')}
+          subtitle={subtitle}
+        />
         <main className="min-h-0 flex-1 overflow-auto">
           <SubtitleContext.Provider value={setSubtitle}>
             <Outlet />
