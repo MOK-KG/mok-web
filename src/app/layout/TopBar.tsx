@@ -1,6 +1,6 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Popover from '@radix-ui/react-popover';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSession } from '@/features/auth';
@@ -20,6 +20,7 @@ import {
   CheckIcon,
   ChevronDownIcon,
   MoonIcon,
+  SearchIcon,
   SettingsIcon,
 } from '@/shared/ui/icons';
 import { type ThemeMode, useTheme } from '../providers/ThemeProvider';
@@ -51,12 +52,54 @@ export function TopBar({ title, subtitle: custom }: { title: string; subtitle?: 
         <p className="truncate text-[12px] tracking-[0.1px] text-faint">{subtitle}</p>
       </div>
       <div className="flex items-center gap-2">
+        {pathname !== '/search' && <GlobalSearch />}
         {/* На странице уведомлений колокольчик не нужен — как в макете */}
         {pathname !== '/notifications' && <Notifications />}
         <LanguageMenu />
         <ThemeMenu />
       </div>
     </header>
+  );
+}
+
+/** Поле поиска по системе: Enter — экран поиска; Ctrl/⌘+K — в поле с любого экрана */
+function GlobalSearch() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [query, setQuery] = useState('');
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        input.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  return (
+    <form
+      aria-label={t('search.label')}
+      onSubmit={(e) => {
+        e.preventDefault();
+        navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+        setQuery('');
+      }}
+      className="hidden h-8 w-[220px] items-center gap-2 rounded-9 border border-line bg-control px-[10px] focus-within:border-info lg:flex"
+    >
+      <SearchIcon size={14} className="shrink-0 text-faint" />
+      <input
+        ref={input}
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder={t('search.short')}
+        aria-label={t('search.label')}
+        className="min-w-0 flex-1 bg-transparent text-[12px] text-text outline-none placeholder:text-dim"
+      />
+      <kbd className="text-[10px] text-dim">⌘K</kbd>
+    </form>
   );
 }
 

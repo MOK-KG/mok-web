@@ -63,7 +63,9 @@ describe('база знаний (логика)', () => {
 
     const search = searchKnowledge(QUERY, roles);
     expect(search.ids).toHaveLength(3);
-    expect(search.hidden).toEqual([{ sectionId: 'legal', sectionName: 'Правовая база', count: 2 }]);
+    // Совпадения в закрытом разделе не возвращаются даже числом (приёмка 11.3)
+    expect(search).toEqual({ ids: search.ids });
+    expect(searchKnowledge(QUERY, ['R6']).ids.length).toBe(5);
 
     const legalArticle = createMockKnowledge(TODAY).articles.find((a) => a.sectionId === 'legal');
     expect(() => fetchArticle(legalArticle?.id ?? '', roles)).toThrow(
@@ -72,10 +74,9 @@ describe('база знаний (логика)', () => {
     expect(() => fetchArticle('kb-404', roles)).toThrow(expect.objectContaining({ status: 404 }));
   });
 
-  it('роли, которой раздел открыт, он виден целиком: 64 статьи, 5 найдено, скрытых нет', () => {
+  it('роли, которой раздел открыт, он виден целиком: 64 статьи, 5 найдено', () => {
     resetKnowledgeMock(TODAY);
     expect(fetchKnowledge(['R6']).articles).toHaveLength(64);
-    expect(searchKnowledge(QUERY, ['R6'])).toMatchObject({ hidden: [] });
     expect(searchKnowledge(QUERY, ['R6']).ids).toHaveLength(5);
   });
 
@@ -162,7 +163,9 @@ describe('база знаний (логика)', () => {
       roles: ['R6', 'R7'],
     });
     expect(r1.articles.some((a) => a.sectionId === 'records')).toBe(false);
-    expect(searchKnowledge(QUERY, ['R1']).hidden.map((h) => h.sectionId)).toContain('records');
+    const r1Found = searchKnowledge(QUERY, ['R1']).ids;
+    const records = createMockKnowledge(TODAY).articles.filter((a) => a.sectionId === 'records');
+    expect(r1Found.some((id) => records.some((a) => a.id === id))).toBe(false);
     expect(() => fetchArticle('kb-1', ['R1'])).toThrow(ApiError);
     expect(fetchKnowledge(['R7']).articles.some((a) => a.sectionId === 'records')).toBe(true);
     expect(() => setSectionAccess('records', [])).toThrow(ApiError);
@@ -270,7 +273,8 @@ describe('база знаний (экраны)', () => {
     expect(text()).toContain('55 статей в 6 разделах');
     expect(text()).toContain(`Найдено 3 статьи по запросу «${QUERY}»`);
     expect(text()).toContain('14 статей · 3 найдено');
-    expect(text()).toContain('Ещё 2 статьи с этим словом есть в разделе «Правовая база»');
+    // Совпадения в закрытом разделе не показываются и не считаются (приёмка 11.3)
+    expect(text()).not.toMatch(/Ещё \d+ стат/);
 
     const list = container.querySelector('section[aria-label="Делопроизводство"]');
     const rows = list?.querySelectorAll('a[href^="/knowledge/"]') ?? [];

@@ -178,7 +178,8 @@ describe('доска задач', () => {
   });
 
   it('поиск сужает доску', async () => {
-    const input = container.querySelector<HTMLInputElement>('input[type="search"]');
+    // Поле доски — в main; в шапке есть ещё поиск по системе
+    const input = container.querySelector<HTMLInputElement>('main input[type="search"]');
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
     await act(async () => {
       setter?.call(input, 'устав');

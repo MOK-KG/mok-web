@@ -23,6 +23,9 @@ const JournalPage = lazy(() =>
 const AbsencesPage = lazy(() =>
   import('@/features/absences/AbsencesPage').then((m) => ({ default: m.AbsencesPage })),
 );
+const SearchPage = lazy(() =>
+  import('@/features/search/SearchPage').then((m) => ({ default: m.SearchPage })),
+);
 const TasksPage = lazy(() =>
   import('@/features/tasks/TasksPage').then((m) => ({ default: m.TasksPage })),
 );
@@ -107,6 +110,16 @@ const sectionRoutes: RouteObject[] = [
     element: (
       <Suspense fallback={null}>
         <AbsencesPage />
+      </Suspense>
+    ),
+  },
+  // Поиск по системе — всем; находит только то, к чему есть доступ
+  {
+    path: 'search',
+    handle: { titleKey: 'search.title' } satisfies RouteHandle,
+    element: (
+      <Suspense fallback={null}>
+        <SearchPage />
       </Suspense>
     ),
   },

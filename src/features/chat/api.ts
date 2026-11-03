@@ -77,6 +77,15 @@ export const fetchChatFiles = (): ChatFile[] =>
     ];
   });
 
+/** Сообщения из переписок, где пользователь участник, — для поиска по системе */
+export const fetchMemberMessages = () =>
+  store.messages.flatMap((message) => {
+    const chat = store.chats.find((c) => c.id === message.chatId);
+    if (!chat?.memberIds.includes(currentMemberId)) return [];
+    const author = message.authorId ? (chatMembers[message.authorId]?.short ?? null) : null;
+    return [structuredClone({ message, chatTitle: chat.title, author })];
+  });
+
 export function markChatRead(chatId: string) {
   const chat = find(chatId);
   const last = store.messages.filter((m) => m.chatId === chatId).at(-1);
@@ -175,6 +184,14 @@ export function useChatFiles(enabled = true) {
       await delay(60);
       return fetchChatFiles();
     },
+  });
+}
+
+export function useMemberMessages(enabled = true) {
+  return useQuery({
+    enabled,
+    queryKey: [...chatKey, 'search'],
+    queryFn: async () => fetchMemberMessages(),
   });
 }
 

@@ -12,7 +12,6 @@ import type {
   KbArticleSummary,
   KbAttachment,
   KbBlock,
-  KbHiddenMatches,
   KbRelatedDocument,
   KbRelatedTask,
   KbSection,
@@ -83,20 +82,18 @@ export function fetchKnowledge(roles: RoleCode[]): KnowledgeList {
   };
 }
 
-export type KnowledgeSearch = { ids: string[]; hidden: KbHiddenMatches[] };
+export type KnowledgeSearch = { ids: string[] };
 
-/** Поиск по заголовку, описанию и тексту. Закрытые разделы — только число совпадений */
+/**
+ * Поиск по заголовку, описанию и тексту — только в открытых разделах. Совпадения в закрытых
+ * не возвращаются и не считаются даже числом (приёмка 11.3)
+ */
 export function searchKnowledge(query: string, roles: RoleCode[]): KnowledgeSearch {
-  const matched = store.articles.filter((a) => matchesQuery(a, query));
-  const hidden = store.sections
-    .filter((s) => !isOpen(s.id, roles))
-    .map((s) => ({
-      sectionId: s.id,
-      sectionName: s.name,
-      count: matched.filter((a) => a.sectionId === s.id).length,
-    }))
-    .filter((h) => h.count > 0);
-  return { ids: matched.filter((a) => isOpen(a.sectionId, roles)).map((a) => a.id), hidden };
+  return {
+    ids: store.articles
+      .filter((a) => isOpen(a.sectionId, roles) && matchesQuery(a, query))
+      .map((a) => a.id),
+  };
 }
 
 export function fetchArticle(id: string, roles: RoleCode[]): KbArticle {

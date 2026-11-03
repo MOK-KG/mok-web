@@ -366,9 +366,6 @@
     "closedNote_other": "{{names}} are closed for your role: the sections are visible, their content is not.",
     "foundInSection": "{{count}} found",
     "byFilter": "{{count}} match the filter",
-    "hidden_one": "{{count}} more article with this word is in «{{section}}»",
-    "hidden_other": "{{count}} more articles with this word are in «{{section}}»",
-    "hiddenNote": "Not shown, not counted, and a direct link returns “access denied”, not an empty page.",
     "updated": "updated {{date}}",
     "fresh": "Up to date",
     "stale": "Not updated for a while",
@@ -1053,5 +1050,27 @@
     "save": "Save",
     "created": "Absence recorded",
     "cancelled": "Absence cancelled"
+  },
+  "search": {
+    "title": "Search",
+    "label": "System search",
+    "short": "Search",
+    "placeholder": "Tasks, documents, articles, files, chats",
+    "subtitle_one": "{{count}} result",
+    "subtitle_other": "{{count}} results",
+    "all": "All",
+    "kind": {
+      "tasks": "Tasks",
+      "documents": "Documents",
+      "knowledge": "Knowledge base",
+      "files": "Files",
+      "chat": "Chats"
+    },
+    "shownOf": "{{shown}} of {{total}}",
+    "showAll": "Show all — {{count}}",
+    "prompt": "Type a query: a document number, task name, or a word from an article or message.",
+    "loading": "Searching…",
+    "nothing": "Nothing found for “{{query}}”.",
+    "note": "We only search where you have access: closed items are not shown and not counted."
   }
 }

@@ -26,7 +26,7 @@ import { useKnowledge, useKnowledgeSearch, useMoveSection } from './api';
 import { Avatar, capsTitle, FreshnessBadge, useShortDate } from './parts';
 import { SectionDialog } from './SectionDialog';
 import { checkedAt, freshnessOf, queryStems } from './search';
-import type { KbArticleSummary, KbFreshness, KbHiddenMatches, KbSection } from './types';
+import type { KbArticleSummary, KbFreshness, KbSection } from './types';
 
 type Filters = { freshness: Exclude<KbFreshness, null>[]; authors: string[] };
 
@@ -187,8 +187,6 @@ export function KnowledgePage() {
               {filterActive ? t('knowledge.emptyFilter') : t('knowledge.empty')}
             </p>
           )}
-          {searching &&
-            search.data?.hidden.map((h) => <HiddenMatches key={h.sectionId} hidden={h} />)}
         </section>
       </div>
     </div>
@@ -503,21 +501,6 @@ function ArticleRow({
         </span>
       </Link>
     </li>
-  );
-}
-
-function HiddenMatches({ hidden }: { hidden: KbHiddenMatches }) {
-  const { t } = useTranslation();
-  return (
-    <div className="mx-5 my-4 flex items-center gap-2 rounded-9 border border-line bg-muted-soft px-[13px] py-2">
-      <ShieldCheckIcon size={16} className="shrink-0 text-dim" />
-      <div className="min-w-0">
-        <p className="text-[11.5px] font-medium tracking-[-0.1px] text-faint">
-          {t('knowledge.hidden', { count: hidden.count, section: hidden.sectionName })}
-        </p>
-        <p className="mt-[2px] text-[10.5px] text-dim">{t('knowledge.hiddenNote')}</p>
-      </div>
-    </div>
   );
 }
 

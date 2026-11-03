@@ -73,7 +73,4 @@ export type KbArticle = KbArticleSummary & {
   versions: KbVersion[];
 };
 
-/** Совпадения в закрытых разделах: статьи не показываются, только число и раздел */
-export type KbHiddenMatches = { sectionId: string; sectionName: string; count: number };
-
 export type KbFreshness = 'fresh' | 'stale' | null;
