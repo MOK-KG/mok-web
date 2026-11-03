@@ -14,6 +14,7 @@ import { formatInBishkek, formatIsoDate } from '@/shared/lib/date';
 import { addWorkingDays, todayInBishkek } from '@/shared/lib/workDays';
 import { BookIcon, FileIcon, XIcon } from '@/shared/ui/icons';
 import { docNumber, docRef, useAnnul, useDocument, useIssue, useMarkDone, useResolve } from './api';
+import { LetterDialog } from './LetterDialog';
 import {
   capsTitle,
   FieldError,
@@ -65,6 +66,9 @@ function Body({ doc }: { doc: DocumentRecord }) {
   const { t, i18n } = useTranslation();
   const { can } = useCan();
   const [form, setForm] = useState<'resolution' | 'annul' | null>(null);
+  const [letterOpen, setLetterOpen] = useState(false);
+  // Подписывает генеральный секретарь; у отправленного — кто отправил
+  const signer = doc.signer?.short ?? people.ad.short;
   const issue = useIssue();
   const markDone = useMarkDone();
   const number = docNumber(doc);
@@ -123,6 +127,30 @@ function Body({ doc }: { doc: DocumentRecord }) {
               </li>
             ))}
           </ul>
+        )}
+
+        {doc.kind === 'outgoing' && (
+          <section className="mt-4 flex items-center gap-3 rounded-11 border border-line bg-surface px-4 py-3">
+            <FileIcon size={18} className="shrink-0 text-faint" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[12.5px] font-medium text-text">{t('documents.letter.title')}</p>
+              <p className="mt-[2px] text-[11px] text-faint">
+                {doc.letter ? t(`documents.letter.langName.${doc.letter.lang}`) : '—'}
+                {doc.fingerprint && ` · ${t('documents.letter.fingerprint')} ${doc.fingerprint}`}
+              </p>
+            </div>
+            <button type="button" className={secondaryButton} onClick={() => setLetterOpen(true)}>
+              {doc.status === 'draft' && (can('documents.create') || can('documents.register'))
+                ? t('documents.letter.edit')
+                : t('documents.letter.open')}
+            </button>
+            <LetterDialog
+              doc={doc}
+              signer={signer}
+              open={letterOpen}
+              onClose={() => setLetterOpen(false)}
+            />
+          </section>
         )}
 
         {doc.annulment && (

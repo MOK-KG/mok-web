@@ -5,6 +5,7 @@ import { createMockTasks } from '@/features/tasks/mock';
 import type { Person } from '@/features/tasks/types';
 import type { FeedbackMeta } from '@/shared/api/feedback';
 import { type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
+import { defaultLetter, fillTemplate, type Letter, letterFingerprint } from './letter';
 import { createMockDocuments } from './mock';
 import type { DocHistoryEntry, DocKind, DocStatus, DocumentRecord } from './types';
 
@@ -122,6 +123,8 @@ export function registerIncoming(input: IncomingInput, today = todayInBishkek())
     resolution: null,
     annulment: null,
     history: [historyEntry('registered')],
+    letter: null,
+    fingerprint: null,
   };
   store.push(doc);
   journal('documentRegistered', doc);
@@ -134,6 +137,8 @@ export type DraftInput = {
   party: string | null;
   summary: string;
   attachments: string[];
+  /** Язык и шаблон письма; по умолчанию — русский, стандартный бланк */
+  letter?: Letter;
 };
 
 /** Проект исходящего или приказа — без номера, пока не отправят или не подпишут */
@@ -155,6 +160,16 @@ export function createDraft(input: DraftInput, today = todayInBishkek()): Docume
     resolution: null,
     annulment: null,
     history: [historyEntry('created')],
+    letter:
+      input.kind === 'outgoing'
+        ? (input.letter ?? {
+            lang: 'ru',
+            templateId: 'standard',
+            addressee: input.party?.trim() ?? '',
+            body: fillTemplate('standard', 'ru'),
+          })
+        : null,
+    fingerprint: null,
   };
   store.push(doc);
   return structuredClone(doc);
@@ -170,8 +185,30 @@ export function issue(id: string, today = todayInBishkek()): DocumentRecord {
   doc.date = today;
   doc.signer = me();
   doc.status = doc.kind === 'outgoing' ? 'sent' : 'signed';
+  if (doc.kind === 'outgoing') {
+    doc.letter ??= defaultLetter(doc.party, doc.summary);
+    // С этого момента письмо неизменяемо: отпечаток меняется от любой правки
+    doc.fingerprint = letterFingerprint({
+      number: docNumber(doc),
+      date: doc.date,
+      title: doc.title,
+      letter: doc.letter,
+      signer: doc.signer.short,
+    });
+  }
   doc.history.unshift(historyEntry(doc.kind === 'outgoing' ? 'sent' : 'signed'));
   journal('documentSent', doc);
+  return structuredClone(doc);
+}
+
+/** Правка письма — только в проекте; отправленное письмо неизменяемо */
+export function updateLetter(id: string, letter: Letter, title?: string): DocumentRecord {
+  const doc = find(id);
+  if (doc.kind !== 'outgoing') throw new Error('not-letter');
+  if (doc.status !== 'draft') throw new Error('immutable');
+  doc.letter = { ...letter, addressee: letter.addressee.trim(), body: letter.body.trim() };
+  if (title?.trim()) doc.title = title.trim();
+  doc.history.unshift(historyEntry('edited'));
   return structuredClone(doc);
 }
 
@@ -317,6 +354,13 @@ export const useResolve = () =>
   useDocMutation(
     ({ id, ...input }: ResolutionInput & { id: string }) => resolve(id, input),
     'documents.resolved',
+  );
+
+export const useUpdateLetter = () =>
+  useDocMutation(
+    ({ id, letter, title }: { id: string; letter: Letter; title?: string }) =>
+      updateLetter(id, letter, title),
+    'documents.letterSaved',
   );
 
 export const useMarkDone = () =>

@@ -865,7 +865,8 @@
       "done": "marked completed",
       "sent": "sent",
       "signed": "signed",
-      "annulled": "annulled"
+      "annulled": "annulled",
+      "edited": "edited the letter"
     },
     "cancel": "Cancel",
     "form": {
@@ -903,7 +904,38 @@
     "issued": "Document number {{number}} issued",
     "resolved": "Resolution added, task created",
     "doneToast": "Document marked completed",
-    "annulledToast": "Document annulled, its number stays taken"
+    "annulledToast": "Document annulled, its number stays taken",
+    "letter": {
+      "title": "Letter on letterhead",
+      "open": "Open letter",
+      "edit": "Edit letter",
+      "print": "Print or PDF",
+      "save": "Save",
+      "lang": "Letter language",
+      "langHint": "The letterhead, date and signature are in the letter's language. If the text hasn't been edited yet, the template switches to the new language.",
+      "langName": {
+        "ru": "in Russian",
+        "ky": "in Kyrgyz",
+        "en": "in English"
+      },
+      "template": "Template",
+      "templateHint": "Choosing a template replaces the letter text with its outline.",
+      "templates": {
+        "standard": "Letter",
+        "reply": "Reply",
+        "cover": "Cover letter"
+      },
+      "addressee": "To",
+      "body": "Text",
+      "preview": "Letter preview",
+      "locked": "The letter is final",
+      "lockedHint": "The letter has been sent: its text is fixed and can't be edited. The fingerprint changes with any edit, which shows the file hasn't been altered.",
+      "noRights": "The draft's author or the records office can edit the letter.",
+      "fingerprint": "Fingerprint",
+      "embedNote": "The logo and signature are embedded in the file, not loaded from a link, so they show when printed and forwarded. The letterhead logo and details are placeholders until the real ones are uploaded in settings.",
+      "docxFailed": "Couldn't create the .docx file"
+    },
+    "letterSaved": "Letter saved"
   },
   "files": {
     "subtitle_one": "{{count}} file across sections",

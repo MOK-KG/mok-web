@@ -8,6 +8,7 @@ import {
   nextWorkingDay,
   todayInBishkek,
 } from '@/shared/lib/workDays';
+import { defaultLetter, type Letter, letterFingerprint } from './letter';
 import type { DocHistoryEntry, DocKind, DocumentRecord, Resolution } from './types';
 
 /**
@@ -38,6 +39,7 @@ type Special = {
   author?: Person;
   resolution?: Omit<Resolution, 'at' | 'author'> & { daysAfter?: number };
   annulment?: string;
+  letter?: Letter;
 };
 
 /** Документы с содержанием — по номеру; остальные номера — архив без подробностей */
@@ -140,12 +142,24 @@ const outgoing: Record<number, Special> = {
   412: {
     title: 'Ответ на запрос по программе солидарности',
     party: 'МОК',
+    letter: {
+      lang: 'en',
+      templateId: 'reply',
+      addressee: 'International Olympic Committee\nOlympic Solidarity\nLausanne, Switzerland',
+      body: 'Dear colleague,\n\nIn reply to your request regarding the Olympic Solidarity programmes, please find enclosed the report of the National Olympic Committee of the Kyrgyz Republic for the current cycle.\n\nWe remain at your disposal for any further information.\n\nYours sincerely,',
+    },
     summary: 'Ответ на запрос МОК о реализации программ Олимпийской солидарности.',
     attachments: ['solidarity_report.pdf'],
   },
   413: {
     title: 'Квартальный отчёт для ОКС',
     party: 'ОКС',
+    letter: {
+      lang: 'en',
+      templateId: 'cover',
+      addressee: 'Olympic Council of Asia\nKuwait',
+      body: 'Dear colleague,\n\nPlease find enclosed the quarterly report of the National Olympic Committee of the Kyrgyz Republic for the second quarter.\n\nEnclosure: 6 pages, 1 copy.\n\nYours sincerely,',
+    },
     summary: 'Отчёт НОК КР за второй квартал.',
     attachments: ['q2_report.pdf'],
   },
@@ -173,6 +187,12 @@ const drafts: { kind: DocKind; special: Special; daysAgo: number }[] = [
       party: 'Минюст',
       summary: 'Сопроводительное письмо к официальному переводу устава.',
       author: people.nb,
+      letter: {
+        lang: 'ru',
+        templateId: 'cover',
+        addressee: 'Министерство юстиции\nКыргызской Республики',
+        body: 'Уважаемый коллега!\n\nНа Ваше письмо № 12-04/518 направляем официальный перевод устава Национального олимпийского комитета Кыргызской Республики на государственный язык.\n\nПриложение: на 18 л. в 1 экз.\n\nС уважением,',
+      },
     },
   },
   {
@@ -183,6 +203,12 @@ const drafts: { kind: DocKind; special: Special; daysAgo: number }[] = [
       party: 'АНОК',
       summary: 'Подтверждение состава делегации НОК КР.',
       author: people.ad,
+      letter: {
+        lang: 'en',
+        templateId: 'reply',
+        addressee: 'Association of National Olympic Committees\nSecretariat',
+        body: 'Dear colleague,\n\nIn reply to your letter ANOC/GA/2026-114, the National Olympic Committee of the Kyrgyz Republic confirms its participation in the General Assembly. The composition of the delegation will follow separately.\n\nYours sincerely,',
+      },
     },
   },
   {
@@ -302,6 +328,8 @@ function build(
     resolution,
     annulment,
     history: history.reverse(),
+    letter: special?.letter ?? null,
+    fingerprint: null,
   };
 }
 
@@ -346,6 +374,21 @@ export function createMockDocuments(
       }),
     ),
   ];
+
+  // Отправленные исходящие с текстом — неизменяемы, у них отпечаток содержания
+  for (const doc of docs) {
+    if (doc.kind !== 'outgoing') continue;
+    if (doc.seq !== null && !doc.letter) doc.letter = defaultLetter(doc.party, doc.summary);
+    if (doc.seq !== null && doc.letter) {
+      doc.fingerprint = letterFingerprint({
+        number: `Исх. №${doc.year}-${String(doc.seq).padStart(4, '0')}`,
+        date: doc.date,
+        title: doc.title,
+        letter: doc.letter,
+        signer: doc.signer?.short ?? '',
+      });
+    }
+  }
 
   // Срок в резолюции — срок задачи по ней (из заглушки задач)
   for (const doc of docs) {

@@ -1,5 +1,6 @@
 import type { Person } from '@/features/tasks/types';
 import type { IsoDate } from '@/shared/lib/workDays';
+import type { Letter } from './letter';
 
 /**
  * Делопроизводство: входящие, исходящие, приказы.
@@ -45,6 +46,7 @@ export type Resolution = {
 
 export type DocHistoryKind =
   | 'created'
+  | 'edited'
   | 'registered'
   | 'resolution'
   | 'done'
@@ -84,4 +86,8 @@ export type DocumentRecord = {
   resolution: Resolution | null;
   annulment: { reason: string; by: Person; at: string } | null;
   history: DocHistoryEntry[];
+  /** Текст исходящего письма на бланке; у входящих и приказов — null */
+  letter: Letter | null;
+  /** Отпечаток содержания при отправке; после него письмо не меняется */
+  fingerprint: string | null;
 };
