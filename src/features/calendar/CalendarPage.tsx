@@ -2,9 +2,9 @@ import { type ReactNode, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import { usePageSubtitle } from '@/app/layout/AppLayout';
+import { useCurrentAbsences } from '@/features/absences/api';
 import { useCan } from '@/features/auth';
 import { Avatar } from '@/features/knowledge-base/parts';
-import { mockAbsences } from '@/features/tasks/absences';
 import { useTasks } from '@/features/tasks/api';
 import { DueChips } from '@/features/tasks/board/TaskCard';
 import { urgencyOf } from '@/features/tasks/deadline';
@@ -59,7 +59,8 @@ export function CalendarPage() {
 
   const weeks = useMemo(() => monthGrid(month), [month]);
   const norm = useMemo(() => monthNorm(month), [month]);
-  const absences = useMemo(() => mockAbsences(today), [today]);
+  const absenceList = useCurrentAbsences().data;
+  const absences = useMemo(() => absenceList ?? [], [absenceList]);
   const shownLayers = useMemo(
     () => new Set([...layers].filter((l) => canTasks || l === 'absences')),
     [layers, canTasks],

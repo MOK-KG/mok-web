@@ -1,6 +1,7 @@
 import type { ComponentType, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { useCurrentAbsences } from '@/features/absences/api';
 import { useCan, useSession } from '@/features/auth';
 import { useChatUnread } from '@/features/chat/api';
 import { Avatar } from '@/features/knowledge-base/parts';
@@ -10,7 +11,6 @@ import {
   useOpenNotification,
   useVisibleNotifications,
 } from '@/features/notifications/parts';
-import { mockAbsences } from '@/features/tasks/absences';
 import { useMailQueueSummary, useTasks } from '@/features/tasks/api';
 import { DueChips } from '@/features/tasks/board/TaskCard';
 import { currentUserId } from '@/features/tasks/directory';
@@ -52,7 +52,8 @@ export function DashboardPage() {
   const canTasks = can('tasks.view');
   const tasks = useTasks('department');
   const today = todayInBishkek();
-  const summary = dashboardSummary(tasks.data ?? [], mockAbsences(today), currentUserId, today);
+  const absences = useCurrentAbsences().data ?? [];
+  const summary = dashboardSummary(tasks.data ?? [], absences, currentUserId, today);
 
   return (
     <div className="flex flex-col gap-[14px] pb-2 leading-[normal]">
@@ -386,6 +387,7 @@ function Absences({ summary }: { summary: DashboardSummary }) {
       <PanelHeader
         title={t('dashboard.absences')}
         count={String(summary.absentNow.length + summary.absentSoon.length)}
+        link={{ to: '/absences', label: t('dashboard.all') }}
       />
       {summary.absentNow.length + summary.absentSoon.length === 0 ? (
         <p className="px-[18px] pb-5 pt-2 text-[12.5px] text-dim">{t('dashboard.noAbsences')}</p>

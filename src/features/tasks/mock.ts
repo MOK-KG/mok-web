@@ -1,5 +1,5 @@
 import { addDays, type IsoDate, nextWorkingDay, todayInBishkek } from '@/shared/lib/workDays';
-import { absenceOf, isAbsentOn } from './absences';
+import { absenceOf, isAbsentOn, mockAbsences } from './absences';
 import { currentUserId, people, projects } from './directory';
 import type { HistoryEntry, Person, Project, TaskDetail, TaskStatus } from './types';
 
@@ -117,7 +117,8 @@ function make(seed: Seed, today: IsoDate): TaskDetail {
   });
 
   // Заместитель — если исполнитель сейчас в отпуске
-  const absence = absenceOf(assignee?.id, today);
+  // Отпуска заглушки на тот же «сегодня», что и задачи
+  const absence = absenceOf(assignee?.id, today, mockAbsences(today));
   const deputy = absence && isAbsentOn(absence, today) ? absence.deputy : null;
 
   return {

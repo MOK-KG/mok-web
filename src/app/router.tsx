@@ -20,6 +20,9 @@ const FilesPage = lazy(() =>
 const JournalPage = lazy(() =>
   import('@/features/journal/JournalPage').then((m) => ({ default: m.JournalPage })),
 );
+const AbsencesPage = lazy(() =>
+  import('@/features/absences/AbsencesPage').then((m) => ({ default: m.AbsencesPage })),
+);
 const TasksPage = lazy(() =>
   import('@/features/tasks/TasksPage').then((m) => ({ default: m.TasksPage })),
 );
@@ -95,6 +98,16 @@ const sectionRoutes: RouteObject[] = [
       <RequirePermission permission="journal.view">
         <JournalPage />
       </RequirePermission>,
+    ),
+  },
+  // Отпуск и командировки — всем, у кого есть вход: свои отсутствия оформляет каждый
+  {
+    path: 'absences',
+    handle: { titleKey: 'absences.title' } satisfies RouteHandle,
+    element: (
+      <Suspense fallback={null}>
+        <AbsencesPage />
+      </Suspense>
     ),
   },
   // Уведомления — всем, у кого есть вход; это не раздел меню, а экран колокольчика

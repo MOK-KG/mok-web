@@ -3,6 +3,7 @@ import { addJournalEntry, resetJournal } from '@/features/journal/store';
 import { ApiError } from '@/shared/api/errors';
 import type { FeedbackMeta } from '@/shared/api/feedback';
 import { addDays, type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
+import { deputyFor } from './absences';
 import { createMockQueue, type Letter, type Suggestion } from './mailQueue';
 import { atBishkek, createMockTasks, currentUserId, people } from './mock';
 import {
@@ -49,6 +50,14 @@ function tasksFor(tab: TaskTab): Task[] {
   }
 }
 
+/**
+ * Заместитель — по действующим отсутствиям на сегодня, а не сохранённый в задаче:
+ * оформили отпуск — задача сразу у заместителя, отпуск кончился — права заместителя
+ * прекратились сами (приёмка 11.11)
+ */
+const withDeputy = <T extends Task>(task: T): T =>
+  task.status === 'done' ? task : { ...task, deputy: deputyFor(task.assignee?.id) };
+
 export const tasksKey = ['tasks'] as const;
 
 export function useTasks(tab: TaskTab) {
@@ -57,7 +66,7 @@ export function useTasks(tab: TaskTab) {
     queryFn: async () => {
       await delay(120);
       // Копии, как от настоящего API: изменения в заглушке не должны менять уже выданные данные
-      return structuredClone(tasksFor(tab));
+      return structuredClone(tasksFor(tab)).map(withDeputy);
     },
   });
 }
@@ -227,7 +236,7 @@ export function useTask(taskId: string | null) {
     queryFn: async () => {
       await delay(80);
       const task = allTasks().find((t) => t.id === taskId);
-      return task ? structuredClone(task) : null;
+      return task ? withDeputy(structuredClone(task)) : null;
     },
   });
 }

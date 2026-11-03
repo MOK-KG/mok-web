@@ -968,7 +968,9 @@
       "documentResolved": "Resolution",
       "documentDone": "Document completed",
       "documentAnnulled": "Document annulled",
-      "journalExported": "Log export"
+      "journalExported": "Log export",
+      "absenceCreated": "Absence recorded",
+      "absenceCancelled": "Absence cancelled"
     },
     "integrityOk_one": "Chain intact · {{count}} entry checked",
     "integrityOk_other": "Chain intact · {{count}} entries checked",
@@ -992,5 +994,64 @@
     "exportSubmit": "Export CSV",
     "exportDetails": "CSV, entries: {{count}}",
     "exported": "Log exported; the export was logged"
+  },
+  "absences": {
+    "title": "Leave and business trips",
+    "subtitle_one": "{{count}} person away now",
+    "subtitle_other": "{{count}} people away now",
+    "mine": "Mine",
+    "everyone": "All staff",
+    "new": "Record an absence",
+    "group": {
+      "now": "Now",
+      "upcoming": "Upcoming",
+      "past": "Past",
+      "cancelled": "Cancelled"
+    },
+    "empty": {
+      "now": "Everyone is in.",
+      "upcoming": "Nothing planned.",
+      "past": "None yet.",
+      "cancelled": "No cancelled absences."
+    },
+    "kind": {
+      "vacation": "Leave",
+      "trip": "Business trip"
+    },
+    "kindLabel": "Type of absence",
+    "workingDays_one": "{{count}} working day",
+    "workingDays_other": "{{count}} working days",
+    "deputyIs": "Covered by {{name}}",
+    "rightsUntil": "Deputy rights: {{from}} – {{to}}, then they end automatically",
+    "cancelledBy": "Cancelled by {{by}}: {{reason}}",
+    "cancel": "Cancel",
+    "cancelTitle": "Cancel absence",
+    "cancelHint": "The record stays under “Cancelled”. {{name}}'s tasks return to them right away and {{deputy}}'s deputy rights end.",
+    "reason": "Reason",
+    "errorReason": "Enter a reason of at least 5 characters",
+    "person": "Employee",
+    "from": "From",
+    "to": "To",
+    "deputy": "Deputy",
+    "selectDeputy": "Choose a deputy",
+    "deputyHint": "You can't save without a deputy: they take over tasks and notifications for these days.",
+    "note": "Comment",
+    "notePlaceholder": {
+      "vacation": "E.g. annual paid leave",
+      "trip": "Where and why: Tashkent, OCA seminar"
+    },
+    "affectedTasks_one": "{{count}} task due in these days will go to {{name}}",
+    "affectedTasks_other": "{{count}} tasks due in these days will go to {{name}}",
+    "problem": {
+      "deputyRequired": "Choose a deputy — you can't save without one",
+      "deputySelf": "The deputy can't be the employee themselves",
+      "datesOrder": "The end date is before the start date",
+      "past": "The absence is entirely in the past",
+      "overlap": "{{name}} already has an absence {{from}} – {{to}}",
+      "deputyAbsent": "{{name}} is away {{from}} – {{to}} — choose another deputy"
+    },
+    "save": "Save",
+    "created": "Absence recorded",
+    "cancelled": "Absence cancelled"
   }
 }

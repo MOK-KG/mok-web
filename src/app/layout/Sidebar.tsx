@@ -1,7 +1,7 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import type { ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useCan, useSession, useSignOut } from '@/features/auth';
 import { useNavCounters } from '@/features/notifications/api';
 import { workDomain } from '@/shared/config/links';
@@ -17,6 +17,7 @@ import {
   FilesIcon,
   KnowledgeIcon,
   LogoutIcon,
+  PlaneIcon,
   SidebarCollapseIcon,
   SidebarExpandIcon,
   TasksIcon,
@@ -165,6 +166,7 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
   const { t } = useTranslation();
   const user = useSession().data?.user;
   const signOut = useSignOut();
+  const navigate = useNavigate();
   if (!user) return null;
 
   return (
@@ -199,6 +201,13 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
             <span className="mt-[2px] block truncate text-[11px] text-faint">{user.email}</span>
           </DropdownMenu.Label>
           <DropdownMenu.Separator className="mx-1 my-1 h-px bg-line" />
+          <DropdownMenu.Item
+            onSelect={() => navigate('/absences')}
+            className="flex h-[34px] cursor-pointer items-center gap-2 rounded-[7px] px-3 text-[12px] tracking-[-0.1px] text-sub outline-none data-[highlighted]:bg-popover-active data-[highlighted]:text-text"
+          >
+            <PlaneIcon size={15} />
+            {t('absences.title')}
+          </DropdownMenu.Item>
           <DropdownMenu.Item
             disabled={signOut.isPending}
             onSelect={() => signOut.mutate()}

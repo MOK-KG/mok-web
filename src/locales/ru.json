@@ -1034,7 +1034,9 @@
       "documentResolved": "Резолюция",
       "documentDone": "Документ исполнен",
       "documentAnnulled": "Документ аннулирован",
-      "journalExported": "Выгрузка журнала"
+      "journalExported": "Выгрузка журнала",
+      "absenceCreated": "Отсутствие оформлено",
+      "absenceCancelled": "Отсутствие отменено"
     },
     "integrityOk_one": "Цепочка цела · проверена {{count}} запись",
     "integrityOk_few": "Цепочка цела · проверено {{count}} записи",
@@ -1060,5 +1062,70 @@
     "exportSubmit": "Выгрузить CSV",
     "exportDetails": "CSV, записей: {{count}}",
     "exported": "Журнал выгружен, запись о выгрузке добавлена"
+  },
+  "absences": {
+    "title": "Отпуск и командировки",
+    "subtitle_one": "Сейчас отсутствует {{count}}",
+    "subtitle_few": "Сейчас отсутствуют {{count}}",
+    "subtitle_many": "Сейчас отсутствуют {{count}}",
+    "subtitle_other": "Сейчас отсутствуют {{count}}",
+    "mine": "Мои",
+    "everyone": "Все сотрудники",
+    "new": "Оформить отсутствие",
+    "group": {
+      "now": "Сейчас",
+      "upcoming": "Впереди",
+      "past": "Прошли",
+      "cancelled": "Отменены"
+    },
+    "empty": {
+      "now": "Сейчас все на месте.",
+      "upcoming": "Ничего не запланировано.",
+      "past": "Пока нет.",
+      "cancelled": "Отменённых нет."
+    },
+    "kind": {
+      "vacation": "Отпуск",
+      "trip": "Командировка"
+    },
+    "kindLabel": "Вид отсутствия",
+    "workingDays_one": "{{count}} рабочий день",
+    "workingDays_few": "{{count}} рабочих дня",
+    "workingDays_many": "{{count}} рабочих дней",
+    "workingDays_other": "{{count}} рабочих дня",
+    "deputyIs": "Замещает {{name}}",
+    "rightsUntil": "Права заместителя: {{from}} – {{to}}, потом прекращаются сами",
+    "cancelledBy": "Отменил {{by}}: {{reason}}",
+    "cancel": "Отменить",
+    "cancelTitle": "Отменить отсутствие",
+    "cancelHint": "Запись останется в списке «Отменены». Задачи {{name}} сразу вернутся к нему, у {{deputy}} права заместителя прекратятся.",
+    "reason": "Причина",
+    "errorReason": "Укажите причину — не короче 5 символов",
+    "person": "Сотрудник",
+    "from": "С",
+    "to": "По",
+    "deputy": "Заместитель",
+    "selectDeputy": "Выберите заместителя",
+    "deputyHint": "Без заместителя сохранить нельзя: он принимает задачи и уведомления на эти дни.",
+    "note": "Комментарий",
+    "notePlaceholder": {
+      "vacation": "Например: ежегодный оплачиваемый",
+      "trip": "Куда и зачем: Ташкент, семинар ОКС"
+    },
+    "affectedTasks_one": "{{count}} задача со сроком в эти дни будет у {{name}}",
+    "affectedTasks_few": "{{count}} задачи со сроком в эти дни будут у {{name}}",
+    "affectedTasks_many": "{{count}} задач со сроком в эти дни будут у {{name}}",
+    "affectedTasks_other": "{{count}} задачи со сроком в эти дни будут у {{name}}",
+    "problem": {
+      "deputyRequired": "Укажите заместителя — без него сохранить нельзя",
+      "deputySelf": "Заместитель не может быть самим сотрудником",
+      "datesOrder": "Дата окончания раньше даты начала",
+      "past": "Отсутствие целиком в прошлом",
+      "overlap": "У {{name}} уже есть отсутствие {{from}} – {{to}}",
+      "deputyAbsent": "{{name}} сам отсутствует {{from}} – {{to}} — выберите другого заместителя"
+    },
+    "save": "Сохранить",
+    "created": "Отсутствие оформлено",
+    "cancelled": "Отсутствие отменено"
   }
 }
