@@ -107,7 +107,8 @@ react-hook-form, zod, i18next, date-fns, dnd-kit, Biome, Vitest. Менедже�
   `shared/api/{errors,request,feedback}.ts`,
   `features/tasks/{types,directory,absences,mock,deadline,filters,list,ui,mailQueue}.ts`,
   `features/knowledge-base/{types,search,mock}.ts`, `features/chat/{types,mock,api}.ts`,
-  `features/notifications/api.ts`, `features/dashboard/summary.ts`, `locales/*.json`.
+  `features/notifications/api.ts`, `features/dashboard/summary.ts`, `features/calendar/month.ts`,
+  `locales/*.json`.
   Тесты общих файлов живут в web
 - Иконки: `shared/ui/icons.tsx` в web — источник; в mobile тот же набор путей (react-native-svg)
 - Тексты интерфейса только через i18next, ключи во всех трёх файлах `src/locales/` (ru, ky, en)

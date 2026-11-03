@@ -9,6 +9,9 @@ import { AppLayout, type RouteHandle } from './layout/AppLayout';
 const DashboardPage = lazy(() =>
   import('@/features/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })),
 );
+const CalendarPage = lazy(() =>
+  import('@/features/calendar/CalendarPage').then((m) => ({ default: m.CalendarPage })),
+);
 const TasksPage = lazy(() =>
   import('@/features/tasks/TasksPage').then((m) => ({ default: m.TasksPage })),
 );
@@ -36,6 +39,7 @@ const ArticlePage = lazy(() =>
 /** Готовые разделы; остальные пока — заглушка SectionPage */
 const sectionPages: Partial<Record<Section, () => ReactElement>> = {
   dashboard: () => <DashboardPage />,
+  calendar: () => <CalendarPage />,
   tasks: () => <TasksPage />,
   knowledge: () => <KnowledgePage />,
   access: () => <RolesPage />,

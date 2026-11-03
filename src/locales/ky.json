@@ -742,5 +742,36 @@
     "absentUntil": "{{date}} чейин",
     "absentFrom": "{{from}} – {{to}}",
     "deputy": "ордун {{name}} басат"
+  },
+  "calendar": {
+    "prev": "Мурунку ай",
+    "next": "Кийинки ай",
+    "today": "Бүгүн",
+    "layers": "Эмнени көрсөтүү",
+    "layer": {
+      "mine": "Менин мөөнөттөрүм",
+      "department": "Департаменттин мөөнөттөрү",
+      "absences": "Өргүүлөр"
+    },
+    "norm_one": "{{count}} жумуш күнү · {{hours}} саат",
+    "norm_other": "{{count}} жумуш күнү · {{hours}} саат",
+    "unofficial": "{{year}}-жылдын календары Эмгек министрлигинин буйругу боюнча али киргизиле элек: туруктуу датадагы майрамдар гана көрсөтүлдү, Орозо айт жана Курман айт белгиленген жок.",
+    "shortenedTag": "−1 с",
+    "more_one": "дагы {{count}}",
+    "more_other": "дагы {{count}}",
+    "deadlinesCount_one": "{{count}} мөөнөт",
+    "deadlinesCount_other": "{{count}} мөөнөт",
+    "absentCount_one": "{{count}} өргүүдө",
+    "absentCount_other": "{{count}} өргүүдө",
+    "hours_one": "{{count}} саат",
+    "hours_other": "{{count}} саат",
+    "deadlines": "Мөөнөттөр",
+    "noDeadlines": "Мөөнөттөр жок.",
+    "absent": "Өргүүдө",
+    "monthTitle": "Норма · {{month}}",
+    "workingDaysLabel": "Жумуш күндөрү",
+    "hoursLabel": "Саат нормасы",
+    "shortenedDays": "Бир саатка кыскартылган: {{dates}}",
+    "source": "Календарь боюнча: {{source}}"
   }
 }

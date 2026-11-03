@@ -1,4 +1,4 @@
-import { addDays, type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
+import { addDays, type IsoDate, nextWorkingDay, todayInBishkek } from '@/shared/lib/workDays';
 import { absenceOf, isAbsentOn } from './absences';
 import { currentUserId, people, projects } from './directory';
 import type { HistoryEntry, Person, Project, TaskDetail, TaskStatus } from './types';
@@ -54,7 +54,10 @@ function make(seed: Seed, today: IsoDate): TaskDetail {
   counter += 1;
   const createdDay = addDays(today, -12);
   const createdAt = atBishkek(createdDay, '16:02');
-  const due = seed.dueIn === null ? null : addDays(today, seed.dueIn);
+  // Срок — только рабочий день (CLAUDE.md, «Даты»): будущий срок на выходном — на ближайший рабочий.
+  // Прошедшие сроки не двигаем, чтобы «просрочено N дней» оставалось как в макете
+  const rawDue = seed.dueIn === null ? null : addDays(today, seed.dueIn);
+  const due = rawDue && seed.dueIn !== null && seed.dueIn > 0 ? nextWorkingDay(rawDue) : rawDue;
   const assignee = seed.assignee ?? null;
 
   const subtaskCount = typeof seed.subtasks === 'number' ? seed.subtasks : 0;

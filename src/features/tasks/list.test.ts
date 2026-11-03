@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { addDays, isWorkingDay } from '@/shared/lib/workDays';
 import { matchesQuick, sortForList } from './list';
 import { createMockTasks } from './mock';
 
@@ -25,5 +26,15 @@ describe('мобильный список задач', () => {
     ]);
     const statuses = sortForList(department, TODAY).map((t) => t.status);
     expect(statuses.slice(-8).every((s) => s === 'done')).toBe(true);
+  });
+});
+
+describe('сроки в заглушке', () => {
+  it('будущий срок — всегда рабочий день, в любой день года', () => {
+    for (let today = '2026-01-01'; today < '2027-01-01'; today = addDays(today, 1)) {
+      const { department } = createMockTasks(today);
+      const bad = department.filter((t) => t.due && t.due > today && !isWorkingDay(t.due));
+      expect(bad.map((t) => `${today}: ${t.title} → ${t.due}`)).toEqual([]);
+    }
   });
 });

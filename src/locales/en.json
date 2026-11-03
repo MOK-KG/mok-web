@@ -742,5 +742,36 @@
     "absentUntil": "until {{date}}",
     "absentFrom": "{{from}} – {{to}}",
     "deputy": "covered by {{name}}"
+  },
+  "calendar": {
+    "prev": "Previous month",
+    "next": "Next month",
+    "today": "Today",
+    "layers": "What to show",
+    "layer": {
+      "mine": "My deadlines",
+      "department": "Department deadlines",
+      "absences": "Leave"
+    },
+    "norm_one": "{{count}} working day · {{hours}} h",
+    "norm_other": "{{count}} working days · {{hours}} h",
+    "unofficial": "The {{year}} calendar has not been entered from the Ministry of Labour order yet: only fixed-date holidays are shown; Orozo Ait and Kurman Ait are not marked.",
+    "shortenedTag": "−1 h",
+    "more_one": "{{count}} more",
+    "more_other": "{{count}} more",
+    "deadlinesCount_one": "{{count}} deadline",
+    "deadlinesCount_other": "{{count}} deadlines",
+    "absentCount_one": "{{count}} on leave",
+    "absentCount_other": "{{count}} on leave",
+    "hours_one": "{{count}} hour",
+    "hours_other": "{{count}} hours",
+    "deadlines": "Deadlines",
+    "noDeadlines": "No deadlines.",
+    "absent": "On leave",
+    "monthTitle": "Norm · {{month}}",
+    "workingDaysLabel": "Working days",
+    "hoursLabel": "Hours norm",
+    "shortenedDays": "Shortened by an hour: {{dates}}",
+    "source": "Calendar source: {{source}}"
   }
 }

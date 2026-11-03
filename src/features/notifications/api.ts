@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useChatUnread } from '@/features/chat/api';
-import { addDays, todayInBishkek } from '@/shared/lib/workDays';
+import { addDays, nextWorkingDay, todayInBishkek } from '@/shared/lib/workDays';
 
 /**
  * Уведомления. Файл продублирован в web/ и mobile/ — правьте оба.
@@ -50,7 +50,7 @@ export type NotificationSettings = Record<NotificationKind, boolean>;
  */
 function createMockNotifications(now = Date.now()): AppNotification[] {
   const minutesAgo = (m: number) => new Date(now - m * 60_000).toISOString();
-  const reminderDue = addDays(todayInBishkek(), 2);
+  const reminderDue = nextWorkingDay(addDays(todayInBishkek(), 2));
   return [
     {
       id: 'n1',
@@ -92,7 +92,7 @@ function createMockNotifications(now = Date.now()): AppNotification[] {
       id: 'n5',
       kind: 'reminder',
       title: 'Напоминание · «Обновить регламент аккредитации»',
-      // Дата — в тексте сразу: срок задачи через два дня (заглушка задач, dueIn 2)
+      // Дата — в тексте сразу: срок задачи через два дня (заглушка задач, dueIn 2, на рабочий день)
       text: reminderDue,
       at: minutesAgo(24 * 60),
       read: true,
