@@ -6,6 +6,9 @@ import { type Section, sections } from '@/shared/config/permissions';
 import { AppLayout, type RouteHandle } from './layout/AppLayout';
 
 // Разделы грузятся отдельными чанками — только когда их открывают
+const DashboardPage = lazy(() =>
+  import('@/features/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })),
+);
 const TasksPage = lazy(() =>
   import('@/features/tasks/TasksPage').then((m) => ({ default: m.TasksPage })),
 );
@@ -32,6 +35,7 @@ const ArticlePage = lazy(() =>
 
 /** Готовые разделы; остальные пока — заглушка SectionPage */
 const sectionPages: Partial<Record<Section, () => ReactElement>> = {
+  dashboard: () => <DashboardPage />,
   tasks: () => <TasksPage />,
   knowledge: () => <KnowledgePage />,
   access: () => <RolesPage />,

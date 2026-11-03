@@ -44,7 +44,9 @@ export function TopBar({ title, subtitle: custom }: { title: string; subtitle?: 
   return (
     <header className="flex h-14 items-center justify-between gap-4 rounded-14 border border-line bg-panel px-5 shadow-[0_2px_10px_rgba(10,22,40,0.05)]">
       <div className="flex min-w-0 items-center gap-3">
-        <h1 className="text-[17px] font-semibold tracking-[-0.3px] text-text">{title}</h1>
+        <h1 className="shrink-0 whitespace-nowrap text-[17px] font-semibold tracking-[-0.3px] text-text">
+          {title}
+        </h1>
         <span aria-hidden className="size-[3px] shrink-0 rounded-full bg-dim" />
         <p className="truncate text-[12px] tracking-[0.1px] text-faint">{subtitle}</p>
       </div>

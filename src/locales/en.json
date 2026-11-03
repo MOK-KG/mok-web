@@ -701,5 +701,46 @@
     "emptyMentions": "No mentions",
     "showAll": "All notifications",
     "taskGone": "Task not found — it may have been closed"
+  },
+  "dashboard": {
+    "greeting": {
+      "morning": "Good morning, {{name}}",
+      "day": "Good afternoon, {{name}}",
+      "evening": "Good evening, {{name}}"
+    },
+    "dayKind": {
+      "working": "Working day",
+      "shortened": "Shortened working day",
+      "weekend": "Weekend",
+      "holiday": "Public holiday"
+    },
+    "workDaysLeft": "working days left this month: {{count}} of {{total}}",
+    "nextHoliday": "{{name}} — {{date}}",
+    "inDays_one": "in {{count}} day",
+    "inDays_other": "in {{count}} days",
+    "stats": "Summary",
+    "myTasks": "My tasks",
+    "overdue": "Overdue",
+    "soon": "Due in 2 days",
+    "mailQueue": "Emails in queue",
+    "chatUnread": "Unread in chat",
+    "shownOf": "{{shown}} of {{total}}",
+    "allTasks": "All tasks",
+    "all": "All",
+    "loading": "Loading tasks…",
+    "noTasks": "No open tasks.",
+    "toReview_one": "{{count}} task you assigned is awaiting review",
+    "toReview_other": "{{count}} tasks you assigned are awaiting review",
+    "escalations": "Escalations",
+    "escalationsHint": "Notifications for these tasks were not opened in time, so they were passed to the department director.",
+    "absences": "Who's away",
+    "noAbsences": "Everyone is in.",
+    "absent": {
+      "now": "On leave now",
+      "soon": "Leave coming up"
+    },
+    "absentUntil": "until {{date}}",
+    "absentFrom": "{{from}} – {{to}}",
+    "deputy": "covered by {{name}}"
   }
 }

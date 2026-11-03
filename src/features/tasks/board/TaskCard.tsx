@@ -39,7 +39,7 @@ function Chip({ className, children }: { className: string; children: ReactNode 
   );
 }
 
-function DueChips({ task }: { task: Task }) {
+export function DueChips({ task }: { task: Task }) {
   const { t, i18n } = useTranslation();
   if (task.status === 'done') {
     return <Chip className="bg-tone-green-bg text-tone-green">{t('tasks.doneChip')}</Chip>;

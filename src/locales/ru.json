@@ -747,5 +747,50 @@
     "emptyMentions": "Упоминаний нет",
     "showAll": "Все уведомления",
     "taskGone": "Задача не найдена — возможно, её уже закрыли"
+  },
+  "dashboard": {
+    "greeting": {
+      "morning": "Доброе утро, {{name}}",
+      "day": "Добрый день, {{name}}",
+      "evening": "Добрый вечер, {{name}}"
+    },
+    "dayKind": {
+      "working": "Рабочий день",
+      "shortened": "Сокращённый рабочий день",
+      "weekend": "Выходной",
+      "holiday": "Праздничный день"
+    },
+    "workDaysLeft": "рабочих дней до конца месяца: {{count}} из {{total}}",
+    "nextHoliday": "{{name}} — {{date}}",
+    "inDays_one": "через {{count}} день",
+    "inDays_few": "через {{count}} дня",
+    "inDays_many": "через {{count}} дней",
+    "inDays_other": "через {{count}} дня",
+    "stats": "Сводка",
+    "myTasks": "Мои задачи",
+    "overdue": "Просрочено",
+    "soon": "Срок до 2 дней",
+    "mailQueue": "Письма в очереди",
+    "chatUnread": "Непрочитанные в чате",
+    "shownOf": "{{shown}} из {{total}}",
+    "allTasks": "Все задачи",
+    "all": "Все",
+    "loading": "Загружаем задачи…",
+    "noTasks": "Открытых задач нет.",
+    "toReview_one": "{{count}} задача, поставленная вами, ждёт проверки",
+    "toReview_few": "{{count}} задачи, поставленные вами, ждут проверки",
+    "toReview_many": "{{count}} задач, поставленных вами, ждут проверки",
+    "toReview_other": "{{count}} задачи, поставленные вами, ждут проверки",
+    "escalations": "Эскалации",
+    "escalationsHint": "Уведомления по этим задачам не открыли вовремя — они переданы директору департамента.",
+    "absences": "Кто отсутствует",
+    "noAbsences": "Все на месте.",
+    "absent": {
+      "now": "Сейчас в отпуске",
+      "soon": "Скоро в отпуске"
+    },
+    "absentUntil": "до {{date}}",
+    "absentFrom": "{{from}} – {{to}}",
+    "deputy": "замещает {{name}}"
   }
 }
