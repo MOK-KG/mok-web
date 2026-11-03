@@ -1,7 +1,6 @@
 import { lazy, type ReactElement, Suspense } from 'react';
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-dom';
 import { AuthGate, LoginPage, PendingPage, RequirePermission } from '@/features/auth';
-import { SectionPage } from '@/features/sections/SectionPage';
 import { type Section, sections } from '@/shared/config/permissions';
 import { AppLayout, type RouteHandle } from './layout/AppLayout';
 
@@ -14,6 +13,9 @@ const CalendarPage = lazy(() =>
 );
 const DocumentsPage = lazy(() =>
   import('@/features/documents/DocumentsPage').then((m) => ({ default: m.DocumentsPage })),
+);
+const FilesPage = lazy(() =>
+  import('@/features/files/FilesPage').then((m) => ({ default: m.FilesPage })),
 );
 const TasksPage = lazy(() =>
   import('@/features/tasks/TasksPage').then((m) => ({ default: m.TasksPage })),
@@ -39,11 +41,12 @@ const ArticlePage = lazy(() =>
   import('@/features/knowledge-base/ArticlePage').then((m) => ({ default: m.ArticlePage })),
 );
 
-/** Готовые разделы; остальные пока — заглушка SectionPage */
-const sectionPages: Partial<Record<Section, () => ReactElement>> = {
+/** Страница каждого раздела меню; новый раздел без страницы — ошибка типов */
+const sectionPages: Record<Section, () => ReactElement> = {
   dashboard: () => <DashboardPage />,
   calendar: () => <CalendarPage />,
   documents: () => <DocumentsPage />,
+  files: () => <FilesPage />,
   tasks: () => <TasksPage />,
   knowledge: () => <KnowledgePage />,
   access: () => <RolesPage />,
@@ -73,7 +76,7 @@ const sectionRoutes: RouteObject[] = [
   ...(Object.keys(sections) as Section[]).map((section) => ({
     ...(section === 'dashboard' ? { index: true } : { path: sectionPaths[section].slice(1) }),
     handle: { section } satisfies RouteHandle,
-    element: guarded(section, sectionPages[section]?.() ?? <SectionPage />),
+    element: guarded(section, sectionPages[section]()),
   })),
   {
     path: 'knowledge/:articleId',

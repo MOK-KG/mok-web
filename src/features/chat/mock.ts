@@ -105,6 +105,7 @@ export function createMockChat(now: number = Date.now(), today: IsoDate = todayI
       me.id,
       onDay(1, '10:15'),
       'Смету на Азиатские игры отправила на согласование, жду правки до среды.',
+      { file: { name: 'Смета Азиатские игры 2026', ext: 'xlsx' } },
     ),
     msg(
       'c-medical',
@@ -119,6 +120,7 @@ export function createMockChat(now: number = Date.now(), today: IsoDate = todayI
       dt.id,
       onDay(1, '11:02'),
       'Айбек, посмотрите, пожалуйста, протокол комиссии спортсменов.',
+      { file: { name: 'Протокол комиссии спортсменов', ext: 'pdf' } },
     ),
     msg('c-dt', ad.id, onDay(1, '11:40'), 'посмотрю к среде'),
     msg('c-me', ad.id, onDay(1, '09:30'), 'Мээрим, нужна справка по медосмотрам делегации.'),
@@ -127,7 +129,9 @@ export function createMockChat(now: number = Date.now(), today: IsoDate = todayI
       kind: 'system',
       system: { kind: 'autoreply', title: vacation?.to ?? today },
     }),
-    msg('c-nb', nb.id, onDay(55, '17:10'), 'Черновик перевода готов'),
+    msg('c-nb', nb.id, onDay(55, '17:10'), 'Черновик перевода готов', {
+      file: { name: 'Устав — перевод, главы 1–4', ext: 'docx' },
+    }),
     msg('c-at', ad.id, onDay(58, '10:00'), 'Азамат, выдайте доступ Н. Бакирову к платформе.'),
     msg('c-at', 'u-at', onDay(58, '10:25'), 'Доступ выдан'),
   ];

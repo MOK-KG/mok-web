@@ -244,8 +244,9 @@ export function fetchDocuments(): DocumentRecord[] {
   );
 }
 
-export function useDocuments() {
+export function useDocuments(enabled = true) {
   return useQuery({
+    enabled,
     queryKey: [...documentsKey, 'list'],
     queryFn: async () => {
       await delay(100);

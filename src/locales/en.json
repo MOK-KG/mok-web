@@ -907,5 +907,39 @@
     "resolved": "Resolution added, task created",
     "doneToast": "Document marked completed",
     "annulledToast": "Document annulled, its number stays taken"
+  },
+  "files": {
+    "subtitle_one": "{{count}} file across sections",
+    "subtitle_other": "{{count}} files across sections",
+    "all": "All",
+    "source": {
+      "documents": "Documents",
+      "knowledge": "Knowledge base",
+      "chat": "Chat"
+    },
+    "search": "File name, location, who added it",
+    "typeFilter": "File type",
+    "anyType": "Any type",
+    "type": {
+      "pdf": "PDF",
+      "doc": "Word documents",
+      "sheet": "Spreadsheets",
+      "image": "Images",
+      "other": "Other"
+    },
+    "loading": "Collecting files…",
+    "empty": "No files yet.",
+    "nothingFound": "Nothing found. Change the search or filters.",
+    "col": {
+      "name": "File",
+      "place": "Location",
+      "addedBy": "Added by",
+      "date": "Date"
+    },
+    "download": "Download",
+    "downloadName": "Download {{name}}",
+    "kb": "KB",
+    "mb": "MB",
+    "note": "Attachments from Documents, the Knowledge base and chats you have access to. A file opens where it was attached. Task files will appear once file storage is connected."
   }
 }

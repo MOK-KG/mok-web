@@ -48,6 +48,35 @@ const find = (chatId: string) => {
   return chat;
 };
 
+/** Файл из переписки — для раздела «Файлы» */
+export type ChatFile = {
+  messageId: string;
+  chatId: string;
+  chatTitle: string;
+  name: string;
+  ext: string;
+  authorId: string | null;
+  at: string;
+};
+
+/** Файлы из переписок, где пользователь участник */
+export const fetchChatFiles = (): ChatFile[] =>
+  store.messages.flatMap((m) => {
+    const chat = store.chats.find((c) => c.id === m.chatId);
+    if (!m.file || !chat?.memberIds.includes(currentMemberId)) return [];
+    return [
+      {
+        messageId: m.id,
+        chatId: chat.id,
+        chatTitle: chat.title,
+        name: m.file.name,
+        ext: m.file.ext,
+        authorId: m.authorId,
+        at: m.at,
+      },
+    ];
+  });
+
 export function markChatRead(chatId: string) {
   const chat = find(chatId);
   const last = store.messages.filter((m) => m.chatId === chatId).at(-1);
@@ -134,6 +163,17 @@ export function useMessages(chatId: string | null) {
     queryFn: async () => {
       await delay(80);
       return chatId ? fetchMessages(chatId) : [];
+    },
+  });
+}
+
+export function useChatFiles(enabled = true) {
+  return useQuery({
+    enabled,
+    queryKey: [...chatKey, 'files'],
+    queryFn: async () => {
+      await delay(60);
+      return fetchChatFiles();
     },
   });
 }

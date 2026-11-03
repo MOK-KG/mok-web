@@ -1,9 +1,10 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/features/auth';
 import { currentUserId, people } from '@/features/tasks/directory';
+import type { Person } from '@/features/tasks/types';
 import { ApiError } from '@/shared/api/errors';
 import type { RoleCode } from '@/shared/config/permissions';
-import { todayInBishkek } from '@/shared/lib/workDays';
+import { type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
 import { createMockKnowledge, documentPool } from './mock';
 import { matchesQuery, queryStems } from './search';
 import type {
@@ -116,6 +117,42 @@ export function useKnowledge() {
     queryFn: async () => {
       await delay(120);
       return fetchKnowledge(roles);
+    },
+  });
+}
+
+/** Вложение статьи для раздела «Файлы» */
+export type KbFile = {
+  attachment: KbAttachment;
+  articleId: string;
+  articleTitle: string;
+  author: Person;
+  updatedAt: IsoDate;
+};
+
+/** Вложения статей из открытых пользователю разделов — для раздела «Файлы» */
+export function fetchKnowledgeFiles(roles: RoleCode[]): KbFile[] {
+  return store.articles
+    .filter((a) => isOpen(a.sectionId, roles))
+    .flatMap((a) =>
+      a.attachments.map((attachment) => ({
+        attachment: { ...attachment },
+        articleId: a.id,
+        articleTitle: a.title,
+        author: a.author,
+        updatedAt: a.updatedAt,
+      })),
+    );
+}
+
+export function useKnowledgeFiles(enabled = true) {
+  const roles = useRoles();
+  return useQuery({
+    enabled,
+    queryKey: [...knowledgeKey, 'files', roles],
+    queryFn: async () => {
+      await delay(80);
+      return fetchKnowledgeFiles(roles);
     },
   });
 }
