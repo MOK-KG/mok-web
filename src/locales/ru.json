@@ -700,7 +700,17 @@
     "selectChat": "Выберите переписку слева",
     "noMessages": "Сообщений пока нет — напишите первым.",
     "close": "Закрыть",
-    "back": "К списку чатов"
+    "back": "К списку чатов",
+    "thread": {
+      "replies_one": "{{count}} ответ",
+      "replies_few": "{{count}} ответа",
+      "replies_many": "{{count}} ответов",
+      "replies_other": "{{count}} ответа",
+      "last": "последний в {{time}}",
+      "reply": "Ответить в ветке",
+      "title": "Ветка",
+      "placeholder": "Ответить в ветке…"
+    }
   },
   "notifications": {
     "title": "Уведомления",
@@ -828,7 +838,21 @@
     "workingDaysLabel": "Рабочих дней",
     "hoursLabel": "Норма часов",
     "shortenedDays": "Сокращённые на час: {{dates}}",
-    "source": "По календарю: {{source}}"
+    "source": "По календарю: {{source}}",
+    "peakTag": "пик",
+    "conflict": "{{name}} в отпуске — задачу ведёт {{deputy}}",
+    "load": {
+      "title": "Загрузка месяца",
+      "calm": "Пиков нет, сроков во время отпусков нет.",
+      "peaks_one": "{{count}} день пика:",
+      "peaks_few": "{{count}} дня пика:",
+      "peaks_many": "{{count}} дней пика:",
+      "peaks_other": "{{count}} дня пика:",
+      "conflicts_one": "{{count}} срок в отпуске:",
+      "conflicts_few": "{{count}} срока в отпуске:",
+      "conflicts_many": "{{count}} сроков в отпуске:",
+      "conflicts_other": "{{count}} срока в отпуске:"
+    }
   },
   "documents": {
     "subtitle": "Делопроизводство",
@@ -1243,5 +1267,15 @@
     "loading": "Ищем…",
     "nothing": "По запросу «{{query}}» ничего не найдено.",
     "note": "Ищем только там, куда у вас есть доступ: закрытое не показывается и не учитывается в счётчиках."
+  },
+  "profile": {
+    "title": "Профиль",
+    "role": "Роль",
+    "roleNote": "Роль назначает администратор; права меняются сразу, без перезапуска.",
+    "interface": "Интерфейс",
+    "noAbsences": "Отпусков и командировок нет, вы никого не замещаете.",
+    "myAbsence": "{{kind}} {{from}} – {{to}}, замещает {{deputy}}",
+    "covering": "Вы замещаете {{name}}: {{from}} – {{to}}",
+    "save": "Сохранить"
   }
 }

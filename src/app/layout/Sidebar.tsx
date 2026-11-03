@@ -18,6 +18,7 @@ import {
   KnowledgeIcon,
   LogoutIcon,
   PlaneIcon,
+  SettingsIcon,
   SidebarCollapseIcon,
   SidebarExpandIcon,
   TasksIcon,
@@ -201,6 +202,13 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
             <span className="mt-[2px] block truncate text-[11px] text-faint">{user.email}</span>
           </DropdownMenu.Label>
           <DropdownMenu.Separator className="mx-1 my-1 h-px bg-line" />
+          <DropdownMenu.Item
+            onSelect={() => navigate('/profile')}
+            className="flex h-[34px] cursor-pointer items-center gap-2 rounded-[7px] px-3 text-[12px] tracking-[-0.1px] text-sub outline-none data-[highlighted]:bg-popover-active data-[highlighted]:text-text"
+          >
+            <SettingsIcon size={15} />
+            {t('profile.title')}
+          </DropdownMenu.Item>
           <DropdownMenu.Item
             onSelect={() => navigate('/absences')}
             className="flex h-[34px] cursor-pointer items-center gap-2 rounded-[7px] px-3 text-[12px] tracking-[-0.1px] text-sub outline-none data-[highlighted]:bg-popover-active data-[highlighted]:text-text"

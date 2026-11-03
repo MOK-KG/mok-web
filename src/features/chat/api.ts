@@ -31,13 +31,27 @@ export function fetchChats(): ChatSummary[] {
   return store.chats
     .map((chat) => {
       const own = store.messages.filter((m) => m.chatId === chat.id);
-      return structuredClone({ ...chat, last: own.at(-1) ?? null, unread: unreadOf(chat) });
+      // Последнее в ленте — без ответов в ветках, как в канале
+      const last = own.filter((m) => !m.threadId).at(-1) ?? null;
+      return structuredClone({ ...chat, last, unread: unreadOf(chat) });
     })
     .sort((a, b) => (b.last?.at ?? '').localeCompare(a.last?.at ?? ''));
 }
 
 export const fetchMessages = (chatId: string): ChatMessage[] =>
   structuredClone(store.messages.filter((m) => m.chatId === chatId));
+
+/** Ветки ответов: ID сообщения → ответы по времени */
+export function threadsOf(messages: ChatMessage[]): Map<string, ChatMessage[]> {
+  const threads = new Map<string, ChatMessage[]>();
+  for (const m of messages) {
+    if (!m.threadId) continue;
+    const list = threads.get(m.threadId) ?? [];
+    list.push(m);
+    threads.set(m.threadId, list);
+  }
+  return threads;
+}
 
 /** Всего непрочитанных — для счётчика в меню и в шапке */
 export const unreadTotal = () => store.chats.reduce((sum, c) => sum + unreadOf(c), 0);
@@ -92,7 +106,7 @@ export function markChatRead(chatId: string) {
   if (last && last.at > chat.readAt) chat.readAt = last.at;
 }
 
-export type OutgoingMessage = Pick<ChatMessage, 'text' | 'kind' | 'task' | 'file'>;
+export type OutgoingMessage = Pick<ChatMessage, 'text' | 'kind' | 'task' | 'file' | 'threadId'>;
 
 /**
  * Отправить сообщение. В личной переписке с тем, кто в отпуске, приходит автоответ

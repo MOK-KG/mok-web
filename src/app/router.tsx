@@ -26,6 +26,9 @@ const AbsencesPage = lazy(() =>
 const SearchPage = lazy(() =>
   import('@/features/search/SearchPage').then((m) => ({ default: m.SearchPage })),
 );
+const ProfilePage = lazy(() =>
+  import('@/features/profile/ProfilePage').then((m) => ({ default: m.ProfilePage })),
+);
 const TasksPage = lazy(() =>
   import('@/features/tasks/TasksPage').then((m) => ({ default: m.TasksPage })),
 );
@@ -120,6 +123,16 @@ const sectionRoutes: RouteObject[] = [
     element: (
       <Suspense fallback={null}>
         <SearchPage />
+      </Suspense>
+    ),
+  },
+  // Профиль и уведомления — у каждого свой
+  {
+    path: 'profile',
+    handle: { titleKey: 'profile.title' } satisfies RouteHandle,
+    element: (
+      <Suspense fallback={null}>
+        <ProfilePage />
       </Suspense>
     ),
   },

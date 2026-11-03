@@ -658,7 +658,15 @@
     "selectChat": "Pick a conversation on the left",
     "noMessages": "No messages yet — write the first one.",
     "close": "Close",
-    "back": "Back to chats"
+    "back": "Back to chats",
+    "thread": {
+      "replies_one": "{{count}} reply",
+      "replies_other": "{{count}} replies",
+      "last": "last at {{time}}",
+      "reply": "Reply in thread",
+      "title": "Thread",
+      "placeholder": "Reply in thread…"
+    }
   },
   "notifications": {
     "title": "Notifications",
@@ -770,7 +778,17 @@
     "workingDaysLabel": "Working days",
     "hoursLabel": "Hours norm",
     "shortenedDays": "Shortened by an hour: {{dates}}",
-    "source": "Calendar source: {{source}}"
+    "source": "Calendar source: {{source}}",
+    "peakTag": "peak",
+    "conflict": "{{name}} is on leave — {{deputy}} is handling it",
+    "load": {
+      "title": "Month load",
+      "calm": "No peaks and no deadlines during leave.",
+      "peaks_one": "{{count}} peak day:",
+      "peaks_other": "{{count}} peak days:",
+      "conflicts_one": "{{count}} deadline during leave:",
+      "conflicts_other": "{{count}} deadlines during leave:"
+    }
   },
   "documents": {
     "subtitle": "Records management",
@@ -1167,5 +1185,15 @@
     "loading": "Searching…",
     "nothing": "Nothing found for “{{query}}”.",
     "note": "We only search where you have access: closed items are not shown and not counted."
+  },
+  "profile": {
+    "title": "Profile",
+    "role": "Role",
+    "roleNote": "Roles are assigned by the administrator; rights change immediately, without restarting.",
+    "interface": "Interface",
+    "noAbsences": "No leave or trips, and you aren't covering for anyone.",
+    "myAbsence": "{{kind}} {{from}} – {{to}}, covered by {{deputy}}",
+    "covering": "You're covering for {{name}}: {{from}} – {{to}}",
+    "save": "Save"
   }
 }

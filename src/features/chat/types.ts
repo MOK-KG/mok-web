@@ -33,6 +33,8 @@ export type ChatMessage = {
    * autoreply — title дата конца отпуска (IsoDate), text заместитель
    */
   system?: { kind: 'escalation' | 'autoreply'; title: string };
+  /** Ответ в ветке (S-33): ID сообщения, к которому ветка; в общей ленте канала не показывается */
+  threadId?: string;
   /** Файл: в заглушке хранится только имя */
   file?: { name: string; ext: string };
 };

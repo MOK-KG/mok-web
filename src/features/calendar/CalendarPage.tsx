@@ -5,6 +5,7 @@ import { usePageSubtitle } from '@/app/layout/AppLayout';
 import { useCurrentAbsences } from '@/features/absences/api';
 import { useCan } from '@/features/auth';
 import { Avatar } from '@/features/knowledge-base/parts';
+import { absenceOf } from '@/features/tasks/absences';
 import { useTasks } from '@/features/tasks/api';
 import { DueChips } from '@/features/tasks/board/TaskCard';
 import { urgencyOf } from '@/features/tasks/deadline';
@@ -22,9 +23,13 @@ import {
   eventsByDay,
   holidayRanges,
   isIsoMonth,
+  loadLevel,
+  type MonthLoad,
   monthGrid,
+  monthLoad,
   monthNorm,
   monthOf,
+  PEAK_DEADLINES,
   shiftMonth,
 } from './month';
 
@@ -76,6 +81,8 @@ export function CalendarPage() {
       ),
     [weeks, selected, tasks.data, absences, shownLayers, canTasks],
   );
+
+  const load = useMemo(() => monthLoad(events, month), [events, month]);
 
   const monthTitle = capitalize(formatIsoDate(`${month}-01`, 'LLLL yyyy', i18n.language));
   usePageSubtitle(
@@ -210,7 +217,14 @@ export function CalendarPage() {
           </div>
         </section>
 
-        <DayPanel day={selected} events={events.get(selected)} month={month} norm={norm} />
+        <DayPanel
+          day={selected}
+          events={events.get(selected)}
+          month={month}
+          norm={norm}
+          load={load}
+          onPick={pick}
+        />
       </div>
     </div>
   );
@@ -237,6 +251,8 @@ function DayCell({
   const deadlines = events?.deadlines ?? [];
   const absences = events?.absences ?? [];
   const more = deadlines.length - CELL_DEADLINES;
+  const peak = loadLevel(events) === 3;
+  const conflictIds = new Set((events?.conflicts ?? []).map((c) => c.id));
   const label = [
     formatIsoDate(day, 'EEEE, d MMMM', i18n.language),
     type.type === 'holiday' ? t(`holidays.${type.holiday}`) : null,
@@ -253,7 +269,7 @@ function DayCell({
       aria-pressed={selected}
       onClick={onPick}
       className={`relative flex min-w-0 flex-col gap-1 border-b border-r border-line p-[6px] text-left transition-colors [&:nth-child(7n)]:border-r-0 ${
-        off ? 'bg-surface' : ''
+        peak ? 'bg-warning-soft' : off ? 'bg-surface' : ''
       } ${selected ? 'outline outline-2 -outline-offset-2 outline-info' : 'hover:bg-row-highlight'} ${
         inMonth ? '' : 'opacity-45'
       }`}
@@ -282,13 +298,21 @@ function DayCell({
             {t('calendar.shortenedTag')}
           </span>
         )}
+        {peak && (
+          <span className="ml-auto rounded-[4px] bg-warning-chip px-[5px] text-[9.5px] font-semibold text-warning-text">
+            {t('calendar.peakTag')}
+          </span>
+        )}
       </span>
       {deadlines.slice(0, CELL_DEADLINES).map((task) => (
         <span
           key={task.id}
-          className={`truncate rounded-[5px] px-[6px] py-[2px] text-[10.5px] ${deadlineChip(task)}`}
+          className={`flex min-w-0 items-center gap-1 rounded-[5px] px-[6px] py-[2px] text-[10.5px] ${deadlineChip(task)} ${
+            conflictIds.has(task.id) ? 'ring-1 ring-inset ring-tone-cyan' : ''
+          }`}
         >
-          {task.title}
+          {conflictIds.has(task.id) && <PlaneIcon size={10} className="shrink-0 text-tone-cyan" />}
+          <span className="truncate">{task.title}</span>
         </span>
       ))}
       {more > 0 && (
@@ -322,11 +346,15 @@ function DayPanel({
   events,
   month,
   norm,
+  load,
+  onPick,
 }: {
   day: IsoDate;
   events: DayEvents | undefined;
   month: string;
   norm: ReturnType<typeof monthNorm>;
+  load: MonthLoad;
+  onPick: (day: IsoDate) => void;
 }) {
   const { t, i18n } = useTranslation();
   const type = dayType(day);
@@ -370,6 +398,16 @@ function DayPanel({
                     <DueChips task={task} />
                     {task.assignee && <span>{task.assignee.short}</span>}
                   </p>
+                  {events?.conflicts.some((c) => c.id === task.id) && (
+                    <p className="mt-[5px] flex items-center gap-[5px] text-[11px] text-tone-cyan">
+                      <PlaneIcon size={11} className="shrink-0" />
+                      {t('calendar.conflict', {
+                        name: task.assignee?.short,
+                        // Заместитель — по отпуску на этот день, даже если слой отпусков скрыт
+                        deputy: absenceOf(task.assignee?.id, day)?.deputy.short ?? '—',
+                      })}
+                    </p>
+                  )}
                 </Link>
               </li>
             ))}
@@ -398,6 +436,74 @@ function DayPanel({
           </ul>
         )}
       </PanelSection>
+
+      <section className="border-b border-line px-5 pb-3 pt-4">
+        <h3 className="text-[10px] font-semibold uppercase tracking-[1.4px] text-dim">
+          {t('calendar.load.title')}
+        </h3>
+        {load.peaks.length === 0 && load.conflicts.length === 0 ? (
+          <p className="mt-2 text-[12px] text-dim">{t('calendar.load.calm')}</p>
+        ) : (
+          <div className="mt-2 flex flex-col gap-2 text-[12px]">
+            {load.peaks.length > 0 && (
+              <p className="text-sub">
+                <span className="font-medium text-warning-text">
+                  {t('calendar.load.peaks', { count: load.peaks.length })}
+                </span>{' '}
+                {load.peaks.map((d, i) => (
+                  <span key={d}>
+                    {i > 0 && ', '}
+                    <button
+                      type="button"
+                      onClick={() => onPick(d)}
+                      className="text-info hover:underline"
+                    >
+                      {date(d)}
+                    </button>
+                  </span>
+                ))}
+              </p>
+            )}
+            {load.conflicts.length > 0 && (
+              <p className="text-sub">
+                <span className="font-medium text-tone-cyan">
+                  {t('calendar.load.conflicts', { count: load.conflicts.length })}
+                </span>{' '}
+                {load.conflicts.map(({ day: d, task }, i) => (
+                  <span key={task.id}>
+                    {i > 0 && ', '}
+                    <button
+                      type="button"
+                      onClick={() => onPick(d)}
+                      className="text-info hover:underline"
+                    >
+                      {date(d)} · {task.assignee?.short}
+                    </button>
+                  </span>
+                ))}
+              </p>
+            )}
+          </div>
+        )}
+        {load.byPerson.length > 0 && (
+          <ul className="mt-3 flex flex-col gap-[5px]">
+            {load.byPerson.slice(0, 5).map((p) => (
+              <li key={p.id} className="flex items-center gap-2 text-[11.5px]">
+                <span className="w-[110px] truncate text-sub">{p.short}</span>
+                <span className="h-[6px] flex-1 overflow-hidden rounded-full bg-chip">
+                  <span
+                    className={`block h-full rounded-full ${p.count >= PEAK_DEADLINES * 2 ? 'bg-warning' : 'bg-info'}`}
+                    style={{
+                      width: `${Math.min(100, (p.count / (load.byPerson[0]?.count || 1)) * 100)}%`,
+                    }}
+                  />
+                </span>
+                <span className="w-5 text-right text-dim">{p.count}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <div className="mt-auto border-t border-line px-5 py-4">
         <h3 className="text-[10px] font-semibold uppercase tracking-[1.4px] text-dim">

@@ -1,3 +1,4 @@
+import * as Dialog from '@radix-ui/react-dialog';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Fragment, type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,11 +15,13 @@ import {
   PaperclipIcon,
   SendIcon,
   TasksIcon,
+  XIcon,
 } from '@/shared/ui/icons';
 import { Tooltip } from '@/shared/ui/Tooltip';
 import {
   chatMembers,
   currentMemberId,
+  threadsOf,
   useMarkChatRead,
   useMessages,
   useSendMessage,
@@ -41,7 +44,12 @@ import type { ChatMessage, ChatSummary } from './types';
 /** Открытая переписка: шапка, сообщения по дням, поле ввода */
 export function Conversation({ chat }: { chat: ChatSummary }) {
   const { t } = useTranslation();
-  const messages = useMessages(chat.id).data ?? [];
+  const all = useMessages(chat.id).data ?? [];
+  // Ответы в ветках — не в общей ленте, а под сообщением: «2 ответа»
+  const messages = all.filter((m) => !m.threadId);
+  const threads = threadsOf(all);
+  const [thread, setThread] = useState<string | null>(null);
+  const threadRoot = thread ? all.find((m) => m.id === thread) : undefined;
   const markRead = useMarkChatRead();
   const dayLabel = useDayLabel();
   const end = useRef<HTMLDivElement>(null);
@@ -76,13 +84,26 @@ export function Conversation({ chat }: { chat: ChatSummary }) {
                   <span className="h-px flex-1 bg-line" />
                 </div>
               )}
-              <Message message={m} peerName={chat.peerId ? chatMembers[chat.peerId]?.name : ''} />
+              <Message
+                message={m}
+                peerName={chat.peerId ? chatMembers[chat.peerId]?.name : ''}
+                replies={threads.get(m.id)}
+                onThread={chat.kind === 'channel' ? () => setThread(m.id) : undefined}
+              />
             </Fragment>
           );
         })}
         <div ref={end} />
       </div>
       <Composer chat={chat} />
+      {threadRoot && (
+        <ThreadPanel
+          chat={chat}
+          root={threadRoot}
+          replies={threads.get(threadRoot.id) ?? []}
+          onClose={() => setThread(null)}
+        />
+      )}
     </>
   );
 }
@@ -178,13 +199,26 @@ function Header({ chat }: { chat: ChatSummary }) {
   );
 }
 
-function Message({ message: m, peerName }: { message: ChatMessage; peerName?: string }) {
+function Message({
+  message: m,
+  peerName,
+  replies,
+  onThread,
+}: {
+  message: ChatMessage;
+  peerName?: string;
+  /** Ответы в ветке к этому сообщению */
+  replies?: ChatMessage[];
+  /** Открыть ветку; только в каналах департаментов */
+  onThread?: () => void;
+}) {
+  const { t } = useTranslation();
   if (m.kind === 'system') return <SystemMessage message={m} peerName={peerName ?? ''} />;
   if (m.kind === 'task') return <TaskCard message={m} />;
   const author = m.authorId ? chatMembers[m.authorId] : null;
   if (!author) return null;
   return (
-    <article className="mt-[10px] flex gap-[10px] py-1">
+    <article className="group mt-[10px] flex gap-[10px] py-1">
       <MemberAvatar member={author} />
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-2">
@@ -206,6 +240,27 @@ function Message({ message: m, peerName }: { message: ChatMessage; peerName?: st
             {m.file.ext && <span className="text-[10.5px] text-dim">{m.file.ext}</span>}
           </span>
         )}
+        {onThread &&
+          (replies && replies.length > 0 ? (
+            <button
+              type="button"
+              onClick={onThread}
+              className="mt-[6px] flex items-center gap-2 text-[12px] font-medium text-info hover:underline"
+            >
+              {t('chat.thread.replies', { count: replies.length })}
+              <span className="font-normal text-dim">
+                {t('chat.thread.last', { time: timeOf(replies[replies.length - 1].at) })}
+              </span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onThread}
+              className="mt-[4px] text-[11.5px] text-faint opacity-0 hover:text-info focus-visible:opacity-100 group-hover:opacity-100"
+            >
+              {t('chat.thread.reply')}
+            </button>
+          ))}
       </div>
     </article>
   );
@@ -412,5 +467,79 @@ function Composer({ chat }: { chat: ChatSummary }) {
         }}
       />
     </div>
+  );
+}
+
+/** Ветка ответов к сообщению канала (S-33): справа, со своим полем ввода */
+function ThreadPanel({
+  chat,
+  root,
+  replies,
+  onClose,
+}: {
+  chat: ChatSummary;
+  root: ChatMessage;
+  replies: ChatMessage[];
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const send = useSendMessage();
+  const [text, setText] = useState('');
+  const submit = () => {
+    const clean = text.trim();
+    if (!clean) return;
+    send.mutate({ chatId: chat.id, message: { kind: 'text', text: clean, threadId: root.id } });
+    setText('');
+  };
+  return (
+    <Dialog.Root open onOpenChange={(o) => !o && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-[rgba(3,6,12,0.35)]" />
+        <Dialog.Content
+          aria-describedby={undefined}
+          className="fixed inset-y-4 right-4 z-50 flex w-[min(440px,calc(100vw-32px))] flex-col overflow-hidden rounded-18 border border-line bg-panel shadow-[0_20px_60px_rgba(0,0,0,0.5)]"
+        >
+          <div className="border-b border-line px-5 py-4 pr-14">
+            <Dialog.Title className="text-[14px] font-semibold text-text">
+              {t('chat.thread.title')}
+            </Dialog.Title>
+            <p className="mt-[2px] text-[11.5px] text-faint">{chat.fullTitle}</p>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-3">
+            <Message message={root} />
+            <p className="my-3 flex items-center gap-3 text-[10.5px] text-dim">
+              <span className="h-px flex-1 bg-line" />
+              {t('chat.thread.replies', { count: replies.length })}
+              <span className="h-px flex-1 bg-line" />
+            </p>
+            {replies.map((r) => (
+              <Message key={r.id} message={r} />
+            ))}
+          </div>
+          <div className="border-t border-line p-3">
+            <textarea
+              aria-label={t('chat.thread.placeholder')}
+              placeholder={t('chat.thread.placeholder')}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  submit();
+                }
+              }}
+              rows={2}
+              className="w-full resize-none rounded-9 border border-line bg-column px-3 py-2 text-[13px] text-text outline-none placeholder:text-dim focus:border-info"
+            />
+          </div>
+          <Dialog.Close
+            aria-label={t('taskCard.close')}
+            className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-8 text-faint hover:bg-row-highlight hover:text-text"
+          >
+            <XIcon size={16} />
+          </Dialog.Close>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

@@ -124,7 +124,57 @@ export type DayEvents = {
   deadlines: Task[];
   /** Кто в отпуске в этот день */
   absences: Absence[];
+  /** Сроки, у исполнителя которых в этот день отпуск — задачу ведёт заместитель */
+  conflicts: Task[];
 };
+
+/** С какого числа сроков в день — пик загрузки */
+export const PEAK_DEADLINES = 3;
+
+/** Загрузка дня: 0 — сроков нет, 1–2 — обычная, 3 — пик */
+export const loadLevel = (events: DayEvents | undefined): 0 | 1 | 2 | 3 => {
+  const n = events?.deadlines.length ?? 0;
+  return n >= PEAK_DEADLINES ? 3 : n >= 2 ? 2 : n === 1 ? 1 : 0;
+};
+
+export type MonthLoad = {
+  /** Дни месяца с пиком сроков */
+  peaks: IsoDate[];
+  /** Сроки во время отпуска исполнителя */
+  conflicts: { day: IsoDate; task: Task }[];
+  /** Сколько сроков у каждого исполнителя в месяце, больше — выше */
+  byPerson: { id: string; short: string; count: number }[];
+};
+
+/** Загрузка месяца (S-04): пики сроков, конфликты с отпусками, сроки по людям */
+export function monthLoad(events: Map<IsoDate, DayEvents>, month: IsoMonth): MonthLoad {
+  const peaks: IsoDate[] = [];
+  const conflicts: MonthLoad['conflicts'] = [];
+  const people = new Map<string, { id: string; short: string; count: number }>();
+  for (const day of daysOf(month)) {
+    const e = events.get(day);
+    if (!e) continue;
+    if (loadLevel(e) === 3) peaks.push(day);
+    for (const task of e.conflicts) conflicts.push({ day, task });
+    for (const task of e.deadlines) {
+      if (!task.assignee) continue;
+      const p = people.get(task.assignee.id) ?? {
+        id: task.assignee.id,
+        short: task.assignee.short,
+        count: 0,
+      };
+      p.count += 1;
+      people.set(p.id, p);
+    }
+  }
+  return {
+    peaks,
+    conflicts,
+    byPerson: [...people.values()].sort(
+      (a, b) => b.count - a.count || a.short.localeCompare(b.short, 'ru'),
+    ),
+  };
+}
 
 /**
  * События по дням для показанных дней: сроки незакрытых задач и отпуска.
@@ -140,12 +190,19 @@ export function eventsByDay(
   const result = new Map<IsoDate, DayEvents>();
   // Повторы дней (выбранный день и он же в сетке) не удваивают события
   const shown = new Set(days);
-  for (const day of shown) result.set(day, { deadlines: [], absences: [] });
+  for (const day of shown) result.set(day, { deadlines: [], absences: [], conflicts: [] });
 
   for (const task of tasks) {
     if (!task.due || task.status === 'done' || !shown.has(task.due)) continue;
     const layer: CalendarLayer = task.assignee?.id === userId ? 'mine' : 'department';
-    if (layers.has(layer)) result.get(task.due)?.deadlines.push(task);
+    if (!layers.has(layer)) continue;
+    const events = result.get(task.due);
+    events?.deadlines.push(task);
+    // Конфликт считается по всем отпускам, даже если слой отпусков скрыт
+    const away = absences.some(
+      (a) => a.person.id === task.assignee?.id && isAbsentOn(a, task.due as IsoDate),
+    );
+    if (away) events?.conflicts.push(task);
   }
   if (layers.has('absences')) {
     for (const day of shown) {

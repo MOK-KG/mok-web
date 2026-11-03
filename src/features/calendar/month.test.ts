@@ -8,7 +8,9 @@ import {
   dayType,
   eventsByDay,
   holidayRanges,
+  loadLevel,
   monthGrid,
+  monthLoad,
   monthNorm,
   shiftMonth,
   weekdayOf,
@@ -118,5 +120,34 @@ describe('события по дням', () => {
     expect(twice.get(TODAY)?.absences).toHaveLength(2);
     const off = eventsByDay(days, [], absences, new Set(['mine']), currentUserId);
     expect([...off.values()].every((e) => e.absences.length === 0)).toBe(true);
+  });
+});
+
+describe('загрузка (S-04)', () => {
+  const { department } = createMockTasks(TODAY);
+  const days = monthGrid('2026-09').flat();
+  const all = new Set<CalendarLayer>(calendarLayers);
+
+  it('срок во время отпуска исполнителя — конфликт, даже если слой отпусков скрыт', () => {
+    const absences = mockAbsences(TODAY);
+    // Н. Бакиров в отпуске до 22 сентября, «Перевод устава» — срок 18 сентября
+    for (const layers of [all, new Set<CalendarLayer>(['mine', 'department'])]) {
+      const events = eventsByDay(days, department, absences, layers, currentUserId);
+      expect(events.get('2026-09-18')?.conflicts.map((t) => t.title)).toContain(
+        'Перевод устава на кыргызский язык',
+      );
+    }
+    const load = monthLoad(eventsByDay(days, department, absences, all, currentUserId), '2026-09');
+    expect(load.conflicts.some((c) => c.task.assignee?.short === 'Н. Бакиров')).toBe(true);
+  });
+
+  it('пик — от трёх сроков в день; по людям — по убыванию', () => {
+    const extra = department.slice(0, 3).map((t) => ({ ...t, id: `${t.id}-x`, due: '2026-09-24' }));
+    const events = eventsByDay(days, [...department, ...extra], [], all, currentUserId);
+    expect(loadLevel(events.get('2026-09-24'))).toBe(3);
+    const load = monthLoad(events, '2026-09');
+    expect(load.peaks).toContain('2026-09-24');
+    const counts = load.byPerson.map((p) => p.count);
+    expect([...counts].sort((a, b) => b - a)).toEqual(counts);
   });
 });

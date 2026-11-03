@@ -68,6 +68,13 @@ export function createMockChat(now: number = Date.now(), today: IsoDate = todayI
       onDay(1, '16:34'),
       'Спасибо. По уставу черновик глав 1–4 готов, отдал юристу на сверку.',
     ),
+    // Ветка к сообщению Н. Бакирова (S-33): ответы не попадают в общую ленту канала
+    msg('c-admin', ka.id, onDay(1, '16:48'), 'Сверку перевода с юристом начну завтра с утра.', {
+      threadId: 'm-2',
+    }),
+    msg('c-admin', ad.id, onDay(1, '17:02'), 'Хорошо. Главы 5–9 нужны к пятнице.', {
+      threadId: 'm-2',
+    }),
     msg(
       'c-admin',
       ad.id,
