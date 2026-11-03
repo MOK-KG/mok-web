@@ -75,7 +75,8 @@ describe('права доступа', () => {
   it('с правом раздел открывается', async () => {
     signInAs('R6');
     await render('/documents');
-    await waitFor(() => text().includes('Раздел в разработке'));
+    // Делопроизводство (R6) видит входящие и может регистрировать
+    await waitFor(() => text().includes('Зарегистрировать входящий'));
     expect(text()).not.toContain('Нет доступа');
   });
 

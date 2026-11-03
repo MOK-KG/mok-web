@@ -12,6 +12,9 @@ const DashboardPage = lazy(() =>
 const CalendarPage = lazy(() =>
   import('@/features/calendar/CalendarPage').then((m) => ({ default: m.CalendarPage })),
 );
+const DocumentsPage = lazy(() =>
+  import('@/features/documents/DocumentsPage').then((m) => ({ default: m.DocumentsPage })),
+);
 const TasksPage = lazy(() =>
   import('@/features/tasks/TasksPage').then((m) => ({ default: m.TasksPage })),
 );
@@ -40,6 +43,7 @@ const ArticlePage = lazy(() =>
 const sectionPages: Partial<Record<Section, () => ReactElement>> = {
   dashboard: () => <DashboardPage />,
   calendar: () => <CalendarPage />,
+  documents: () => <DocumentsPage />,
   tasks: () => <TasksPage />,
   knowledge: () => <KnowledgePage />,
   access: () => <RolesPage />,

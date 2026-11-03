@@ -485,7 +485,7 @@
     "docParty": "Correspondent",
     "docIssuer": "Issued by",
     "docArticles": "Articles with this document",
-    "docNote": "Resolutions, the file and the document's history will be in the Records section once it's connected.",
+    "docNote": "Resolutions, files and the document log are in Documents.",
     "access": "Access",
     "accessMenu": "Access…",
     "accessTitle": "Access to “{{name}}”",
@@ -499,7 +499,8 @@
     "errorAccessRoles": "Select at least one role",
     "accessLoseOwn": "Your role isn't selected: after saving you'll no longer see this section's articles.",
     "accessSaved": "Section access saved",
-    "openTo": "Open to roles: {{roles}}"
+    "openTo": "Open to roles: {{roles}}",
+    "docOpen": "Open in Documents"
   },
   "access": {
     "usersTab": "Users",
@@ -773,5 +774,138 @@
     "hoursLabel": "Hours norm",
     "shortenedDays": "Shortened by an hour: {{dates}}",
     "source": "Calendar source: {{source}}"
+  },
+  "documents": {
+    "subtitle": "Records management",
+    "waitingSubtitle_one": "{{count}} incoming document awaits a resolution",
+    "waitingSubtitle_other": "{{count}} incoming documents await a resolution",
+    "tab": {
+      "incoming": "Incoming",
+      "outgoing": "Outgoing",
+      "order": "Orders"
+    },
+    "kind": {
+      "incoming": "Incoming",
+      "outgoing": "Outgoing",
+      "order": "Order"
+    },
+    "status": {
+      "draft": "Draft",
+      "registered": "Awaiting resolution",
+      "inWork": "In progress",
+      "done": "Completed",
+      "sent": "Sent",
+      "signed": "Signed",
+      "annulled": "Annulled"
+    },
+    "new": {
+      "incoming": "Register incoming",
+      "outgoing": "New outgoing",
+      "order": "New order"
+    },
+    "search": "Number, subject, correspondent",
+    "statusFilter": "Status",
+    "all": "All",
+    "loading": "Loading documents…",
+    "empty": "No documents.",
+    "nothingFound": "Nothing found. Change the search or status.",
+    "notFound": "Document not found.",
+    "col": {
+      "number": "Number",
+      "date": "Date",
+      "party": {
+        "incoming": "From",
+        "outgoing": "To"
+      },
+      "title": "Subject",
+      "status": "Status"
+    },
+    "shownOf": "Showing {{shown}} of {{total}}",
+    "showMore": "Show more",
+    "noNumber": "No number",
+    "field": {
+      "kind": "Type",
+      "date": {
+        "draft": "Created",
+        "incoming": "Registered",
+        "outgoing": "Sent",
+        "order": "Signed"
+      },
+      "from": "From",
+      "to": "To",
+      "senderRef": "Sender's reference",
+      "author": {
+        "incoming": "Registered by",
+        "outgoing": "Prepared by",
+        "order": "Prepared by"
+      },
+      "signer": "Signed by"
+    },
+    "annulledTitle": "Annulled",
+    "numberKept": "number {{number}} stays taken",
+    "resolution": "Resolution",
+    "dueTo": "due {{date}}",
+    "openTask": "Open task {{code}}",
+    "resolutionHint": "The resolution creates a task for the assignee with this due date.",
+    "action": {
+      "resolve": "Add resolution",
+      "done": "Mark completed",
+      "issue": {
+        "outgoing": "Send",
+        "order": "Sign"
+      },
+      "annul": "Annul"
+    },
+    "issueHint": "The number is issued when the document is sent or signed — sequential, with no gaps.",
+    "annulHint": "The document stays in the list marked “Annulled”; number {{number}} will not be freed. Documents cannot be deleted.",
+    "annulDraftHint": "The draft stays in the list marked “Annulled”. Documents cannot be deleted.",
+    "articles": "Knowledge base articles",
+    "history": "Document log",
+    "historyKind": {
+      "created": "created the draft",
+      "registered": "registered",
+      "resolution": "added a resolution",
+      "done": "marked completed",
+      "sent": "sent",
+      "signed": "signed",
+      "annulled": "annulled"
+    },
+    "cancel": "Cancel",
+    "form": {
+      "hint": {
+        "incoming": "The number is issued right away on registration.",
+        "outgoing": "This is a draft: the number is issued when it is sent.",
+        "order": "This is a draft: the number is issued when it is signed."
+      },
+      "title": "Subject",
+      "titlePlaceholder": "What the document is about",
+      "errorTitle": "Enter a subject of at least 3 characters",
+      "party": {
+        "incoming": "From",
+        "outgoing": "To"
+      },
+      "errorParty": "Enter the correspondent",
+      "senderRef": "Sender's reference",
+      "summary": "Summary",
+      "attach": "Attach files",
+      "removeFile": "Remove file {{name}}",
+      "submit": {
+        "incoming": "Register",
+        "outgoing": "Create draft",
+        "order": "Create draft"
+      },
+      "resolutionText": "Resolution text",
+      "resolutionPlaceholder": "E.g. “Prepare a reply and agree it with me”",
+      "errorResolution": "Write the resolution",
+      "submitResolution": "Add and create task",
+      "reason": "Reason",
+      "errorReason": "Enter a reason of at least 5 characters"
+    },
+    "registered": "Registered {{number}}",
+    "draftCreated": "Draft “{{title}}” created",
+    "issued": "Document number {{number}} issued",
+    "resolved": "Resolution added, task created",
+    "doneToast": "Document marked completed",
+    "annulledToast": "Document annulled, its number stays taken"
   }
 }

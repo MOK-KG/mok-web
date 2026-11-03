@@ -26,7 +26,17 @@ let queue: Letter[] = createMockQueue();
 export type JournalEntry = {
   at: string;
   author: string;
-  action: 'mailRejected' | 'mailAccepted' | 'roleChanged' | 'userInvited' | 'userDeactivated';
+  action:
+    | 'mailRejected'
+    | 'mailAccepted'
+    | 'roleChanged'
+    | 'userInvited'
+    | 'userDeactivated'
+    | 'documentRegistered'
+    | 'documentSent'
+    | 'documentResolved'
+    | 'documentDone'
+    | 'documentAnnulled';
   details: string;
 };
 const journal: JournalEntry[] = [];

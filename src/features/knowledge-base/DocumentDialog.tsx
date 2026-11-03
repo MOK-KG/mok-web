@@ -1,6 +1,8 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { useCan } from '@/features/auth';
+import { findByRef } from '@/features/documents/api';
 import { BookIcon, DocSmallIcon, XIcon } from '@/shared/ui/icons';
 import { useDocumentArticles } from './api';
 import { capsTitle } from './parts';
@@ -29,8 +31,8 @@ export function parseDocumentNumber(number: string): {
 }
 
 /**
- * Карточка связанного документа. Пока раздела «Делопроизводство» нет — номер, тип,
- * корреспондент и статьи, где документ упомянут; полная карточка появится в том разделе.
+ * Карточка связанного документа: номер, тип, корреспондент и статьи, где документ упомянут.
+ * Полная карточка — резолюция, файлы, журнал — в разделе «Документы» (ссылка, если есть право).
  */
 export function DocumentDialog({
   document: doc,
@@ -42,6 +44,8 @@ export function DocumentDialog({
   const { t } = useTranslation();
   const articles = useDocumentArticles(doc);
   const parsed = doc ? parseDocumentNumber(doc.number) : null;
+  const { can } = useCan();
+  const docId = doc ? findByRef(doc.number) : null;
   const row = 'flex gap-3 py-[7px] text-[12px]';
 
   return (
@@ -98,7 +102,18 @@ export function DocumentDialog({
                 ))}
               </ul>
 
-              <p className="mt-4 text-[11px] leading-4 text-dim">{t('knowledge.docNote')}</p>
+              {docId && can('documents.view') ? (
+                <Link
+                  to={`/documents?kind=${parsed.kind}&doc=${docId}`}
+                  onClick={onClose}
+                  className="mt-4 inline-flex items-center gap-2 text-[12px] font-medium text-info hover:underline"
+                >
+                  <DocSmallIcon size={14} />
+                  {t('knowledge.docOpen')}
+                </Link>
+              ) : (
+                <p className="mt-4 text-[11px] leading-4 text-dim">{t('knowledge.docNote')}</p>
+              )}
             </>
           )}
           <Dialog.Close

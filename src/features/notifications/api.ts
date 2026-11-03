@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useChatUnread } from '@/features/chat/api';
+import { useAwaitingResolution } from '@/features/documents/api';
 import { addDays, nextWorkingDay, todayInBishkek } from '@/shared/lib/workDays';
 
 /**
@@ -172,8 +173,9 @@ export function useSaveNotificationSettings() {
   });
 }
 
-/** Счётчики меню: непрочитанные в чате — из чата; документы — ЗАГЛУШКА до раздела */
+/** Счётчики меню: непрочитанные в чате; входящие, ждущие резолюции */
 export function useNavCounters(): Partial<Record<'chat' | 'documents', number>> {
   const chat = useChatUnread();
-  return { chat: chat || undefined, documents: 6 };
+  const documents = useAwaitingResolution();
+  return { chat: chat || undefined, documents: documents || undefined };
 }
