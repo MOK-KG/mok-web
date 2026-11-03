@@ -117,7 +117,7 @@ export function DocumentsPage() {
               className="min-w-0 flex-1 bg-transparent text-text outline-none placeholder:text-dim"
             />
           </label>
-          {can('documents.register') && (
+          {can(kind === 'incoming' ? 'documents.register' : 'documents.create') && (
             <button type="button" className={primaryButton} onClick={() => setCreating(kind)}>
               <PlusIcon size={15} />
               {t(`documents.new.${kind}`)}

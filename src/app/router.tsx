@@ -17,6 +17,9 @@ const DocumentsPage = lazy(() =>
 const FilesPage = lazy(() =>
   import('@/features/files/FilesPage').then((m) => ({ default: m.FilesPage })),
 );
+const JournalPage = lazy(() =>
+  import('@/features/journal/JournalPage').then((m) => ({ default: m.JournalPage })),
+);
 const TasksPage = lazy(() =>
   import('@/features/tasks/TasksPage').then((m) => ({ default: m.TasksPage })),
 );
@@ -82,6 +85,17 @@ const sectionRoutes: RouteObject[] = [
     path: 'knowledge/:articleId',
     handle: { section: 'knowledge' } satisfies RouteHandle,
     element: guarded('knowledge', <ArticlePage />),
+  },
+  // Журнал действий — внутри «Ролей и доступа», только с правом journal.view
+  {
+    path: 'access/journal',
+    handle: { section: 'access', titleKey: 'journal.title' } satisfies RouteHandle,
+    element: guarded(
+      'access',
+      <RequirePermission permission="journal.view">
+        <JournalPage />
+      </RequirePermission>,
+    ),
   },
   // Уведомления — всем, у кого есть вход; это не раздел меню, а экран колокольчика
   {

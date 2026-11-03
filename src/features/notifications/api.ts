@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useChatUnread } from '@/features/chat/api';
 import { useAwaitingResolution } from '@/features/documents/api';
+import type { Permission } from '@/shared/config/permissions';
 import { addDays, nextWorkingDay, todayInBishkek } from '@/shared/lib/workDays';
 
 /**
@@ -40,6 +41,24 @@ export type AppNotification = {
   read: boolean;
   target: NotificationTarget | null;
 };
+
+/**
+ * Видно ли уведомление при этих правах: только если можно открыть то, о чём оно.
+ * Очередь из почты — тем, кто создаёт задачи; задачи — с доступом к задачам; чат — с чатом.
+ * Иначе кнопка вела бы на экран 403, а счётчик считал бы недоступное.
+ */
+export function canSeeNotification(n: AppNotification, can: (p: Permission) => boolean) {
+  switch (n.target?.kind) {
+    case 'mailQueue':
+      return can('tasks.create');
+    case 'task':
+      return can('tasks.view');
+    case 'chat':
+      return can('chat.use');
+    default:
+      return n.kind !== 'done' || can('tasks.view');
+  }
+}
 
 /** Какие уведомления получать; эскалацию выключить нельзя — это правило платформы */
 export type NotificationSettings = Record<NotificationKind, boolean>;

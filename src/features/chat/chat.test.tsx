@@ -68,7 +68,7 @@ const waitFor = async (check: () => boolean, timeout = 3000) => {
 async function open(url: string) {
   vi.stubEnv('VITE_AUTH_MOCK', 'active');
   sessionStorage.clear();
-  sessionStorage.setItem('nok.mockSession', JSON.stringify(mockSessionFor('active', 'R1')));
+  sessionStorage.setItem('nok.mockSession', JSON.stringify(mockSessionFor('active', 'R3')));
   resetChatMock();
   resetNotificationsMock();
   resetTasksMock();

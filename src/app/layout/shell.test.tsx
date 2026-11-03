@@ -41,7 +41,7 @@ describe('каркас приложения', () => {
     vi.stubEnv('VITE_AUTH_MOCK', 'active');
     sessionStorage.clear();
     localStorage.clear();
-    sessionStorage.setItem('nok.mockSession', JSON.stringify(mockSessionFor('active', 'R1')));
+    sessionStorage.setItem('nok.mockSession', JSON.stringify(mockSessionFor('active', 'R3')));
     await i18n.changeLanguage('ru');
   });
 

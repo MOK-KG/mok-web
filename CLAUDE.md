@@ -15,7 +15,7 @@ react-hook-form, zod, i18next, date-fns, dnd-kit, Biome, Vitest. Менедже�
 
 Общие материалы лежат в `../docs/`, вне git. Читай их перед работой над соответствующей частью:
 
-- `../docs/priyomka.md` — 16 проверок приёмки, три блокирующие
+- `../docs/priyomka.md` — 16 проверок приёмки (ТЗ, раздел 11), девять блокирующих
 - `../docs/model-dannyh.md` — сущности и правила удаления
 - `../docs/roli.md` — 9 ролей и матрица прав
 - `../docs/glossary.md` — термины предметной области
@@ -41,7 +41,7 @@ react-hook-form, zod, i18next, date-fns, dnd-kit, Biome, Vitest. Менедже�
 - Раздел без права по прямой ссылке — экран 403 (`RequirePermission`), не пустой список и не редирект
 - Смена роли — без перезапуска: сессия обновляется при фокусе, раз в минуту и после любого 403
 - Не добавляй права на удаление журнала, сотрудников, задач, документов — их нет намеренно
-- Матрица ролей в `permissions.ts` — заглушка для mock, настоящая на бэкенде (`../docs/roli.md`)
+- Матрица ролей в `permissions.ts` — заглушка для mock по разделу 06 ТЗ, настоящая на бэкенде (`../docs/roli.md`, там же допущения). Генеральный секретарь — R3, не R1
 
 ## Запросы, ошибки, сообщения
 
@@ -88,7 +88,7 @@ react-hook-form, zod, i18next, date-fns, dnd-kit, Biome, Vitest. Менедже�
 
 ## Проверки приёмки
 
-Шестнадцать проверок в `../docs/priyomka.md`, три блокирующие.
+Шестнадцать проверок в `../docs/priyomka.md`, девять блокирующих (11.1–11.9).
 Прежде чем менять права, сессии или журнал — перечитай соответствующую проверку.
 
 ## Данные
@@ -109,6 +109,7 @@ react-hook-form, zod, i18next, date-fns, dnd-kit, Biome, Vitest. Менедже�
   `features/knowledge-base/{types,search,mock}.ts`, `features/chat/{types,mock,api}.ts`,
   `features/notifications/api.ts`, `features/dashboard/summary.ts`, `features/calendar/month.ts`,
   `features/documents/{types,mock,api}.ts`, `features/files/{collect,api}.ts`,
+  `features/journal/store.ts`, `features/roles/{types,mock,api}.ts`,
   `locales/*.json`.
   Тесты общих файлов живут в web
 - Иконки: `shared/ui/icons.tsx` в web — источник; в mobile тот же набор путей (react-native-svg)

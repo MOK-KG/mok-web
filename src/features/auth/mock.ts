@@ -5,7 +5,7 @@ import type { Session } from './types';
  * Заглушка авторизации, пока нет бэкенда.
  *
  * Исход входа: VITE_AUTH_MOCK (active | pending | denied) или ?mock= на странице входа.
- * Роль: VITE_AUTH_MOCK_ROLE (R1–R9, по умолчанию R1) или ?role=.
+ * Роль: VITE_AUTH_MOCK_ROLE (R1–R9, по умолчанию R3 — Генеральный секретарь, как у заглушки пользователя) или ?role=.
  * Смена роли «на лету» (проверка 3 из блокирующих): в консоли браузера
  *   window.__nokMock.setRole('R6')
  * Данные вымышленные (см. CLAUDE.md, раздел «Данные»).
@@ -33,7 +33,7 @@ function mockRole(): RoleCode {
   const fromUrl = new URLSearchParams(window.location.search).get('role');
   if (isRole(fromUrl)) return fromUrl;
   const fromEnv = import.meta.env.VITE_AUTH_MOCK_ROLE;
-  return isRole(fromEnv) ? fromEnv : 'R1';
+  return isRole(fromEnv) ? fromEnv : 'R3';
 }
 
 export function mockSessionFor(status: Session['status'], role: RoleCode): Session {

@@ -238,7 +238,7 @@ const waitFor = async (check: () => boolean, timeout = 2000) => {
   }
 };
 
-async function open(url: string, role: RoleCode = 'R1') {
+async function open(url: string, role: RoleCode = 'R3') {
   vi.stubEnv('VITE_AUTH_MOCK', 'active');
   sessionStorage.clear();
   sessionStorage.setItem('nok.mockSession', JSON.stringify(mockSessionFor('active', role)));

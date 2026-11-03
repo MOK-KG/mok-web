@@ -1,7 +1,7 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { usePageSubtitle } from '@/app/layout/AppLayout';
 import { Can } from '@/features/auth';
 import { type RoleCode, roleCodes } from '@/shared/config/permissions';
@@ -14,6 +14,7 @@ import {
   MoreIcon,
   PlusIcon,
   SearchIcon,
+  ShieldCheckIcon,
 } from '@/shared/ui/icons';
 import { Tooltip } from '@/shared/ui/Tooltip';
 import { type StaffRow, useStaff } from './api';
@@ -142,6 +143,15 @@ export function RolesPage() {
               })
             }
           />
+          <Can permission="journal.view">
+            <Link
+              to="/access/journal"
+              className="flex h-8 items-center gap-[6px] rounded-9 border border-line bg-control px-3 text-[12.5px] font-medium text-sub hover:text-text"
+            >
+              <ShieldCheckIcon size={15} />
+              {t('journal.title')}
+            </Link>
+          </Can>
           <Can permission="staff.manage">
             <button
               type="button"

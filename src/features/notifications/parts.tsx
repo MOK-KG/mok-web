@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { useCan } from '@/features/auth';
 import { useMailQueueSummary, useTasks } from '@/features/tasks/api';
 import { formatIsoDate } from '@/shared/lib/date';
 import { toast } from '@/shared/lib/toast';
@@ -13,7 +14,13 @@ import {
   ClockIcon,
   MailIcon,
 } from '@/shared/ui/icons';
-import { type AppNotification, type NotificationKind, useMarkRead, useNotifications } from './api';
+import {
+  type AppNotification,
+  canSeeNotification,
+  type NotificationKind,
+  useMarkRead,
+  useNotifications,
+} from './api';
 
 /** Иконка, цвет и полоса непрочитанного — по виду уведомления, как в макете */
 export const notificationKinds: Record<
@@ -36,7 +43,8 @@ export type NotificationView = AppNotification & { shownTitle: string; shownText
  */
 export function useVisibleNotifications(): NotificationView[] {
   const { t, i18n } = useTranslation();
-  const data = useNotifications().data ?? [];
+  const { can } = useCan();
+  const data = (useNotifications().data ?? []).filter((n) => canSeeNotification(n, can));
   const queue = useMailQueueSummary().data;
   const queueCount = queue ? queue.ready + queue.manual : 0;
   const today = todayInBishkek();

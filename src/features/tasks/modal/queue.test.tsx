@@ -75,7 +75,7 @@ describe('очередь из почты (интерфейс)', () => {
   beforeEach(async () => {
     vi.stubEnv('VITE_AUTH_MOCK', 'active');
     sessionStorage.clear();
-    sessionStorage.setItem('nok.mockSession', JSON.stringify(mockSessionFor('active', 'R1')));
+    sessionStorage.setItem('nok.mockSession', JSON.stringify(mockSessionFor('active', 'R3')));
     resetTasksMock();
     await i18n.changeLanguage('ru');
     router = createMemoryRouter(routes, { initialEntries: ['/tasks'] });

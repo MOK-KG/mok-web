@@ -18,11 +18,13 @@ import type { DeactivationPlan, StaffBadge, StaffMember } from './types';
  *
  * Права проверяет бэкенд; здесь — те же правила, чтобы экран вёл себя как настоящий:
  * сотрудника нельзя удалить — только деактивировать; себя деактивировать нельзя.
+ *
+ * Файл продублирован в web/ и mobile/ — правьте оба.
  */
 let store = createMockStaff();
 
-const delay = (ms: number) =>
-  new Promise((r) => setTimeout(r, import.meta.env.MODE === 'test' ? 0 : ms));
+// Без import.meta.env: файл общий для web и mobile (Expo)
+const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Сброс заглушки (для тестов) */
 export function resetStaffMock() {
@@ -41,17 +43,15 @@ export type StaffRow = StaffMember & {
 };
 
 /**
- * Кому уйдут задачи: директор департамента (R4), иначе генеральный секретарь (R3),
- * иначе руководство (R2), иначе администратор (R1)
+ * Кому уйдут задачи: директор департамента (R4), иначе генеральный секретарь (R3).
+ * Президент (R2) только читает, администратор (R1) с задачами не работает (ТЗ, раздел 06).
  */
 function successorOf(member: StaffMember) {
   const working = store.filter(
     (s) => s.id !== member.id && (s.status === 'active' || s.status === 'invited'),
   );
   const director = working.find((s) => s.role === 'R4' && s.department === member.department);
-  const target =
-    director ??
-    (['R3', 'R2', 'R1'] as RoleCode[]).map((r) => working.find((s) => s.role === r)).find(Boolean);
+  const target = director ?? working.find((s) => s.role === 'R3');
   return target ? { member: target, isDirector: !!director } : null;
 }
 

@@ -124,7 +124,7 @@ describe('доска задач', () => {
   beforeEach(async () => {
     vi.stubEnv('VITE_AUTH_MOCK', 'active');
     sessionStorage.clear();
-    sessionStorage.setItem('nok.mockSession', JSON.stringify(mockSessionFor('active', 'R1')));
+    sessionStorage.setItem('nok.mockSession', JSON.stringify(mockSessionFor('active', 'R3')));
     resetTasksMock();
     await i18n.changeLanguage('ru');
     const router = createMemoryRouter(routes, { initialEntries: ['/tasks'] });

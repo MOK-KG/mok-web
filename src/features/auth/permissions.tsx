@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { addJournalEntry } from '@/features/journal/store';
 import { type Permission, type Section, sections } from '@/shared/config/permissions';
 import { useSession } from './useSession';
 
@@ -49,7 +50,32 @@ export function RequirePermission({
   children: ReactNode;
 }) {
   const { can } = useCan();
-  return can(permission) ? children : <ForbiddenPage />;
+  const allowed = can(permission);
+  useLogDenied(!allowed, permission);
+  return allowed ? children : <ForbiddenPage />;
+}
+
+/** «Айбек Дуйшеев» → «А. Дуйшеев» */
+const shortName = (name: string) => {
+  const [first, ...rest] = name.split(' ');
+  return rest.length ? `${first.charAt(0)}. ${rest.join(' ')}` : name;
+};
+
+/**
+ * Отказ по прямой ссылке попадает в журнал действий (приёмка 11.1). В заглушке пишет
+ * интерфейс; с бэкендом — сервер, на сам запрос к данным.
+ */
+function useLogDenied(denied: boolean, permission: Permission | null) {
+  const user = useSession().data?.user;
+  const path = useLocation().pathname;
+  useEffect(() => {
+    if (!denied || !user) return;
+    addJournalEntry({
+      author: shortName(user.name),
+      action: 'accessDenied',
+      details: `${path} · ${permission ?? 'role'}`,
+    });
+  }, [denied, user, path, permission]);
 }
 
 export function ForbiddenPage() {

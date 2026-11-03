@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { addJournalEntry, resetJournal } from '@/features/journal/store';
 import { ApiError } from '@/shared/api/errors';
 import type { FeedbackMeta } from '@/shared/api/feedback';
 import { addDays, type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
@@ -22,30 +23,8 @@ import {
 let store = createMockTasks();
 let queue: Letter[] = createMockQueue();
 
-/** Журнал действий (заглушка): только добавляется, записи не меняются и не удаляются */
-export type JournalEntry = {
-  at: string;
-  author: string;
-  action:
-    | 'mailRejected'
-    | 'mailAccepted'
-    | 'roleChanged'
-    | 'userInvited'
-    | 'userDeactivated'
-    | 'documentRegistered'
-    | 'documentSent'
-    | 'documentResolved'
-    | 'documentDone'
-    | 'documentAnnulled';
-  details: string;
-};
-const journal: JournalEntry[] = [];
-export const journalEntries = (): readonly JournalEntry[] => journal;
-
-/** Записать действие в журнал (из других разделов: роли, приглашения, увольнения) */
-export function addJournalEntry(entry: Omit<JournalEntry, 'at'>) {
-  journal.push({ at: new Date().toISOString(), ...entry });
-}
+// Журнал действий — общий модуль features/journal/store.ts (цепочка хешей)
+export { addJournalEntry, type JournalEntry, journalEntries } from '@/features/journal/store';
 
 const delay = (ms: number) =>
   new Promise((r) => setTimeout(r, import.meta.env.MODE === 'test' ? 0 : ms));
@@ -54,7 +33,7 @@ const delay = (ms: number) =>
 export function resetTasksMock() {
   store = createMockTasks();
   queue = createMockQueue();
-  journal.length = 0;
+  resetJournal();
 }
 
 function tasksFor(tab: TaskTab): Task[] {
@@ -168,8 +147,7 @@ export async function createFromLetter(letterId: string, suggestion: Suggestion)
     letter,
   });
   queue = queue.filter((l) => l.id !== letterId);
-  journal.unshift({
-    at: now(),
+  addJournalEntry({
     author: me().short,
     action: 'mailAccepted',
     details: `${letter.subject} → ${task.code}`,
@@ -184,8 +162,7 @@ export async function rejectLetter(letterId: string, reason: string) {
   if (!letter) throw new Error('not-found');
   if (reason.trim().length < 5) throw new Error('reason-required');
   queue = queue.filter((l) => l.id !== letterId);
-  journal.unshift({
-    at: now(),
+  addJournalEntry({
     author: me().short,
     action: 'mailRejected',
     details: `${letter.subject}: ${reason.trim()}`,

@@ -541,7 +541,7 @@
     },
     "roles": {
       "R1": "Administrator",
-      "R2": "Leadership",
+      "R2": "President",
       "R3": "Secretary General",
       "R4": "Department director",
       "R5": "Department staff",
@@ -551,15 +551,15 @@
       "R9": "Observer"
     },
     "roleHints": {
-      "R1": "All sections, roles and the action log",
-      "R2": "View all sections, tasks and approvals",
-      "R3": "Office tasks, documents and the knowledge base",
-      "R4": "Department tasks and assigning people",
-      "R5": "Own tasks, shared knowledge base, creating documents",
-      "R6": "Registering, resolving and annulling documents",
-      "R7": "Finance processes and editing the knowledge base",
-      "R8": "Legal base, contracts and document review",
-      "R9": "View only"
+      "R1": "Users, roles, directories, settings and audit. No HR data",
+      "R2": "Read tasks, the knowledge base and records",
+      "R3": "Full access; the only one who can export the log",
+      "R4": "Full rights within their department: tasks, knowledge base, documents",
+      "R5": "Own and department tasks, shared knowledge base, creating documents",
+      "R6": "Correspondence log and registration numbers",
+      "R7": "Tasks, knowledge base, reading records",
+      "R8": "Tasks, knowledge base, reading records",
+      "R9": "Read-only access to agreed sections"
     },
     "close": "Close",
     "immediate": "Role changes apply immediately",
@@ -615,8 +615,8 @@
     "errorDepartment": "Enter the department",
     "errorExists": "A staff member with this email already exists",
     "errorInvite": "Couldn't send the invitation. Please try again.",
-    "toManager": "To leadership ({{name}}), recorded in the task history",
-    "noSuccessor": "No one to hand them to: the department has no director and there is no leadership",
+    "toManager": "To the Secretary General ({{name}}), recorded in the task history",
+    "noSuccessor": "No one to hand them to: there is no department director and no Secretary General",
     "departmentOf": "{{name}} department"
   },
   "chat": {
@@ -941,5 +941,56 @@
     "kb": "KB",
     "mb": "MB",
     "note": "Attachments from Documents, the Knowledge base and chats you have access to. A file opens where it was attached. Task files will appear once file storage is connected."
+  },
+  "journal": {
+    "title": "Action log",
+    "subtitle_one": "{{count}} entry",
+    "subtitle_other": "{{count}} entries",
+    "search": "Who, what, details",
+    "groupFilter": "Action type",
+    "all": "All",
+    "group": {
+      "access": "Access",
+      "staff": "Staff and roles",
+      "tasks": "Email and tasks",
+      "documents": "Documents",
+      "journal": "Log"
+    },
+    "action": {
+      "accessDenied": "Access denied",
+      "mailRejected": "Email rejected",
+      "mailAccepted": "Task from email",
+      "roleChanged": "Role changed",
+      "userInvited": "Invitation",
+      "userDeactivated": "Deactivation",
+      "documentRegistered": "Incoming registered",
+      "documentSent": "Number issued",
+      "documentResolved": "Resolution",
+      "documentDone": "Document completed",
+      "documentAnnulled": "Document annulled",
+      "journalExported": "Log export"
+    },
+    "integrityOk_one": "Chain intact · {{count}} entry checked",
+    "integrityOk_other": "Chain intact · {{count}} entries checked",
+    "integrityBroken": "Chain broken at entry {{id}}",
+    "col": {
+      "at": "Time",
+      "author": "Who",
+      "action": "Action",
+      "details": "Details",
+      "hash": "Hash"
+    },
+    "reason": "Grounds: {{reason}}",
+    "empty": "No entries yet.",
+    "nothingFound": "Nothing found.",
+    "note": "Entries cannot be changed or deleted by anyone, including the administrator and the Secretary General. Each entry stores the hash of the previous one.",
+    "export": "Export for audit",
+    "exportHint": "Only the Secretary General can export. The export itself is logged together with its grounds.",
+    "exportReason": "Grounds",
+    "exportPlaceholder": "E.g. Audit Commission request of 3 November",
+    "errorReason": "Enter grounds of at least 5 characters",
+    "exportSubmit": "Export CSV",
+    "exportDetails": "CSV, entries: {{count}}",
+    "exported": "Log exported; the export was logged"
   }
 }
