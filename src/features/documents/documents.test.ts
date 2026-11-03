@@ -61,7 +61,14 @@ describe('регистрационные номера', () => {
 
   it('входящий получает следующий номер при регистрации', () => {
     const doc = registerIncoming(
-      { title: 'Тест', party: 'МОК', senderRef: '', summary: '', attachments: [] },
+      {
+        title: 'Тест',
+        party: 'МОК',
+        senderRef: '',
+        summary: '',
+        attachments: [],
+        category: 'request',
+      },
       TODAY,
     );
     expect(doc.seq).toBe(mockCounts.incoming + 1);

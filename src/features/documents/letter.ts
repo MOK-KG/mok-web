@@ -22,6 +22,8 @@ export type Letter = {
   /** Кому: организация, должность, имя — по строкам */
   addressee: string;
   body: string;
+  /** Почта адресата для отправки; пусто — не по почте (курьер, нарочно) */
+  email: string;
 };
 
 /** Шапка бланка и подписи на языке письма */
@@ -199,6 +201,7 @@ export const defaultLetter = (
   templateId: 'standard',
   addressee: party ?? '',
   body: summary,
+  email: '',
 });
 
 /** Тема письма на бланке: как ввели, с приставкой языка */

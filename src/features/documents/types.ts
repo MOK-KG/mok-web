@@ -46,6 +46,8 @@ export type Resolution = {
 
 export type DocHistoryKind =
   | 'created'
+  | 'bounced'
+  | 'resent'
   | 'edited'
   | 'registered'
   | 'resolution'
@@ -86,8 +88,35 @@ export type DocumentRecord = {
   resolution: Resolution | null;
   annulment: { reason: string; by: Person; at: string } | null;
   history: DocHistoryEntry[];
+  /** Категория входящего; у остальных — null */
+  category: DocCategory | null;
+  /** Срок ответа на входящий; null — ответ не нужен */
+  replyDue: IsoDate | null;
+  /** Исходящий — в ответ на этот входящий (ID) */
+  replyTo: string | null;
+  /** Отправка исходящего по почте; null — не по почте (курьер, нарочно) или ещё не отправлен */
+  delivery: Delivery | null;
   /** Текст исходящего письма на бланке; у входящих и приказов — null */
   letter: Letter | null;
   /** Отпечаток содержания при отправке; после него письмо не меняется */
   fingerprint: string | null;
+};
+
+/** Категория входящего (S-05) */
+export type DocCategory = 'request' | 'invitation' | 'info' | 'agreement' | 'other';
+
+export const docCategories: DocCategory[] = ['request', 'invitation', 'info', 'agreement', 'other'];
+
+/**
+ * Доставка исходящего по почте: delivered — принято сервером адресата; bounced — недоставка
+ * (отдельная срочная строка в журнале, приёмка 11.13). Повторная отправка — тот же номер.
+ */
+export type Delivery = {
+  email: string;
+  status: 'delivered' | 'bounced';
+  /** ISO-время последней попытки */
+  at: string;
+  /** Причина недоставки от почтового сервера */
+  error: string | null;
+  attempts: number;
 };

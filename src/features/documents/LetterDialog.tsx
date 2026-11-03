@@ -191,6 +191,20 @@ function Body({ doc, signer }: { doc: DocumentRecord; signer: string }) {
                   className={`${fieldBox} mt-[6px] py-[9px]`}
                 />
               </div>
+              <div>
+                <label htmlFor="letter-email" className={label}>
+                  {t('documents.form.email')}
+                </label>
+                <input
+                  id="letter-email"
+                  type="email"
+                  value={letter.email}
+                  onChange={(e) => set({ email: e.target.value })}
+                  placeholder="info@minjust.gov.kg"
+                  className={`${fieldBox} mt-[6px]`}
+                />
+                <p className="mt-1 text-[11px] text-dim">{t('documents.form.emailHint')}</p>
+              </div>
               <div className="flex min-h-[220px] flex-1 flex-col">
                 <label htmlFor="letter-body" className={label}>
                   {t('documents.letter.body')}

@@ -1,9 +1,17 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { todayInBishkek } from '@/shared/lib/workDays';
 import { PaperclipIcon } from '@/shared/ui/icons';
-import { type DraftInput, useCreateDraft, useRegisterIncoming } from './api';
+import {
+  type DraftInput,
+  docNumber,
+  useCreateDraft,
+  useDocuments,
+  useRegisterIncoming,
+} from './api';
+import { defaultReplyDue, isEmail } from './correspondence';
 import { FieldError, FormDialog, fieldBox, label, primaryButton, secondaryButton } from './parts';
-import type { DocKind, DocumentRecord } from './types';
+import { type DocCategory, type DocKind, type DocumentRecord, docCategories } from './types';
 
 type Props = {
   /** Какой документ создаём; null — окно закрыто */
@@ -38,29 +46,58 @@ function Form({ kind, onClose, onCreated }: { kind: DocKind } & Omit<Props, 'kin
   const [senderRef, setSenderRef] = useState('');
   const [summary, setSummary] = useState('');
   const [files, setFiles] = useState<string[]>([]);
+  const [category, setCategory] = useState<DocCategory>('request');
+  const [replyDue, setReplyDue] = useState<string>(
+    () => defaultReplyDue('request', todayInBishkek()) ?? '',
+  );
+  const [replyTo, setReplyTo] = useState('');
+  const [email, setEmail] = useState('');
   const [tried, setTried] = useState(false);
+  const documents = useDocuments(kind === 'outgoing').data ?? [];
+  // Ответить можно на зарегистрированный входящий, который ещё ждёт ответа
+  const answerable = documents.filter(
+    (d) => d.kind === 'incoming' && (d.status === 'registered' || d.status === 'inWork'),
+  );
   const fileInput = useRef<HTMLInputElement>(null);
   const pending = register.isPending || draft.isPending;
 
   const titleError = title.trim().length < 3 ? t('documents.form.errorTitle') : null;
   const partyError =
     kind !== 'order' && party.trim().length < 2 ? t('documents.form.errorParty') : null;
+  const emailError =
+    kind === 'outgoing' && email.trim() && !isEmail(email) ? t('documents.form.errorEmail') : null;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setTried(true);
-    if (titleError || partyError) return;
+    if (titleError || partyError || emailError) return;
     const done = (doc: DocumentRecord) => {
       onCreated(doc);
       onClose();
     };
     if (kind === 'incoming') {
       register.mutate(
-        { title, party, senderRef, summary, attachments: files },
+        {
+          title,
+          party,
+          senderRef,
+          summary,
+          attachments: files,
+          category,
+          replyDue: replyDue || null,
+        },
         { onSuccess: done },
       );
     } else {
-      const input: DraftInput = { kind, title, party, summary, attachments: files };
+      const input: DraftInput = {
+        kind,
+        title,
+        party,
+        summary,
+        attachments: files,
+        replyTo: replyTo || null,
+        email,
+      };
       draft.mutate(input, { onSuccess: done });
     }
   };
@@ -113,6 +150,88 @@ function Form({ kind, onClose, onCreated }: { kind: DocKind } & Omit<Props, 'kin
               />
             </div>
           )}
+        </div>
+      )}
+      {kind === 'incoming' && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="doc-category" className={label}>
+              {t('documents.form.category')}
+            </label>
+            <select
+              id="doc-category"
+              value={category}
+              onChange={(e) => {
+                const next = e.target.value as DocCategory;
+                setCategory(next);
+                setReplyDue(defaultReplyDue(next, todayInBishkek()) ?? '');
+              }}
+              className={`${fieldBox} mt-[6px]`}
+            >
+              {docCategories.map((c) => (
+                <option key={c} value={c}>
+                  {t(`documents.category.${c}`)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="doc-reply-due" className={label}>
+              {t('documents.form.replyDue')}
+            </label>
+            <input
+              id="doc-reply-due"
+              type="date"
+              min={todayInBishkek()}
+              value={replyDue}
+              onChange={(e) => setReplyDue(e.target.value)}
+              className={`${fieldBox} mt-[6px]`}
+            />
+            <p className="mt-1 text-[11px] text-dim">{t('documents.form.replyDueHint')}</p>
+          </div>
+        </div>
+      )}
+      {kind === 'outgoing' && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="doc-reply-to" className={label}>
+              {t('documents.form.replyTo')}
+            </label>
+            <select
+              id="doc-reply-to"
+              value={replyTo}
+              onChange={(e) => {
+                setReplyTo(e.target.value);
+                const source = answerable.find((d) => d.id === e.target.value);
+                if (source && !party) setParty(source.party ?? '');
+              }}
+              className={`${fieldBox} mt-[6px]`}
+            >
+              <option value="">{t('documents.form.notReply')}</option>
+              {answerable.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {docNumber(d)} · {d.party} · {d.title}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="doc-email" className={label}>
+              {t('documents.form.email')}
+            </label>
+            <input
+              id="doc-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              aria-invalid={tried && !!emailError}
+              data-invalid={tried && !!emailError}
+              placeholder="info@minjust.gov.kg"
+              className={`${fieldBox} mt-[6px]`}
+            />
+            <FieldError text={tried ? emailError : null} />
+            <p className="mt-1 text-[11px] text-dim">{t('documents.form.emailHint')}</p>
+          </div>
         </div>
       )}
       <div>

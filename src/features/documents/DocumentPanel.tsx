@@ -13,7 +13,18 @@ import type { Person } from '@/features/tasks/types';
 import { formatInBishkek, formatIsoDate } from '@/shared/lib/date';
 import { addWorkingDays, todayInBishkek } from '@/shared/lib/workDays';
 import { BookIcon, FileIcon, XIcon } from '@/shared/ui/icons';
-import { docNumber, docRef, useAnnul, useDocument, useIssue, useMarkDone, useResolve } from './api';
+import {
+  docNumber,
+  docRef,
+  useAnnul,
+  useDocument,
+  useDocuments,
+  useIssue,
+  useMarkDone,
+  useResend,
+  useResolve,
+} from './api';
+import { isEmail, repliesTo, replyState } from './correspondence';
 import { LetterDialog } from './LetterDialog';
 import {
   capsTitle,
@@ -81,7 +92,12 @@ function Body({ doc }: { doc: DocumentRecord }) {
     [t('documents.field.senderRef'), doc.senderRef],
     [t(`documents.field.author.${doc.kind}`), doc.author.short],
     [t('documents.field.signer'), doc.signer?.short ?? null],
+    [t('documents.form.category'), doc.category ? t(`documents.category.${doc.category}`) : null],
   ];
+  const all = useDocuments().data ?? [];
+  const reply = replyState(doc, all);
+  const replies = doc.kind === 'incoming' ? repliesTo(doc.id, all) : [];
+  const source = doc.replyTo ? all.find((d) => d.id === doc.replyTo) : undefined;
 
   return (
     <>
@@ -128,6 +144,57 @@ function Body({ doc }: { doc: DocumentRecord }) {
             ))}
           </ul>
         )}
+
+        {(doc.replyDue || replies.length > 0 || source) && (
+          <section className="mt-4 rounded-11 border border-line px-4 py-3 text-[12px]">
+            {doc.kind === 'incoming' && doc.replyDue && (
+              <p className="flex flex-wrap items-center gap-2 text-sub">
+                {t('documents.form.replyDue')}: {date(doc.replyDue)}
+                {reply !== 'none' && (
+                  <span
+                    className={`inline-flex h-5 items-center rounded-[5px] px-[7px] text-[10.5px] font-medium ${
+                      reply === 'answered'
+                        ? 'bg-success-chip text-success'
+                        : reply === 'overdue'
+                          ? 'bg-danger-chip text-danger'
+                          : reply === 'soon'
+                            ? 'bg-warning-chip text-warning-text'
+                            : 'bg-chip text-chip-text'
+                    }`}
+                  >
+                    {t(`documents.log.reply.${reply}`, { date: date(doc.replyDue) })}
+                  </span>
+                )}
+              </p>
+            )}
+            {replies.length > 0 && (
+              <p className="mt-1 text-sub">
+                {t('documents.log.answeredBy')}{' '}
+                {replies.map((r, i) => (
+                  <span key={r.id}>
+                    {i > 0 && ', '}
+                    <Link
+                      to={`/documents?kind=outgoing&doc=${r.id}`}
+                      className="text-info hover:underline"
+                    >
+                      {docNumber(r) ?? `${t('documents.noNumber')} · ${r.title}`}
+                    </Link>
+                  </span>
+                ))}
+              </p>
+            )}
+            {source && (
+              <p className="text-sub">
+                {t('documents.log.replyTo')}{' '}
+                <Link to={`/documents?doc=${source.id}`} className="text-info hover:underline">
+                  {docNumber(source)} · {source.party}
+                </Link>
+              </p>
+            )}
+          </section>
+        )}
+
+        {doc.delivery && <DeliveryBlock doc={doc} />}
 
         {doc.kind === 'outgoing' && (
           <section className="mt-4 flex items-center gap-3 rounded-11 border border-line bg-surface px-4 py-3">
@@ -442,5 +509,69 @@ function Articles({ doc }: { doc: DocumentRecord }) {
         ))}
       </ul>
     </>
+  );
+}
+
+/** Доставка по почте; недоставка — красным, с повторной отправкой на исправленный адрес */
+function DeliveryBlock({ doc }: { doc: DocumentRecord }) {
+  const { t, i18n } = useTranslation();
+  const { can } = useCan();
+  const resend = useResend();
+  const d = doc.delivery;
+  const [email, setEmail] = useState(d?.email ?? '');
+  const [tried, setTried] = useState(false);
+  if (!d) return null;
+  const error = !isEmail(email) ? t('documents.form.errorEmail') : null;
+  const when = formatInBishkek(d.at, 'd MMM, HH:mm', i18n.language);
+  if (d.status === 'delivered') {
+    return (
+      <p className="mt-4 rounded-11 border border-line px-4 py-3 text-[12px] text-sub">
+        <span className="font-medium text-success">{t('documents.log.delivery.delivered')}</span> ·{' '}
+        {d.email} · {when}
+      </p>
+    );
+  }
+  return (
+    <section
+      role="alert"
+      className="mt-4 rounded-11 border border-danger-line bg-danger-chip px-4 py-3"
+    >
+      <p className="text-[12.5px] font-semibold text-danger">{t('documents.log.bouncedTitle')}</p>
+      <p className="mt-1 text-[12px] text-sub">
+        {d.email} · {d.error} · {when}
+        {d.attempts > 1 && ` · ${t('documents.log.attempts', { count: d.attempts })}`}
+      </p>
+      {can('documents.register') && doc.status === 'sent' && (
+        <form
+          noValidate
+          onSubmit={(e) => {
+            e.preventDefault();
+            setTried(true);
+            if (!error) resend.mutate({ id: doc.id, email });
+          }}
+          className="mt-3 flex flex-wrap items-start gap-2"
+        >
+          <div className="min-w-[220px] flex-1">
+            <label htmlFor="resend-email" className="sr-only">
+              {t('documents.form.email')}
+            </label>
+            <input
+              id="resend-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              aria-invalid={tried && !!error}
+              data-invalid={tried && !!error}
+              className={fieldBox}
+            />
+            <FieldError text={tried ? error : null} />
+          </div>
+          <button type="submit" className={primaryButton} disabled={resend.isPending}>
+            {t('documents.log.resend')}
+          </button>
+          <p className="w-full text-[11px] text-dim">{t('documents.log.resendHint')}</p>
+        </form>
+      )}
+    </section>
   );
 }

@@ -2,14 +2,16 @@ import { people } from '@/features/tasks/directory';
 import type { Person } from '@/features/tasks/types';
 import {
   addDays,
+  addWorkingDays,
   diffDays,
   type IsoDate,
   isWorkingDay,
   nextWorkingDay,
   todayInBishkek,
 } from '@/shared/lib/workDays';
+import { deliver } from './correspondence';
 import { defaultLetter, type Letter, letterFingerprint } from './letter';
-import type { DocHistoryEntry, DocKind, DocumentRecord, Resolution } from './types';
+import type { DocCategory, DocHistoryEntry, DocKind, DocumentRecord, Resolution } from './types';
 
 /**
  * ЗАГЛУШКА делопроизводства до бэкенда.
@@ -39,12 +41,21 @@ type Special = {
   author?: Person;
   resolution?: Omit<Resolution, 'at' | 'author'> & { daysAfter?: number };
   annulment?: string;
-  letter?: Letter;
+  letter?: Omit<Letter, 'email'>;
+  category?: DocCategory;
+  /** Срок ответа: рабочих дней от регистрации; null — ответ не нужен */
+  replyDays?: number | null;
+  /** Ответ на входящий с этим номером */
+  replyToSeq?: number;
+  /** Отправлен по почте на этот адрес */
+  email?: string;
 };
 
 /** Документы с содержанием — по номеру; остальные номера — архив без подробностей */
 const incoming: Record<number, Special> = {
   731: {
+    category: 'invitation',
+    replyDays: 15,
     title: 'Приглашение на Генеральную ассамблею',
     party: 'АНОК',
     senderRef: 'ANOC/GA/2026-114',
@@ -59,6 +70,8 @@ const incoming: Record<number, Special> = {
     },
   },
   884: {
+    category: 'request',
+    replyDays: 25,
     title: 'О предоставлении перевода устава',
     party: 'Минюст',
     senderRef: '№ 12-04/518',
@@ -73,6 +86,7 @@ const incoming: Record<number, Special> = {
     },
   },
   888: {
+    category: 'request',
     title: 'О составе сборной на чемпионат Азии',
     party: 'Федерация лёгкой атлетики',
     senderRef: '№ 47',
@@ -85,6 +99,7 @@ const incoming: Record<number, Special> = {
     },
   },
   889: {
+    category: 'request',
     title: 'О составе сборной на чемпионат Азии',
     party: 'Федерация лёгкой атлетики',
     senderRef: '№ 47',
@@ -92,6 +107,7 @@ const incoming: Record<number, Special> = {
     annulment: 'Зарегистрировано повторно, дубль Вх. №2026-0888',
   },
   890: {
+    category: 'request',
     title: 'Запрос по антидопинговой программе',
     party: 'МОК',
     senderRef: 'IOC/MED/2026-311',
@@ -105,6 +121,8 @@ const incoming: Record<number, Special> = {
     },
   },
   893: {
+    category: 'request',
+    replyDays: 10,
     title: 'О проведении республиканской спартакиады',
     party: 'Минспорт',
     senderRef: '№ 03-1/2207',
@@ -112,6 +130,8 @@ const incoming: Record<number, Special> = {
     attachments: ['положение_проект.docx'],
   },
   894: {
+    category: 'request',
+    replyDays: 5,
     title: 'Запрос квартальной отчётности',
     party: 'ОКС',
     senderRef: 'OCA/NOC/2026-58',
@@ -119,12 +139,15 @@ const incoming: Record<number, Special> = {
     attachments: ['form_q3.xlsx'],
   },
   895: {
+    category: 'agreement',
+    replyDays: 10,
     title: 'Комментарии к спонсорскому соглашению',
     party: 'Kumtor Gold',
     summary: 'Комментарии партнёра к проекту спонсорского соглашения на 2026 год.',
     attachments: ['agreement_comments.docx'],
   },
   896: {
+    category: 'info',
     title: 'О предоставлении спортивных объектов',
     party: 'Мэрия г. Бишкек',
     senderRef: '№ 01-12/4410',
@@ -134,12 +157,14 @@ const incoming: Record<number, Special> = {
 
 const outgoing: Record<number, Special> = {
   390: {
+    email: 'info@minsport.gov.kg',
     title: 'О календаре соревнований',
     party: 'Минспорт',
     summary: 'Направлен календарь международных соревнований с участием сборных на 2026 год.',
     attachments: ['календарь_2026.xlsx'],
   },
   412: {
+    email: 'solidarity@olympic.org',
     title: 'Ответ на запрос по программе солидарности',
     party: 'МОК',
     letter: {
@@ -152,6 +177,8 @@ const outgoing: Record<number, Special> = {
     attachments: ['solidarity_report.pdf'],
   },
   413: {
+    email: 'info@ocasia.org',
+    replyToSeq: 894,
     title: 'Квартальный отчёт для ОКС',
     party: 'ОКС',
     letter: {
@@ -164,6 +191,17 @@ const outgoing: Record<number, Special> = {
     attachments: ['q2_report.pdf'],
   },
 };
+
+const outgoingBounced: Record<number, Special> = {
+  // Недоставка для приёмки 11.13: адрес федерации с опечаткой в домене
+  411: {
+    title: 'О согласовании календаря соревнований',
+    party: 'Федерация дзюдо',
+    summary: 'Проект календаря республиканских соревнований на 2027 год — на согласование.',
+    email: 'secretary@judo-kgz.org',
+  },
+};
+Object.assign(outgoing, outgoingBounced);
 
 const orders: Record<number, Special> = {
   58: {
@@ -185,6 +223,8 @@ const drafts: { kind: DocKind; special: Special; daysAgo: number }[] = [
     special: {
       title: 'О направлении перевода устава',
       party: 'Минюст',
+      replyToSeq: 884,
+      email: 'info@minjust.gov.kg',
       summary: 'Сопроводительное письмо к официальному переводу устава.',
       author: people.nb,
       letter: {
@@ -201,6 +241,8 @@ const drafts: { kind: DocKind; special: Special; daysAgo: number }[] = [
     special: {
       title: 'Подтверждение участия в Генеральной ассамблее',
       party: 'АНОК',
+      replyToSeq: 731,
+      email: 'secretariat@anocolympic.org',
       summary: 'Подтверждение состава делегации НОК КР.',
       author: people.ad,
       letter: {
@@ -237,6 +279,8 @@ const archiveOutgoing = [
   ['О заявке на участие', 'ОКС'],
   ['О согласовании', 'Федерация дзюдо'],
 ] as const;
+
+const archiveCategories: DocCategory[] = ['request', 'info', 'invitation', 'info', 'other'];
 
 const archiveOrders = [
   'О командировании',
@@ -303,6 +347,13 @@ function build(
     history.push(entry(kind === 'outgoing' ? 'sent' : 'signed', time, head));
   }
 
+  if (kind === 'outgoing' && number !== null && special?.email) {
+    const result = deliver(special.email);
+    if (result.status === 'bounced') {
+      history.push(entry('bounced', at(date, '10:21'), head, `${special.email}: ${result.error}`));
+    }
+  }
+
   let annulment: DocumentRecord['annulment'] = null;
   if (special?.annulment) {
     const when = at(date, '16:05');
@@ -328,8 +379,23 @@ function build(
     resolution,
     annulment,
     history: history.reverse(),
-    letter: special?.letter ?? null,
+    letter: special?.letter ? { ...special.letter, email: special.email ?? '' } : null,
     fingerprint: null,
+    category:
+      kind === 'incoming' ? (special?.category ?? archiveCategories[(number ?? 0) % 5]) : null,
+    replyDue:
+      kind === 'incoming' && special?.replyDays ? addWorkingDays(date, special.replyDays) : null,
+    // Ссылка на входящий проставляется ниже, когда известны ID
+    replyTo: special?.replyToSeq ? `seq:${special.replyToSeq}` : null,
+    delivery:
+      kind === 'outgoing' && number !== null && special?.email
+        ? {
+            email: special.email,
+            ...deliver(special.email),
+            at: at(date, '10:20'),
+            attempts: 1,
+          }
+        : null,
   };
 }
 
@@ -375,10 +441,20 @@ export function createMockDocuments(
     ),
   ];
 
+  // «В ответ на» — по номеру входящего за год; адрес черновика — для будущей отправки
+  for (const doc of docs) {
+    if (doc.replyTo?.startsWith('seq:')) {
+      const seq = Number(doc.replyTo.slice(4));
+      doc.replyTo = docs.find((d) => d.kind === 'incoming' && d.seq === seq)?.id ?? null;
+    }
+  }
+
   // Отправленные исходящие с текстом — неизменяемы, у них отпечаток содержания
   for (const doc of docs) {
     if (doc.kind !== 'outgoing') continue;
-    if (doc.seq !== null && !doc.letter) doc.letter = defaultLetter(doc.party, doc.summary);
+    if (doc.seq !== null && !doc.letter) {
+      doc.letter = { ...defaultLetter(doc.party, doc.summary), email: doc.delivery?.email ?? '' };
+    }
     if (doc.seq !== null && doc.letter) {
       doc.fingerprint = letterFingerprint({
         number: `Исх. №${doc.year}-${String(doc.seq).padStart(4, '0')}`,

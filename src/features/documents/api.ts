@@ -5,9 +5,10 @@ import { createMockTasks } from '@/features/tasks/mock';
 import type { Person } from '@/features/tasks/types';
 import type { FeedbackMeta } from '@/shared/api/feedback';
 import { type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
+import { defaultReplyDue, deliver, isEmail } from './correspondence';
 import { defaultLetter, fillTemplate, type Letter, letterFingerprint } from './letter';
 import { createMockDocuments } from './mock';
-import type { DocHistoryEntry, DocKind, DocStatus, DocumentRecord } from './types';
+import type { DocCategory, DocHistoryEntry, DocKind, DocStatus, DocumentRecord } from './types';
 
 /**
  * Данные делопроизводства. Пока бэкенда нет — заглушка в памяти (mock.ts); номера выдаёт
@@ -101,6 +102,9 @@ export type IncomingInput = {
   senderRef: string;
   summary: string;
   attachments: string[];
+  category: DocCategory;
+  /** Срок ответа; undefined — по категории, null — ответ не нужен */
+  replyDue?: IsoDate | null;
 };
 
 /** Зарегистрировать входящий: номер выдаётся сразу */
@@ -125,6 +129,11 @@ export function registerIncoming(input: IncomingInput, today = todayInBishkek())
     history: [historyEntry('registered')],
     letter: null,
     fingerprint: null,
+    category: input.category,
+    replyDue:
+      input.replyDue === undefined ? defaultReplyDue(input.category, today) : input.replyDue,
+    replyTo: null,
+    delivery: null,
   };
   store.push(doc);
   journal('documentRegistered', doc);
@@ -139,6 +148,10 @@ export type DraftInput = {
   attachments: string[];
   /** Язык и шаблон письма; по умолчанию — русский, стандартный бланк */
   letter?: Letter;
+  /** В ответ на входящий (ID) */
+  replyTo?: string | null;
+  /** Почта адресата; пусто — не по почте */
+  email?: string;
 };
 
 /** Проект исходящего или приказа — без номера, пока не отправят или не подпишут */
@@ -167,9 +180,14 @@ export function createDraft(input: DraftInput, today = todayInBishkek()): Docume
             templateId: 'standard',
             addressee: input.party?.trim() ?? '',
             body: fillTemplate('standard', 'ru'),
+            email: input.email?.trim() ?? '',
           })
         : null,
     fingerprint: null,
+    category: null,
+    replyDue: null,
+    replyTo: input.kind === 'outgoing' ? (input.replyTo ?? null) : null,
+    delivery: null,
   };
   store.push(doc);
   return structuredClone(doc);
@@ -198,6 +216,7 @@ export function issue(id: string, today = todayInBishkek()): DocumentRecord {
   }
   doc.history.unshift(historyEntry(doc.kind === 'outgoing' ? 'sent' : 'signed'));
   journal('documentSent', doc);
+  if (doc.kind === 'outgoing' && doc.letter?.email) sendByEmail(doc, doc.letter.email);
   return structuredClone(doc);
 }
 
@@ -209,6 +228,35 @@ export function updateLetter(id: string, letter: Letter, title?: string): Docume
   doc.letter = { ...letter, addressee: letter.addressee.trim(), body: letter.body.trim() };
   if (title?.trim()) doc.title = title.trim();
   doc.history.unshift(historyEntry('edited'));
+  return structuredClone(doc);
+}
+
+/** Отправка по почте: доставка или недоставка — в историю; недоставка — и в журнал */
+function sendByEmail(doc: DocumentRecord, email: string) {
+  const result = deliver(email);
+  doc.delivery = {
+    email: email.trim(),
+    status: result.status,
+    error: result.error,
+    at: now(),
+    attempts: (doc.delivery?.attempts ?? 0) + 1,
+  };
+  if (result.status === 'bounced') {
+    doc.history.unshift(historyEntry('bounced', `${email.trim()}: ${result.error}`));
+    journal('documentBounced', doc);
+  }
+}
+
+/**
+ * Повторная отправка после недоставки — на исправленный адрес. Номер тот же: письмо уже
+ * зарегистрировано, текст и отпечаток не меняются.
+ */
+export function resend(id: string, email: string): DocumentRecord {
+  const doc = find(id);
+  if (doc.kind !== 'outgoing' || doc.status !== 'sent') throw new Error('wrong-status');
+  if (!isEmail(email)) throw new Error('bad-email');
+  doc.history.unshift(historyEntry('resent', email.trim()));
+  sendByEmail(doc, email);
   return structuredClone(doc);
 }
 
@@ -361,6 +409,16 @@ export const useUpdateLetter = () =>
     ({ id, letter, title }: { id: string; letter: Letter; title?: string }) =>
       updateLetter(id, letter, title),
     'documents.letterSaved',
+  );
+
+export const useResend = () =>
+  useDocMutation(
+    ({ id, email }: { id: string; email: string }) => resend(id, email),
+    (doc: DocumentRecord) => ({
+      key:
+        doc.delivery?.status === 'bounced' ? 'documents.log.bouncedAgain' : 'documents.log.resent',
+      params: { email: doc.delivery?.email ?? '' },
+    }),
   );
 
 export const useMarkDone = () =>

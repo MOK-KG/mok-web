@@ -23,6 +23,7 @@ export type JournalAction =
   | 'documentResolved'
   | 'documentDone'
   | 'documentAnnulled'
+  | 'documentBounced'
   | 'journalExported';
 
 /** Группы действий — для фильтра на экране журнала */
@@ -36,6 +37,7 @@ export const journalGroups = {
     'documentResolved',
     'documentDone',
     'documentAnnulled',
+    'documentBounced',
   ],
   journal: ['journalExported'],
 } as const satisfies Record<string, readonly JournalAction[]>;

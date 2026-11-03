@@ -53,6 +53,7 @@ describe('письмо на бланке', () => {
         templateId: 'standard' as const,
         addressee: 'Минспорт',
         body: 'Текст',
+        email: '',
       },
     };
     const a = letterFingerprint(base);
@@ -102,7 +103,7 @@ describe('дата и номер на языке письма', () => {
 
 describe('язык и тема письма', () => {
   it('смена языка не стирает написанный текст', () => {
-    const base = { lang: 'ru' as const, templateId: 'standard' as const, addressee: '' };
+    const base = { lang: 'ru' as const, templateId: 'standard' as const, addressee: '', email: '' };
     const untouched = switchLang({ ...base, body: fillTemplate('standard', 'ru') }, 'en');
     expect(untouched.body).toBe(fillTemplate('standard', 'en'));
     const written = switchLang({ ...base, body: 'Свой текст' }, 'en');

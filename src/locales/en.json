@@ -779,7 +779,8 @@
     "tab": {
       "incoming": "Incoming",
       "outgoing": "Outgoing",
-      "order": "Orders"
+      "order": "Orders",
+      "log": "Log"
     },
     "kind": {
       "incoming": "Incoming",
@@ -866,7 +867,9 @@
       "sent": "sent",
       "signed": "signed",
       "annulled": "annulled",
-      "edited": "edited the letter"
+      "edited": "edited the letter",
+      "bounced": "received a delivery failure",
+      "resent": "resent"
     },
     "cancel": "Cancel",
     "form": {
@@ -897,7 +900,15 @@
       "errorResolution": "Write the resolution",
       "submitResolution": "Add and create task",
       "reason": "Reason",
-      "errorReason": "Enter a reason of at least 5 characters"
+      "errorReason": "Enter a reason of at least 5 characters",
+      "category": "Category",
+      "replyDue": "Reply due",
+      "replyDueHint": "Set by category; clear it if no reply is needed.",
+      "replyTo": "In reply to",
+      "notReply": "Not a reply — new letter",
+      "email": "Recipient email",
+      "emailHint": "The letter goes by email when sent; empty — by courier or by hand.",
+      "errorEmail": "Check the email address"
     },
     "registered": "Registered {{number}}",
     "draftCreated": "Draft “{{title}}” created",
@@ -935,7 +946,58 @@
       "embedNote": "The logo and signature are embedded in the file, not loaded from a link, so they show when printed and forwarded. The letterhead logo and details are placeholders until the real ones are uploaded in settings.",
       "docxFailed": "Couldn't create the .docx file"
     },
-    "letterSaved": "Letter saved"
+    "letterSaved": "Letter saved",
+    "category": {
+      "request": "Request",
+      "invitation": "Invitation",
+      "info": "For information",
+      "agreement": "Contract, agreement",
+      "other": "Other"
+    },
+    "log": {
+      "reconcile": "Email reconciliation",
+      "emailed": "Sent by email",
+      "delivered": "Delivered",
+      "bounced": "Not delivered",
+      "overdue": "Reply overdue",
+      "soon": "Reply due within 2 days",
+      "urgentTitle": "Urgent: letters not delivered",
+      "fix": "Fix and resend",
+      "filter": {
+        "all": "All",
+        "incoming": "Incoming",
+        "outgoing": "Outgoing",
+        "waiting": "Awaiting reply",
+        "overdue": "Reply overdue",
+        "bounced": "Not delivered"
+      },
+      "party": "Correspondent",
+      "link": "Link",
+      "state": "Reply · delivery",
+      "answeredBy": "Reply:",
+      "replyTo": "In reply to",
+      "notByEmail": "not by email",
+      "noReply": "no reply needed",
+      "delivery": {
+        "delivered": "Delivered",
+        "bounced": "Not delivered"
+      },
+      "reply": {
+        "answered": "Reply sent",
+        "drafted": "Reply in progress",
+        "overdue": "Overdue: due {{date}}",
+        "soon": "Due {{date}}",
+        "waiting": "Due {{date}}"
+      },
+      "note": "Incoming and sent outgoing letters in one list by number; undelivered ones at the top. The olympic.kg mailbox and delivery reports are on the backend; in the mock an unknown domain bounces.",
+      "bouncedTitle": "Letter not delivered",
+      "attempts_one": "{{count}} attempt",
+      "attempts_other": "{{count}} attempts",
+      "resend": "Resend",
+      "resendHint": "The letter's number and text stay the same — only the address changes.",
+      "resent": "Letter delivered to {{email}}",
+      "bouncedAgain": "Not delivered to {{email}} again"
+    }
   },
   "files": {
     "subtitle_one": "{{count}} file across sections",
@@ -999,7 +1061,8 @@
       "documentAnnulled": "Document annulled",
       "journalExported": "Log export",
       "absenceCreated": "Absence recorded",
-      "absenceCancelled": "Absence cancelled"
+      "absenceCancelled": "Absence cancelled",
+      "documentBounced": "Delivery failure"
     },
     "integrityOk_one": "Chain intact · {{count}} entry checked",
     "integrityOk_other": "Chain intact · {{count}} entries checked",
