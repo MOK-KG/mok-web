@@ -169,7 +169,7 @@ function EditorForm({ article, sections }: { article: KbArticle | null; sections
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const save = useSaveArticle(article?.id ?? null);
+  const save = useSaveArticle(article);
   const [sectionDialog, setSectionDialog] = useState(false);
   // Созданный раздел виден в списке сразу, не дожидаясь перезагрузки разделов
   const [created, setCreated] = useState<KbSection[]>([]);

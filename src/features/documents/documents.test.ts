@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { documentPool } from '../knowledge-base/mock';
+import { documentPool } from '../knowledge-base/testing/fixtures';
 import { journalEntries, resetTasksMock, tabCounts } from '../tasks/api';
 import { people } from '../tasks/directory';
 import {

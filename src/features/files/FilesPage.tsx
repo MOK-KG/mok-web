@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import { usePageSubtitle } from '@/app/layout/AppLayout';
-import { fetchAttachment } from '@/features/knowledge-base/api';
+import { attachmentUrl } from '@/features/knowledge-base/api';
 import { formatInBishkek } from '@/shared/lib/date';
 import { DownloadIcon, SearchIcon } from '@/shared/ui/icons';
 import { useFiles } from './api';
@@ -36,26 +36,23 @@ export const targetHref = (target: FileTarget) =>
       ? `/knowledge/${target.id}`
       : `/chat?c=${target.chatId}`;
 
-/** Скачать: вложение статьи — из хранилища Базы знаний, остальное — демо-файл до бэкенда */
+/** Скачать: вложение статьи — с бэкенда Базы знаний, остальное — демо-файл до бэкенда */
 function download(file: FileItem) {
   const full = file.ext ? `${file.name}.${file.ext}` : file.name;
-  const blob =
-    file.target.kind === 'article'
-      ? fetchAttachment({
-          id: file.id.split(':')[2],
-          name: file.name,
-          ext: file.ext,
-          size: file.size,
-        }).blob
-      : new Blob([`${full}\n\nДемо-файл: настоящий файл появится после подключения хранилища.\n`], {
-          type: 'text/plain',
-        });
-  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
   a.download = full;
+  if (file.target.kind === 'article') {
+    a.href = attachmentUrl(file.id.split(':')[2]);
+    a.click();
+    return;
+  }
+  const blob = new Blob(
+    [`${full}\n\nДемо-файл: настоящий файл появится после подключения хранилища.\n`],
+    { type: 'text/plain' },
+  );
+  a.href = URL.createObjectURL(blob);
   a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
 /**

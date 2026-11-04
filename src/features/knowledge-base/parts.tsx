@@ -5,7 +5,7 @@ import { formatIsoDate } from '@/shared/lib/date';
 import { initials } from '@/shared/lib/text';
 import { type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
 import { CheckBadgeIcon } from '@/shared/ui/icons';
-import { fetchAttachment } from './api';
+import { attachmentSource } from './api';
 import type { KbAttachment, KbFreshness } from './types';
 
 /** «3 сентября» в текущем году, «3 сентября 2025» — в другом */
@@ -76,17 +76,16 @@ const viewable = /^(pdf|png|jpe?g|gif|webp|svg|txt)$/;
 
 /** Открыть вложение во вкладке (если браузер его показывает) или скачать */
 export function openAttachment(attachment: KbAttachment, mode: 'open' | 'download' = 'open') {
-  const { blob, fileName } = fetchAttachment(attachment);
-  const url = URL.createObjectURL(blob);
-  const ext = fileName.slice(fileName.lastIndexOf('.') + 1).toLowerCase();
-  if (mode === 'open' && viewable.test(ext)) {
+  const inline = mode === 'open' && viewable.test(attachment.ext);
+  const { url, revoke } = attachmentSource(attachment, { inline });
+  if (inline) {
     window.open(url, '_blank', 'noopener');
   } else {
     const link = document.createElement('a');
     link.href = url;
-    link.download = fileName;
+    link.download = attachment.ext ? `${attachment.name}.${attachment.ext}` : attachment.name;
     link.click();
   }
-  // Ссылка нужна, пока вкладка открывается или скачивание начинается
-  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  // Ссылка на файл из памяти нужна, пока вкладка открывается или скачивание начинается
+  if (revoke) setTimeout(revoke, 60_000);
 }

@@ -3,11 +3,12 @@ import { createMockTasks } from '@/features/tasks/mock';
 import type { Person } from '@/features/tasks/types';
 import type { RoleCode } from '@/shared/config/permissions';
 import { addDays, type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
-import type { KbArticle, KbBlock, KbRelatedDocument, KbRelatedTask } from './types';
+import type { KbArticle, KbBlock, KbRelatedDocument, KbRelatedTask } from '../types';
 
 /**
- * ЗАГЛУШКА базы знаний (до бэкенда): разделы и статьи из макета, остальное — вымышленное.
- * Имена вымышленные (см. CLAUDE.md, раздел «Данные»).
+ * ТЕСТОВЫЕ ДАННЫЕ базы знаний: разделы и статьи из макета, остальное — вымышленное.
+ * Имена вымышленные (см. CLAUDE.md, раздел «Данные»). Их отдаёт подставной сервер (server.ts)
+ * в формате бэкенда; приложение берёт данные только из API.
  *
  * Доступ к разделам на бэкенде; здесь — openTo: роли, которым раздел открыт.
  * «Правовая база» закрыта всем, кроме R6 (делопроизводство) — как в макете для R1.

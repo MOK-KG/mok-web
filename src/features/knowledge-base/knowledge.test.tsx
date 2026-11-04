@@ -1,7 +1,7 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from '@/app/i18n';
 import { AppProviders } from '@/app/providers';
 import { routes } from '@/app/router';
@@ -10,23 +10,20 @@ import { ApiError } from '@/shared/api/errors';
 import type { RoleCode } from '@/shared/config/permissions';
 import { addDays } from '@/shared/lib/workDays';
 import {
-  articlesWithDocument,
-  createSection,
   fetchArticle,
-  fetchAttachment,
+  fetchDocumentArticles,
   fetchKnowledge,
-  markReviewed,
-  moveSection,
-  renameSection,
-  resetKnowledgeMock,
   saveArticle,
   searchKnowledge,
-  setSectionAccess,
+  toPerson,
   uploadAttachment,
 } from './api';
 import { parseDocumentNumber } from './DocumentDialog';
-import { createMockKnowledge } from './mock';
-import { checkedAt, freshnessOf, matchesQuery, queryStems } from './search';
+import { blocksToMarkdown, markdownToBlocks } from './markdown';
+import { freshnessOf, matchesQuery, queryStems } from './search';
+import { createMockKnowledge } from './testing/fixtures';
+import { installKnowledgeServer, type KnowledgeServer } from './testing/server';
+import type { KbBlock } from './types';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -49,188 +46,143 @@ describe('база знаний (логика)', () => {
     expect(matchesQuery(article, '   ')).toBe(true);
   });
 
-  it('закрытый раздел: статьи не приходят, не ищутся и не считаются, по ссылке — 403', () => {
-    resetKnowledgeMock(TODAY);
-    const roles: RoleCode[] = ['R1'];
-    const { sections, articles } = fetchKnowledge(roles);
-    const legal = sections.find((s) => s.id === 'legal');
-    expect(legal).toMatchObject({ accessible: false, count: 9 });
-    expect(articles.some((a) => a.sectionId === 'legal')).toBe(false);
-    // «Все статьи» = сумма открытых разделов
-    const open = sections.filter((s) => s.accessible).reduce((n, s) => n + s.count, 0);
-    expect(articles.length).toBe(open);
-    expect(articles.length).toBe(55);
-
-    const search = searchKnowledge(QUERY, roles);
-    expect(search.ids).toHaveLength(3);
-    // Совпадения в закрытом разделе не возвращаются даже числом (приёмка 11.3)
-    expect(search).toEqual({ ids: search.ids });
-    expect(searchKnowledge(QUERY, ['R6']).ids.length).toBe(5);
-
-    const legalArticle = createMockKnowledge(TODAY).articles.find((a) => a.sectionId === 'legal');
-    expect(() => fetchArticle(legalArticle?.id ?? '', roles)).toThrow(
-      expect.objectContaining({ status: 403 }),
-    );
-    expect(() => fetchArticle('kb-404', roles)).toThrow(expect.objectContaining({ status: 404 }));
-  });
-
-  it('роли, которой раздел открыт, он виден целиком: 64 статьи, 5 найдено', () => {
-    resetKnowledgeMock(TODAY);
-    expect(fetchKnowledge(['R6']).articles).toHaveLength(64);
-    expect(searchKnowledge(QUERY, ['R6']).ids).toHaveLength(5);
-  });
-
-  it('числа связей в списке совпадают с карточкой статьи', () => {
-    for (const a of createMockKnowledge(TODAY).articles) {
-      expect(a.tasksCount).toBe(a.relatedTasks.length);
-      expect(a.documentsCount).toBe(a.relatedDocuments.length);
-    }
-  });
-
-  it('новый раздел: открыт всем, пустой, название без повторов и не короче 3 символов', () => {
-    resetKnowledgeMock(TODAY);
-    const section = createSection('  Закупки   и   тендеры ');
-    expect(section).toMatchObject({ name: 'Закупки и тендеры', count: 0, accessible: true });
-    expect(fetchKnowledge(['R1']).sections.at(-1)).toEqual(section);
-    const codeOf = (name: string) => {
-      try {
-        createSection(name);
-      } catch (e) {
-        return e instanceof ApiError ? e.code : 'other';
-      }
-      return null;
-    };
-    expect(codeOf('закупки и ТЕНДЕРЫ')).toBe('section_exists');
-    expect(codeOf('делопроизводство')).toBe('section_exists');
-    expect(codeOf(' аб ')).toBe('section_name');
-  });
-
-  it('раздел переименовывается без повторов и сдвигается; статьи остаются в нём', () => {
-    resetKnowledgeMock(TODAY);
-    expect(renameSection('records', 'Документооборот')).toMatchObject({ count: 14 });
-    expect(() => renameSection('records', 'антидопинг')).toThrow(ApiError);
-    moveSection('records', 1);
-    const names = fetchKnowledge(['R1']).sections.map((s) => s.name);
-    expect(names.slice(0, 2)).toEqual(['Финансовые процессы', 'Документооборот']);
-    moveSection('records', -1);
-    moveSection('records', -1); // уже первый — не сдвигается
-    expect(fetchKnowledge(['R1']).sections[0].name).toBe('Документооборот');
-  });
-
-  it('«Проверено, актуально» снимает «Давно не обновляли», версия не добавляется', () => {
-    resetKnowledgeMock();
-    const stale = fetchKnowledge(['R1']).articles.find(
-      (a) => freshnessOf(checkedAt(a)) === 'stale',
-    );
-    if (!stale) throw new Error('нет устаревшей статьи');
-    const before = fetchArticle(stale.id, ['R1']);
-    const after = markReviewed(stale.id, ['R1']);
-    expect(freshnessOf(checkedAt(after))).toBe('fresh');
-    expect(after.updatedAt).toBe(before.updatedAt);
-    expect(after.versions).toHaveLength(before.versions.length);
-  });
-
-  it('каждая версия хранит свой текст; связанные задачи открываются', () => {
-    const { articles } = createMockKnowledge(TODAY);
-    for (const a of articles) {
-      expect(a.versions[0].body).toEqual(a.body);
-      for (const task of a.relatedTasks) expect(task.id).not.toBeNull();
-    }
-    resetKnowledgeMock(TODAY);
-    const saved = saveArticle(
-      'kb-1',
-      {
-        ...fetchArticle('kb-1', ['R1']),
-        change: 'сокращено',
-        body: [{ kind: 'paragraph', text: 'Коротко' }],
-      },
-      ['R1'],
-    );
-    expect(saved.versions[0]).toMatchObject({
-      number: 5,
-      body: [{ kind: 'paragraph', text: 'Коротко' }],
-    });
-    expect(saved.versions[1].body).toHaveLength(6);
-  });
-
-  it('доступ к разделу: закрытый для роли раздел виден, но статьи не приходят и не ищутся', () => {
-    resetKnowledgeMock(TODAY);
-    setSectionAccess('records', ['R6', 'R7']);
-    const r1 = fetchKnowledge(['R1']);
-    expect(r1.sections.find((s) => s.id === 'records')).toMatchObject({
-      accessible: false,
-      count: 14,
-      roles: ['R6', 'R7'],
-    });
-    expect(r1.articles.some((a) => a.sectionId === 'records')).toBe(false);
-    const r1Found = searchKnowledge(QUERY, ['R1']).ids;
-    const records = createMockKnowledge(TODAY).articles.filter((a) => a.sectionId === 'records');
-    expect(r1Found.some((id) => records.some((a) => a.id === id))).toBe(false);
-    expect(() => fetchArticle('kb-1', ['R1'])).toThrow(ApiError);
-    expect(fetchKnowledge(['R7']).articles.some((a) => a.sectionId === 'records')).toBe(true);
-    expect(() => setSectionAccess('records', [])).toThrow(ApiError);
-    setSectionAccess('records', null);
-    expect(fetchArticle('kb-1', ['R1']).id).toBe('kb-1');
-  });
-
-  it('вложение: загруженный файл скачивается как есть, демо-вложение — текстовой заглушкой', () => {
-    resetKnowledgeMock(TODAY);
-    const file = new File(['%PDF-1.4'], 'Положение о закупках.PDF', { type: 'application/pdf' });
-    const attachment = uploadAttachment(file);
-    expect(attachment).toMatchObject({ name: 'Положение о закупках', ext: 'pdf', size: 8 });
-    expect(fetchAttachment(attachment)).toEqual({
-      blob: file,
-      fileName: 'Положение о закупках.pdf',
-    });
-    const demo = fetchAttachment(fetchArticle('kb-1', ['R1']).attachments[0]);
-    expect(demo.fileName).toBe('Глоссарий терминов МОК на трёх языках.docx.txt');
-  });
-
-  it('документ: тип и корреспондент из номера, статьи с документом — только доступные', () => {
+  it('документ: тип и корреспондент из номера', () => {
     expect(parseDocumentNumber('Вх. №2026-0884 · Минюст')).toEqual({
       kind: 'incoming',
       number: '№2026-0884',
       party: 'Минюст',
     });
     expect(parseDocumentNumber('Приказ №58 · НОК КР').kind).toBe('order');
-    resetKnowledgeMock(TODAY);
-    const doc = fetchArticle('kb-1', ['R1']).relatedDocuments[0];
-    expect(articlesWithDocument(doc, ['R1']).map((a) => a.id)).toContain('kb-1');
-    setSectionAccess('records', ['R6']);
-    expect(articlesWithDocument(doc, ['R1']).map((a) => a.id)).not.toContain('kb-1');
   });
 
-  it('статья с вложениями и связями: счётчики в списке совпадают со связями', () => {
-    resetKnowledgeMock(TODAY);
-    const section = createSection('Закупки');
-    const article = saveArticle(
-      null,
-      {
-        sectionId: section.id,
-        title: 'Порядок закупок',
-        summary: 'Кто согласует закупку и в какие сроки.',
-        body: [{ kind: 'paragraph', text: 'Текст' }],
-        attachments: [{ id: 'att-x', name: 'Положение', ext: 'pdf', size: 1200 }],
-        relatedTasks: [{ id: null, title: 'Закупка ноутбуков', status: 'queue' }],
-        relatedDocuments: [
-          { number: 'Приказ №1', title: 'О закупках' },
-          { number: 'Приказ №2', title: 'О тендерах' },
-        ],
-        change: 'первая редакция',
-      },
-      ['R7'],
-    );
-    const list = fetchKnowledge(['R7']);
-    expect(list.sections.find((s) => s.id === section.id)?.count).toBe(1);
-    expect(list.articles.find((a) => a.id === article.id)).toMatchObject({
-      tasksCount: 1,
-      documentsCount: 2,
+  it('автор: короткое имя и постоянный цвет; без автора — прочерк', () => {
+    const person = { id: '7', email: 'n.bakirov@olympic.kg', name: 'Нурлан Бакиров' };
+    expect(toPerson(person)).toMatchObject({
+      id: '7',
+      name: 'Нурлан Бакиров',
+      short: 'Н. Бакиров',
     });
-    expect(fetchArticle(article.id, ['R7']).attachments).toHaveLength(1);
+    expect(toPerson(person).tone).toBe(toPerson({ ...person }).tone);
+    expect(toPerson(null).name).toBe('—');
+  });
+});
+
+describe('текст статьи: блоки ↔ markdown', () => {
+  const blocks: KbBlock[] = [
+    { kind: 'paragraph', text: 'Перевод заказывают заранее.\nОригинал — в деле.' },
+    { kind: 'heading', id: 'h-1', text: 'Сроки' },
+    { kind: 'list', items: ['Минюст — 5 дней', 'МОК — 10 дней'] },
+    { kind: 'note', title: 'Важно', text: 'Подшивать перевод вместо оригинала нельзя.' },
+    { kind: 'heading', id: 'h-2', text: 'Кто отвечает' },
+    { kind: 'note', title: '', text: 'Без заголовка' },
+  ];
+
+  it('markdown для поиска и ссылок на бэкенде', () => {
+    expect(blocksToMarkdown(blocks)).toBe(
+      [
+        'Перевод заказывают заранее.\nОригинал — в деле.',
+        '## Сроки',
+        '- Минюст — 5 дней\n- МОК — 10 дней',
+        '> **Важно**\n> Подшивать перевод вместо оригинала нельзя.',
+        '## Кто отвечает',
+        '> Без заголовка',
+      ].join('\n\n'),
+    );
+  });
+
+  it('туда и обратно без потерь; якоря заголовков — по порядку', () => {
+    expect(markdownToBlocks(blocksToMarkdown(blocks))).toEqual(blocks);
+  });
+
+  it('markdown из импорта: заголовок без пустой строки, нумерованный список', () => {
+    expect(markdownToBlocks('# Устав\nТекст устава\n\n1. Первое\n2. Второе')).toEqual([
+      { kind: 'heading', id: 'h-1', text: 'Устав' },
+      { kind: 'paragraph', text: 'Текст устава' },
+      { kind: 'list', items: ['Первое', 'Второе'] },
+    ]);
+  });
+
+  it('статьи из тестовых данных переживают сохранение в markdown', () => {
+    for (const a of createMockKnowledge(TODAY).articles) {
+      const ids = a.body.filter((b) => b.kind === 'heading').map((_, i) => `h-${i + 1}`);
+      const again = markdownToBlocks(blocksToMarkdown(a.body));
+      expect(
+        again.filter((b) => b.kind === 'heading').map((b) => b.kind === 'heading' && b.id),
+      ).toEqual(ids);
+      expect(again.length).toBe(a.body.length);
+    }
+  });
+});
+
+describe('база знаний через API', () => {
+  let server: KnowledgeServer;
+  beforeEach(() => {
+    sessionStorage.clear();
+    sessionStorage.setItem('nok.mockSession', JSON.stringify(mockSessionFor('active', 'R1')));
+    server = installKnowledgeServer({ today: TODAY });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('закрытый раздел: статьи не приходят, не ищутся и не считаются, по ссылке — 403', async () => {
+    const { sections, articles } = await fetchKnowledge();
+    expect(sections.find((s) => s.id === 'legal')).toMatchObject({ accessible: false, count: 9 });
+    expect(articles.some((a) => a.sectionId === 'legal')).toBe(false);
+    // «Все статьи» = сумма открытых разделов
+    const open = sections.filter((s) => s.accessible).reduce((n, s) => n + s.count, 0);
+    expect(articles.length).toBe(open);
+    expect((await searchKnowledge(QUERY)).ids).toHaveLength(3);
+
+    const legal = server.articles.find((a) => a.sectionId === 'legal');
+    await expect(fetchArticle(legal?.id ?? '')).rejects.toMatchObject({ status: 403 });
+    await expect(fetchArticle('kb-404')).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it('статья приходит блоками; версии — со своим текстом', async () => {
+    const article = await fetchArticle('kb-1');
+    expect(article.body.filter((b) => b.kind === 'heading')).toHaveLength(2);
+    expect(article.versions.map((v) => v.number)).toEqual([4, 3, 2]);
+    expect(article.versions[2].body).not.toEqual(article.versions[0].body);
+    expect(article.attachments[0]).toMatchObject({
+      name: 'Глоссарий терминов МОК на трёх языках',
+      ext: 'docx',
+    });
+  });
+
+  it('сохранение: новая версия, новые файлы загружаются, убранные — в архив', async () => {
+    const article = await fetchArticle('kb-1');
+    const file = new File(['%PDF-1.4'], 'Положение о закупках.PDF', { type: 'application/pdf' });
+    const added = uploadAttachment(file);
+    expect(added).toMatchObject({ name: 'Положение о закупках', ext: 'pdf', size: 8 });
+
+    const saved = await saveArticle(article, {
+      ...article,
+      body: [{ kind: 'paragraph', text: 'Коротко' }],
+      attachments: [...article.attachments.slice(1), added],
+      change: 'сокращено',
+    });
+    expect(saved.version).toBe(5);
+    expect(saved.versions[0]).toMatchObject({ number: 5, change: 'сокращено' });
+    expect(saved.versions[0].body).toEqual([{ kind: 'paragraph', text: 'Коротко' }]);
+    expect(saved.attachments.map((a) => `${a.name}.${a.ext}`)).toEqual([
+      'Форма служебной записки на перевод.docx',
+      'Договор с бюро переводов 2026.pdf',
+      'Положение о закупках.pdf',
+    ]);
+    expect(server.archived.has(article.attachments[0].id)).toBe(true);
+    expect([...server.files.values()]).toEqual([file]);
+  });
+
+  it('статьи с документом — только из открытых разделов', async () => {
+    const doc = (await fetchArticle('kb-1')).relatedDocuments[0];
+    expect((await fetchDocumentArticles(doc)).map((a) => a.id)).toContain('kb-1');
+    const records = server.sections.find((s) => s.id === 'records');
+    if (records) records.openTo = ['R6'];
+    expect((await fetchDocumentArticles(doc)).map((a) => a.id)).not.toContain('kb-1');
   });
 });
 
 let root: Root;
+let server: KnowledgeServer;
 let container: HTMLDivElement;
 const text = () => container.textContent ?? '';
 const waitFor = async (check: () => boolean, timeout = 2000) => {
@@ -245,7 +197,7 @@ async function open(url: string, role: RoleCode = 'R3') {
   vi.stubEnv('VITE_AUTH_MOCK', 'active');
   sessionStorage.clear();
   sessionStorage.setItem('nok.mockSession', JSON.stringify(mockSessionFor('active', role)));
-  resetKnowledgeMock();
+  server = installKnowledgeServer();
   await i18n.changeLanguage('ru');
   const router = createMemoryRouter(routes, { initialEntries: [url] });
   container = document.createElement('div');
@@ -265,6 +217,7 @@ describe('база знаний (экраны)', () => {
     act(() => root.unmount());
     container.remove();
     vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
   });
 
   it('поиск в разделе: счётчики совпадают с подсвеченными статьями', async () => {
@@ -373,6 +326,7 @@ describe('редактор статьи', () => {
     act(() => root.unmount());
     container.remove();
     vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
   });
 
   it('новая статья: публикуется в выбранный раздел, версия 1, счётчик раздела растёт', async () => {
@@ -392,7 +346,7 @@ describe('редактор статьи', () => {
     expect(container.querySelector('article h2')?.textContent).toBe('Порядок выдачи справок');
     expect(text()).toContain('Версия 1');
     expect(text()).toContain('первая редакция');
-    expect(fetchKnowledge(['R1']).sections.find((s) => s.id === 'records')?.count).toBe(15);
+    expect(server.articles.filter((a) => a.sectionId === 'records')).toHaveLength(15);
   });
 
   it('пустая форма не сохраняется: ошибки у полей', async () => {
@@ -419,8 +373,8 @@ describe('редактор статьи', () => {
     expect(text()).toContain('версия 5');
     expect(text()).toContain('Версия 5');
     expect(text()).toContain('А. Дуйшеев — добавлены сроки для МОК');
-    // Якоря заголовков сохранились — содержание по-прежнему ведёт к ним
-    expect(container.querySelector('#when')).not.toBeNull();
+    // Якоря заголовков — по порядку, содержание по-прежнему ведёт к ним
+    expect(container.querySelector('#h-1')).not.toBeNull();
     // Вложения и связи, которых не касались, при сохранении не теряются
     expect(text()).toContain('Глоссарий терминов МОК на трёх языках');
     expect(text()).toContain('Перевод устава на кыргызский язык');

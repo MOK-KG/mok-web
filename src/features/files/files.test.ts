@@ -1,21 +1,28 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { chatMembers, fetchChatFiles, resetChatMock } from '../chat/api';
 import { fetchDocuments, resetDocumentsMock } from '../documents/api';
-import { fetchKnowledgeFiles } from '../knowledge-base/api';
+import { fetchKnowledgeFiles, type KbFile } from '../knowledge-base/api';
+import { installKnowledgeServer } from '../knowledge-base/testing/server';
 import { collectFiles, fileTypeOf, filterFiles, formatSize, splitName } from './collect';
 
 // Среда, 9 сентября 2026 — «сегодня» в макете
 const TODAY = '2026-09-09';
 
-beforeEach(() => {
+let knowledge: KbFile[] = [];
+
+beforeEach(async () => {
   resetDocumentsMock(TODAY);
   resetChatMock();
+  sessionStorage.clear();
+  installKnowledgeServer({ today: TODAY, roles: ['R1'] });
+  knowledge = await fetchKnowledgeFiles();
 });
+afterEach(() => vi.unstubAllGlobals());
 
 const all = () =>
   collectFiles({
     documents: fetchDocuments(),
-    knowledge: fetchKnowledgeFiles(['R1']),
+    knowledge,
     chat: fetchChatFiles(),
     memberName: (id) => chatMembers[id]?.short ?? null,
   });
@@ -25,9 +32,8 @@ describe('файлы из разделов', () => {
     const items = all();
     const fromDocs = fetchDocuments().reduce((n, d) => n + d.attachments.length, 0);
     expect(items.filter((f) => f.source === 'documents')).toHaveLength(fromDocs);
-    expect(items.filter((f) => f.source === 'knowledge')).toHaveLength(
-      fetchKnowledgeFiles(['R1']).length,
-    );
+    expect(items.filter((f) => f.source === 'knowledge')).toHaveLength(knowledge.length);
+    expect(knowledge.length).toBeGreaterThan(0);
     expect(items.filter((f) => f.source === 'chat')).toHaveLength(3);
     expect(new Set(items.map((f) => f.id)).size).toBe(items.length);
   });
@@ -40,7 +46,7 @@ describe('файлы из разделов', () => {
   });
 
   it('раздел без права не передаётся — его файлов нет', () => {
-    const items = collectFiles({ knowledge: fetchKnowledgeFiles(['R1']) });
+    const items = collectFiles({ knowledge });
     expect(items.every((f) => f.source === 'knowledge')).toBe(true);
   });
 
