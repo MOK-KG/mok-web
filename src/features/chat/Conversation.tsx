@@ -3,6 +3,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Fragment, type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { useCurrentPersonId } from '@/features/auth';
 import { useTasks } from '@/features/tasks/api';
 import { formatIsoDate } from '@/shared/lib/date';
 import { toast } from '@/shared/lib/toast';
@@ -19,9 +20,9 @@ import {
 } from '@/shared/ui/icons';
 import { Tooltip } from '@/shared/ui/Tooltip';
 import {
-  chatMembers,
-  currentMemberId,
+  chatFileUrl,
   threadsOf,
+  useChatMembers,
   useMarkChatRead,
   useMessages,
   useSendMessage,
@@ -52,6 +53,7 @@ export function Conversation({ chat }: { chat: ChatSummary }) {
   const threadRoot = thread ? all.find((m) => m.id === thread) : undefined;
   const markRead = useMarkChatRead();
   const dayLabel = useDayLabel();
+  const chatMembers = useChatMembers();
   const end = useRef<HTMLDivElement>(null);
 
   // Открыли переписку — всё в ней прочитано; пришло новое — тоже
@@ -112,6 +114,8 @@ function Header({ chat }: { chat: ChatSummary }) {
   const { t } = useTranslation();
   const setMuted = useSetMuted();
   const line = useMemberLine(chat.peerId);
+  const chatMembers = useChatMembers();
+  const me = useCurrentPersonId();
   const peer = chat.peerId ? chatMembers[chat.peerId] : null;
   const names = chat.memberIds.map((id) => chatMembers[id]?.short).filter(Boolean);
   const membersLine =
@@ -173,7 +177,7 @@ function Header({ chat }: { chat: ChatSummary }) {
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[12px] text-text">
                       {m.name}
-                      {id === currentMemberId && ` · ${t('access.you')}`}
+                      {id === me && ` · ${t('access.you')}`}
                     </span>
                     <span className="block truncate text-[10.5px] text-dim">
                       {m.role} · {t(`access.roles.${m.role}`)}
@@ -212,9 +216,22 @@ function Message({
   /** Открыть ветку; только в каналах департаментов */
   onThread?: () => void;
 }) {
-  const { t } = useTranslation();
   if (m.kind === 'system') return <SystemMessage message={m} peerName={peerName ?? ''} />;
   if (m.kind === 'task') return <TaskCard message={m} />;
+  return <TextMessage message={m} replies={replies} onThread={onThread} />;
+}
+
+function TextMessage({
+  message: m,
+  replies,
+  onThread,
+}: {
+  message: ChatMessage;
+  replies?: ChatMessage[];
+  onThread?: () => void;
+}) {
+  const { t } = useTranslation();
+  const chatMembers = useChatMembers();
   const author = m.authorId ? chatMembers[m.authorId] : null;
   if (!author) return null;
   return (
@@ -234,11 +251,15 @@ function Message({
           </p>
         )}
         {m.file && (
-          <span className="mt-[6px] inline-flex h-9 items-center gap-2 rounded-8 border border-line bg-surface px-3 text-[12px] text-sub">
+          <a
+            href={chatFileUrl(m.id)}
+            download
+            className="mt-[6px] inline-flex h-9 items-center gap-2 rounded-8 border border-line bg-surface px-3 text-[12px] text-sub hover:border-info hover:text-text"
+          >
             <AttachLargeIcon size={16} className="text-faint" />
             {m.file.name}
             {m.file.ext && <span className="text-[10.5px] text-dim">{m.file.ext}</span>}
-          </span>
+          </a>
         )}
         {onThread &&
           (replies && replies.length > 0 ? (
@@ -271,7 +292,8 @@ function TaskCard({ message: m }: { message: ChatMessage }) {
   const { t, i18n } = useTranslation();
   const tasks = useTasks('department').data;
   if (!m.task) return null;
-  const live = tasks?.find((x) => x.title === m.task?.title);
+  const live =
+    tasks?.find((x) => (m.task?.id ? x.id === m.task.id : x.title === m.task?.title)) ?? null;
   const status = live?.status ?? m.task.status;
   const due = live ? live.due : m.task.due;
   const assignee = live?.assignee?.short ?? m.task.assignee;
@@ -371,18 +393,7 @@ function Composer({ chat }: { chat: ChatSummary }) {
   };
   const attach = (files: FileList | null) => {
     for (const f of Array.from(files ?? [])) {
-      const dot = f.name.lastIndexOf('.');
-      send.mutate({
-        chatId: chat.id,
-        message: {
-          kind: 'text',
-          text: '',
-          file: {
-            name: dot > 0 ? f.name.slice(0, dot) : f.name,
-            ext: dot > 0 ? f.name.slice(dot + 1).toLowerCase() : '',
-          },
-        },
-      });
+      send.mutate({ chatId: chat.id, message: { kind: 'text', text: '', upload: f } });
     }
   };
   const icon =
@@ -457,6 +468,7 @@ function Composer({ chat }: { chat: ChatSummary }) {
               kind: 'task',
               text: '',
               task: {
+                id: task.id,
                 title: task.title,
                 status: task.status,
                 assignee: task.assignee?.short ?? '—',

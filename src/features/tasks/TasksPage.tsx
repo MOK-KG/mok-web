@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Can, useCan } from '@/features/auth';
-import { useTabCounts, useTasks } from './api';
+import { useBoard } from './api';
 import { Board, type Grouping } from './board/Board';
 import { QueueBanner } from './board/QueueBanner';
 import { ActiveFilters, Toolbar } from './board/Toolbar';
@@ -39,10 +39,10 @@ export function TasksPage() {
       p.delete('task');
       return p;
     });
-  const counts = useTabCounts();
-  const tasks = useTasks(tab);
+  const board = useBoard(tab);
+  const counts = useBoard('department').data?.counts;
 
-  const all = tasks.data ?? [];
+  const all = board.data?.tasks ?? [];
   const visible = useMemo(() => applyFilters(all, filters, search), [all, filters, search]);
 
   return (
@@ -50,7 +50,7 @@ export function TasksPage() {
       <Toolbar
         tab={tab}
         onTab={setTab}
-        counts={counts.data}
+        counts={counts}
         grouping={grouping}
         onGrouping={setGrouping}
         search={search}
@@ -66,10 +66,10 @@ export function TasksPage() {
       </Can>
       <div className="overflow-x-auto pb-2">
         <Board
+          columns={board.data?.columns ?? []}
           tasks={visible}
           grouping={grouping}
           canDrag={can('tasks.edit') && tab !== 'completed'}
-          inProgressAll={all.filter((t) => t.status === 'in_progress').length}
           filtered={hasFilters(filters) || search.trim() !== ''}
           onOpen={openTask}
         />

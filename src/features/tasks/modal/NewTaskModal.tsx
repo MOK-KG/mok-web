@@ -5,7 +5,8 @@ import { type DragEvent, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
-import { useSession } from '@/features/auth';
+import { useCurrentAbsences } from '@/features/absences/api';
+import { useCan, useSession } from '@/features/auth';
 import { formatIsoDate } from '@/shared/lib/date';
 import { initials } from '@/shared/lib/text';
 import { diffDays, todayInBishkek } from '@/shared/lib/workDays';
@@ -21,30 +22,31 @@ import {
   XIcon,
 } from '@/shared/ui/icons';
 import { absenceOf } from '../absences';
-import { defaultDue, findSimilar, useCreateTask } from '../api';
+import { defaultDue, useCreateTask, useDirectory, useSimilarTasks, useUpdateTask } from '../api';
 import { type DueProblem, dueProblem } from '../deadline';
-import { people, projects } from '../directory';
 import type { Letter } from '../mailQueue';
-import type { Person, Task } from '../types';
+import type { Person, Task, TaskDetail } from '../types';
 import { toneClasses } from '../ui';
 
 const priorities = ['low', 'normal', 'high'] as const;
 
-const schema = z
-  .object({
-    title: z.string().trim().min(3, 'errorTitle'),
-    description: z.string(),
-    assigneeId: z.string().min(1, 'errorAssignee'),
-    due: z.string().min(1, 'errorDue'),
-    projectId: z.string(),
-    priority: z.enum(priorities),
-  })
-  .superRefine((v, ctx) => {
-    if (!v.due) return;
-    // Срок — не в прошлом и только рабочий день по производственному календарю КР
-    const problem = dueProblem(v.due);
-    if (problem) ctx.addIssue({ code: 'custom', path: ['due'], message: dueMessage(problem) });
-  });
+/** Срок, который уже стоит у задачи, не проверяется — правка просроченной задачи возможна */
+const makeSchema = (keepDue: string | null = null) =>
+  z
+    .object({
+      title: z.string().trim().min(3, 'errorTitle'),
+      description: z.string(),
+      assigneeId: z.string().min(1, 'errorAssignee'),
+      due: z.string().min(1, 'errorDue'),
+      projectId: z.string(),
+      priority: z.enum(priorities),
+    })
+    .superRefine((v, ctx) => {
+      if (!v.due || v.due === keepDue) return;
+      // Срок — не в прошлом и только рабочий день по производственному календарю КР
+      const problem = dueProblem(v.due);
+      if (problem) ctx.addIssue({ code: 'custom', path: ['due'], message: dueMessage(problem) });
+    });
 
 /** Ключ ошибки срока для перевода newTask.* (праздник — через «|») */
 export const dueMessage = (p: DueProblem) =>
@@ -54,10 +56,7 @@ export const dueMessage = (p: DueProblem) =>
       ? 'errorDueWeekend'
       : `errorDueHoliday|${p.holiday}`;
 
-type FormValues = z.infer<typeof schema>;
-
-const staff: Person[] = [people.ad, people.nb, people.dt, people.ka, people.me];
-const projectList = Object.values(projects);
+type FormValues = z.infer<ReturnType<typeof makeSchema>>;
 
 const label = 'text-[10.5px] font-medium tracking-[0.2px] text-sub';
 const fieldBox =
@@ -80,10 +79,12 @@ type Props = {
   onOpenTask: (id: string) => void;
   /** Письмо из очереди, которое оформляют задачей вручную: тема и текст подставляются */
   letter?: Letter | null;
+  /** Правка существующей задачи: поля заполнены, кнопка — «Сохранить» */
+  task?: TaskDetail | null;
 };
 
 /** Окно «Новая задача» (макет Figma). Дубли и отпуск предупреждают, но не блокируют создание */
-export function NewTaskModal({ open, onClose, onOpenTask, letter }: Props) {
+export function NewTaskModal({ open, onClose, onOpenTask, letter, task }: Props) {
   const { t } = useTranslation();
   return (
     <Dialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
@@ -93,7 +94,9 @@ export function NewTaskModal({ open, onClose, onOpenTask, letter }: Props) {
           aria-describedby={undefined}
           className="fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100vh-48px)] w-[min(760px,calc(100vw-48px))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-18 border border-line bg-panel shadow-[0_20px_60px_rgba(0,0,0,0.5)]"
         >
-          {open && <NewTaskForm onClose={onClose} onOpenTask={onOpenTask} letter={letter} />}
+          {open && (
+            <NewTaskForm onClose={onClose} onOpenTask={onOpenTask} letter={letter} task={task} />
+          )}
           <Dialog.Close
             aria-label={t('taskCard.close')}
             className="absolute right-[27px] top-[23px] flex size-8 items-center justify-center rounded-8 text-faint hover:bg-row-highlight hover:text-text"
@@ -106,33 +109,56 @@ export function NewTaskModal({ open, onClose, onOpenTask, letter }: Props) {
   );
 }
 
-function NewTaskForm({ onClose, onOpenTask, letter }: Omit<Props, 'open'>) {
+function NewTaskForm({ onClose, onOpenTask, letter, task: editing }: Omit<Props, 'open'>) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
   const department = useSession().data?.user.department;
+  const { can } = useCan();
   const create = useCreateTask();
-  const [files, setFiles] = useState<string[]>([]);
+  const update = useUpdateTask();
+  // Сменить исполнителя существующей задачи — право tasks.assign
+  const assigneeLocked = !!editing && !can('tasks.assign');
+  // Сотрудники (кому можно назначить) и проекты — справочник бэкенда
+  const directory = useDirectory().data;
+  const staff: Person[] = directory?.people ?? [];
+  const projectList = directory?.projects ?? [];
+  const [files, setFiles] = useState<File[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      title: letter?.subject ?? '',
-      description: letter?.body ?? '',
-      assigneeId: '',
-      due: defaultDue(),
-      projectId: '',
-      priority: 'normal',
-    },
+    resolver: zodResolver(makeSchema(editing?.due ?? null)),
+    defaultValues: editing
+      ? {
+          title: editing.title,
+          description: editing.description,
+          assigneeId: editing.assignee?.id ?? '',
+          due: editing.due ?? defaultDue(),
+          projectId: editing.project?.id ?? '',
+          priority: editing.priority,
+        }
+      : {
+          title: letter?.subject ?? '',
+          description: letter?.body ?? '',
+          assigneeId: '',
+          due: defaultDue(),
+          projectId: '',
+          priority: 'normal',
+        },
   });
   const { register, control, handleSubmit, watch, formState } = form;
   const errors = formState.errors;
   const title = watch('title');
   const due = watch('due');
-  const assignee = staff.find((p) => p.id === watch('assigneeId'));
+  // У задачи может быть исполнитель не из справочника (уволен) — показываем как есть
+  const assignee =
+    staff.find((p) => p.id === watch('assigneeId')) ??
+    (editing?.assignee?.id === watch('assigneeId') ? editing.assignee : undefined) ??
+    undefined;
 
-  const similar = title.trim().length >= 6 ? findSimilar(title) : [];
-  const absence = absenceOf(assignee?.id);
+  const similarQuery = useSimilarTasks(title);
+  // При правке «похожие» не показываем: задача уже есть
+  const similar = !editing && title.trim().length >= 6 ? (similarQuery.data ?? []) : [];
+  const absence = absenceOf(assignee?.id, todayInBishkek(), useCurrentAbsences().data);
 
   const errorText = (message?: string) => {
     if (!message) return null;
@@ -141,6 +167,23 @@ function NewTaskForm({ onClose, onOpenTask, letter }: Omit<Props, 'open'>) {
   };
 
   const onSubmit = handleSubmit(async (v) => {
+    if (editing) {
+      await update.mutateAsync({
+        id: editing.id,
+        title: v.title.trim(),
+        description: v.description.trim(),
+        assignee:
+          v.assigneeId !== (editing.assignee?.id ?? '')
+            ? (staff.find((p) => p.id === v.assigneeId) ?? null)
+            : null,
+        due: v.due,
+        project: projectList.find((p) => p.id === v.projectId) ?? null,
+        priority: v.priority,
+        files,
+      });
+      onClose();
+      return;
+    }
     const task = await create.mutateAsync({
       title: v.title.trim(),
       description: v.description.trim(),
@@ -148,15 +191,14 @@ function NewTaskForm({ onClose, onOpenTask, letter }: Omit<Props, 'open'>) {
       due: v.due,
       project: projectList.find((p) => p.id === v.projectId) ?? null,
       priority: v.priority,
-      attachments: files.length + (letter?.attachments.length ?? 0),
+      files,
       letter: letter ?? undefined,
     });
     onClose();
     onOpenTask(task.id);
   });
 
-  const addFiles = (list: FileList | null) =>
-    list && setFiles((f) => [...f, ...Array.from(list, (file) => file.name)]);
+  const addFiles = (list: FileList | null) => list && setFiles((f) => [...f, ...Array.from(list)]);
 
   const onDrop = (e: DragEvent) => {
     e.preventDefault();
@@ -167,7 +209,7 @@ function NewTaskForm({ onClose, onOpenTask, letter }: Omit<Props, 'open'>) {
     <form onSubmit={onSubmit} noValidate className="flex min-h-0 flex-col">
       <header className="border-b border-line px-[27px] pb-[14px] pt-[25px]">
         <Dialog.Title className="text-[18px] font-semibold tracking-[-0.35px] text-text">
-          {t('newTask.title')}
+          {t(editing ? 'newTask.editTitle' : 'newTask.title')}
         </Dialog.Title>
         {department && <p className="mt-[2px] text-[12px] text-faint">{department}</p>}
       </header>
@@ -247,9 +289,14 @@ function NewTaskForm({ onClose, onOpenTask, letter }: Omit<Props, 'open'>) {
               control={control}
               name="assigneeId"
               render={({ field }) => (
-                <Select.Root value={field.value} onValueChange={field.onChange}>
+                <Select.Root
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  disabled={assigneeLocked}
+                >
                   <Select.Trigger
                     aria-labelledby="nt-assignee-label"
+                    title={assigneeLocked ? t('newTask.assigneeLocked') : undefined}
                     data-invalid={!!errors.assigneeId}
                     className={`${fieldBox} mt-[6px] px-[11px]`}
                   >
@@ -284,7 +331,9 @@ function NewTaskForm({ onClose, onOpenTask, letter }: Omit<Props, 'open'>) {
               <input
                 id="nt-due"
                 type="date"
-                min={todayInBishkek()}
+                min={
+                  editing?.due && editing.due < todayInBishkek() ? editing.due : todayInBishkek()
+                }
                 {...register('due')}
                 aria-invalid={!!errors.due}
                 className="min-w-0 flex-1 bg-transparent text-[12.5px] text-text outline-none [color-scheme:dark] [[data-theme=light]_&]:[color-scheme:light]"
@@ -412,7 +461,9 @@ function NewTaskForm({ onClose, onOpenTask, letter }: Omit<Props, 'open'>) {
             onChange={(e) => addFiles(e.target.files)}
           />
           {files.length > 0 && (
-            <p className="mt-1 truncate text-[11px] text-faint">{files.join(', ')}</p>
+            <p className="mt-1 truncate text-[11px] text-faint">
+              {files.map((f) => f.name).join(', ')}
+            </p>
           )}
         </div>
       </div>
@@ -423,8 +474,8 @@ function NewTaskForm({ onClose, onOpenTask, letter }: Omit<Props, 'open'>) {
           disabled={formState.isSubmitting}
           className="flex h-[42px] items-center gap-2 rounded-9 bg-brand-red px-4 text-[13px] font-semibold tracking-[-0.1px] text-[#FFFFFF] hover:opacity-90 disabled:opacity-60"
         >
-          <PlusMediumIcon size={17} />
-          {t('newTask.create')}
+          {!editing && <PlusMediumIcon size={17} />}
+          {t(editing ? 'newTask.save' : 'newTask.create')}
         </button>
         <button
           type="button"

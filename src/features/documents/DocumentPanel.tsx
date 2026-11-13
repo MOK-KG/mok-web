@@ -2,18 +2,17 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { useCan } from '@/features/auth';
+import { useCan, useMe } from '@/features/auth';
 import { useDocumentArticles } from '@/features/knowledge-base/api';
 import { Avatar } from '@/features/knowledge-base/parts';
-import { useTasks } from '@/features/tasks/api';
+import { toPerson, useDirectory } from '@/features/tasks/api';
 import { dueProblem } from '@/features/tasks/deadline';
-import { people } from '@/features/tasks/directory';
 import { dueMessage } from '@/features/tasks/modal/NewTaskModal';
-import type { Person } from '@/features/tasks/types';
 import { formatInBishkek, formatIsoDate } from '@/shared/lib/date';
 import { addWorkingDays, todayInBishkek } from '@/shared/lib/workDays';
 import { BookIcon, FileIcon, XIcon } from '@/shared/ui/icons';
 import {
+  attachmentUrl,
   docNumber,
   docRef,
   useAnnul,
@@ -36,9 +35,6 @@ import {
   secondaryButton,
 } from './parts';
 import type { DocumentRecord } from './types';
-
-// Как в форме новой задачи
-const staff: Person[] = [people.ad, people.nb, people.dt, people.ka, people.me];
 
 /** Карточка документа справа: поля, резолюция, действия по правам, журнал */
 export function DocumentPanel({ docId, onClose }: { docId: string | null; onClose: () => void }) {
@@ -78,8 +74,9 @@ function Body({ doc }: { doc: DocumentRecord }) {
   const { can } = useCan();
   const [form, setForm] = useState<'resolution' | 'annul' | null>(null);
   const [letterOpen, setLetterOpen] = useState(false);
-  // Подписывает генеральный секретарь; у отправленного — кто отправил
-  const signer = doc.signer?.short ?? people.ad.short;
+  // У отправленного — кто отправил; у проекта — кто будет выпускать (текущий сотрудник)
+  const me = useMe();
+  const signer = doc.signer?.short ?? (me ? toPerson(me).short : '');
   const issue = useIssue();
   const markDone = useMarkDone();
   const number = docNumber(doc);
@@ -133,13 +130,16 @@ function Body({ doc }: { doc: DocumentRecord }) {
 
         {doc.attachments.length > 0 && (
           <ul className="mt-4 flex flex-col gap-[6px]">
-            {doc.attachments.map((name) => (
-              <li
-                key={name}
-                className="flex items-center gap-2 rounded-8 border border-line bg-surface px-3 py-2 text-[12px] text-sub"
-              >
-                <FileIcon size={14} className="shrink-0 text-faint" />
-                <span className="truncate">{name}</span>
+            {doc.attachments.map((a) => (
+              <li key={a.id}>
+                <a
+                  href={attachmentUrl(a.id)}
+                  download={a.name}
+                  className="flex items-center gap-2 rounded-8 border border-line bg-surface px-3 py-2 text-[12px] text-sub hover:border-info-line hover:text-text"
+                >
+                  <FileIcon size={14} className="shrink-0 text-faint" />
+                  <span className="truncate">{a.name}</span>
+                </a>
               </li>
             ))}
           </ul>
@@ -303,10 +303,7 @@ function Body({ doc }: { doc: DocumentRecord }) {
 function ResolutionBlock({ doc }: { doc: DocumentRecord }) {
   const { t, i18n } = useTranslation();
   const r = doc.resolution;
-  const active = useTasks('department').data ?? [];
-  const done = useTasks('completed').data ?? [];
   if (!r) return null;
-  const task = [...active, ...done].find((x) => x.title === r.taskTitle);
   return (
     <section className="mt-5 rounded-11 border border-info-line bg-info-chip px-4 py-3">
       <h3 className={capsTitle}>{t('documents.resolution')}</h3>
@@ -322,12 +319,12 @@ function ResolutionBlock({ doc }: { doc: DocumentRecord }) {
       <p className="mt-1 text-[10.5px] text-dim">
         {r.author.short} · {formatInBishkek(r.at, 'd MMM, HH:mm', i18n.language)}
       </p>
-      {task && (
+      {r.taskId && r.taskCode && (
         <Link
-          to={`/tasks?task=${task.id}`}
+          to={`/tasks?task=${r.taskId}`}
           className="mt-3 inline-flex items-center gap-2 text-[12px] font-medium text-info hover:underline"
         >
-          {t('documents.openTask', { code: task.code })}
+          {t('documents.openTask', { code: r.taskCode })}
         </Link>
       )}
     </section>
@@ -337,6 +334,7 @@ function ResolutionBlock({ doc }: { doc: DocumentRecord }) {
 function ResolutionForm({ doc, onDone }: { doc: DocumentRecord; onDone: () => void }) {
   const { t } = useTranslation();
   const resolve = useResolve();
+  const staff = useDirectory().data?.people ?? [];
   const [text, setText] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
   const [due, setDue] = useState(addWorkingDays(todayInBishkek(), 5));

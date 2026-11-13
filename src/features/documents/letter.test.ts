@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createDraft, fetchDocuments, issue, resetDocumentsMock, updateLetter } from './api';
+import { createDraft, fetchDocuments, issue, updateLetter } from './api';
 import {
   fillTemplate,
   letterDate,
@@ -10,36 +10,37 @@ import {
   switchLang,
 } from './letter';
 import { letterHtml } from './letterHtml';
+import { installDocumentsServer } from './testing/server';
 
 // Среда, 9 сентября 2026 — «сегодня» в макете
 const TODAY = '2026-09-09';
 
-beforeEach(() => resetDocumentsMock(TODAY));
+beforeEach(() => {
+  installDocumentsServer({ today: TODAY });
+});
 
 const draft = () =>
-  createDraft(
-    { kind: 'outgoing', title: 'О календаре', party: 'Минспорт', summary: '', attachments: [] },
-    TODAY,
-  );
+  createDraft({ kind: 'outgoing', title: 'О календаре', party: 'Минспорт', summary: '' });
 
 describe('письмо на бланке', () => {
-  it('новый исходящий — с письмом по шаблону на русском', () => {
-    const d = draft();
+  it('новый исходящий — с письмом по шаблону на русском', async () => {
+    const d = await draft();
     expect(d.letter).toMatchObject({ lang: 'ru', templateId: 'standard', addressee: 'Минспорт' });
     expect(d.letter?.body).toContain('Уважаемый коллега!');
   });
 
-  it('проект можно править; после отправки — нельзя, есть отпечаток', () => {
-    const d = draft();
+  it('проект можно править; после отправки — нельзя, есть отпечаток', async () => {
+    const d = await draft();
     if (!d.letter) throw new Error('нет письма');
-    const edited = updateLetter(d.id, { ...d.letter, body: 'Новый текст' });
+    const edited = await updateLetter(d.id, { ...d.letter, body: 'Новый текст' });
     expect(edited.letter?.body).toBe('Новый текст');
     expect(edited.history[0].kind).toBe('edited');
-    const sent = issue(d.id, TODAY);
+    const sent = await issue(d.id);
     expect(sent.fingerprint).toMatch(/^[0-9a-f]{8}$/);
-    expect(() => updateLetter(d.id, { ...d.letter, body: 'Подмена' } as never)).toThrow(
-      'immutable',
-    );
+    await expect(updateLetter(d.id, { ...d.letter, body: 'Подмена' })).rejects.toMatchObject({
+      status: 409,
+      code: 'document_immutable',
+    });
   });
 
   it('отпечаток меняется от любой правки содержания', () => {
@@ -62,16 +63,18 @@ describe('письмо на бланке', () => {
     expect(letterFingerprint({ ...base, number: 'Исх. №2026-0415' })).not.toBe(a);
   });
 
-  it('у отправленных исходящих из заглушки есть письмо и отпечаток', () => {
-    const sent = fetchDocuments().filter((d) => d.kind === 'outgoing' && d.status === 'sent');
+  it('у отправленных исходящих из заглушки есть письмо и отпечаток', async () => {
+    const sent = (await fetchDocuments()).filter(
+      (d) => d.kind === 'outgoing' && d.status === 'sent',
+    );
     expect(sent.length).toBeGreaterThan(0);
     expect(sent.every((d) => d.letter && d.fingerprint)).toBe(true);
   });
 
-  it('логотип и подпись встроены в файл, а не по ссылке (приёмка 11.14)', () => {
-    const d = draft();
+  it('логотип и подпись встроены в файл, а не по ссылке (приёмка 11.14)', async () => {
+    const d = await draft();
     if (!d.letter) throw new Error('нет письма');
-    const sent = issue(d.id, TODAY);
+    const sent = await issue(d.id);
     const html = letterHtml({ doc: sent, letter: sent.letter ?? d.letter, signer: 'А. Дуйшеев' });
     const sources = [...html.matchAll(/<img[^>]+src="([^"]+)"/g)].map((m) => m[1]);
     expect(sources).toHaveLength(2);
@@ -81,8 +84,8 @@ describe('письмо на бланке', () => {
     expect(html).not.toContain('ПРОЕКТ');
   });
 
-  it('у проекта — пометка «проект», без номера и без факсимиле', () => {
-    const d = draft();
+  it('у проекта — пометка «проект», без номера и без факсимиле', async () => {
+    const d = await draft();
     if (!d.letter) throw new Error('нет письма');
     const html = letterHtml({ doc: d, letter: d.letter, signer: 'А. Дуйшеев' });
     expect(html).toContain('ПРОЕКТ');

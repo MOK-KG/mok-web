@@ -1,15 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { chatKey } from '@/features/chat/api';
-import { addJournalEntry } from '@/features/journal/store';
 import {
   type Absence,
   type AbsenceKind,
-  absenceStore,
-  allAbsences,
   currentAbsences,
+  setAbsenceCache,
 } from '@/features/tasks/absences';
-import { tasksKey } from '@/features/tasks/api';
+import { type ApiPerson, tasksKey, toPerson } from '@/features/tasks/api';
 import type { Person } from '@/features/tasks/types';
+import { api } from '@/shared/api/client';
 import {
   addDays,
   diffDays,
@@ -19,8 +18,9 @@ import {
 } from '@/shared/lib/workDays';
 
 /**
- * Оформление отпусков и командировок. Заглушка в памяти (tasks/absences.ts); с бэкендом
- * проверки те же, но решает сервер.
+ * Оформление отпусков и командировок — API бэкенда (mok-backend, apps/accounts,
+ * /api/staff/absences). Проверки absenceProblems — те же, что на сервере: экран показывает их
+ * сразу, решает сервер. В тестах — подставной сервер testing/server.ts.
  *
  * Файл продублирован в web/ и mobile/ — правьте оба.
  */
@@ -78,8 +78,6 @@ export function absenceProblems(
 export const absenceWorkingDays = (from: IsoDate, to: IsoDate) =>
   diffDays(from, to) < 0 ? 0 : workingDaysBetween(addDays(from, -1), to);
 
-let seq = 0;
-
 export class AbsenceError extends Error {
   readonly problems: AbsenceProblem[];
   constructor(problems: AbsenceProblem[]) {
@@ -88,69 +86,97 @@ export class AbsenceError extends Error {
   }
 }
 
-export function createAbsence(input: AbsenceInput, actor: string, today = todayInBishkek()) {
+// --- Формат бэкенда (mok-backend, apps/accounts: /api/staff/absences) -----------------------
+
+export type ApiAbsence = Omit<Absence, 'person' | 'deputy' | 'from' | 'to'> & {
+  person: ApiPerson;
+  deputy: ApiPerson;
+  dateFrom: IsoDate;
+  dateTo: IsoDate;
+};
+
+export const toAbsence = (a: ApiAbsence): Absence => ({
+  id: String(a.id),
+  kind: a.kind,
+  person: toPerson(a.person),
+  from: a.dateFrom,
+  to: a.dateTo,
+  deputy: toPerson(a.deputy),
+  note: a.note,
+  status: a.status,
+  createdBy: a.createdBy,
+  cancellation: a.cancellation,
+});
+
+/**
+ * Все отсутствия (с отменёнными). Ответ кладётся и в кэш синхронных помощников
+ * (absenceOf, deputyFor из tasks/absences.ts)
+ */
+export async function fetchAbsences(): Promise<Absence[]> {
+  const list = (await api.get<ApiAbsence[]>('/staff/absences')).map(toAbsence);
+  setAbsenceCache(list);
+  return list;
+}
+
+/**
+ * Оформить отсутствие. Проверки (absenceProblems) повторяет сервер; нарушение — AbsenceError
+ * с проблемами, найденными на клиенте, или ApiError absence_invalid
+ */
+export async function createAbsence(input: AbsenceInput, today = todayInBishkek()) {
   const problems = absenceProblems(input, currentAbsences(), today);
   if (problems.length > 0 || !input.deputy) throw new AbsenceError(problems);
-  const absence: Absence = {
-    id: `abs-new-${++seq}`,
-    kind: input.kind,
-    person: input.person,
-    from: input.from,
-    to: input.to,
-    deputy: input.deputy,
-    note: input.note.trim(),
-    status: 'active',
-    createdBy: actor,
-    cancellation: null,
-  };
-  absenceStore.add(absence);
-  addJournalEntry({
-    author: actor,
-    action: 'absenceCreated',
-    details: `${absence.person.short}: ${absence.from} – ${absence.to} · заместитель ${absence.deputy.short}`,
-  });
-  return structuredClone(absence);
+  return toAbsence(
+    await api.post<ApiAbsence>('/staff/absences', {
+      kind: input.kind,
+      personId: input.person.id,
+      dateFrom: input.from,
+      dateTo: input.to,
+      deputyId: input.deputy.id,
+      note: input.note.trim(),
+    }),
+  );
 }
 
 /** Отменить с причиной: запись остаётся, заместитель перестаёт действовать сразу */
-export function cancelAbsence(id: string, reason: string, actor: string) {
-  const absence = absenceStore.find(id);
-  if (!absence) throw new Error('not-found');
-  if (absence.status === 'cancelled') throw new Error('wrong-status');
-  if (reason.trim().length < 5) throw new Error('reason-required');
-  absence.status = 'cancelled';
-  absence.cancellation = { reason: reason.trim(), by: actor, at: new Date().toISOString() };
-  addJournalEntry({
-    author: actor,
-    action: 'absenceCancelled',
-    details: `${absence.person.short}: ${absence.from} – ${absence.to}`,
-    reason: reason.trim(),
-  });
-  return structuredClone(absence);
+export async function cancelAbsence(id: string, reason: string) {
+  return toAbsence(
+    await api.post<ApiAbsence>(`/staff/absences/${id}/cancel`, { reason: reason.trim() }),
+  );
 }
 
 export const absencesKey = ['absences'] as const;
 
-/** Все отсутствия (с отменёнными) — для экрана; действующие — currentAbsences */
-export function useAbsences() {
+function useAbsenceQuery<T>(select: (list: Absence[]) => T) {
+  return useQuery({ queryKey: absencesKey, queryFn: fetchAbsences, select });
+}
+
+const all = (list: Absence[]) => list;
+const active = (list: Absence[]) => list.filter((a) => a.status === 'active');
+
+/** Все отсутствия (с отменёнными) — для экрана; действующие — useCurrentAbsences */
+export const useAbsences = () => useAbsenceQuery(all);
+
+/**
+ * Действующие отсутствия — для рабочего стола, календаря, задач. Экран, который зовёт
+ * синхронные помощники (absenceOf, deputyFor), подписывается этим хуком: так он перерисуется,
+ * когда отсутствия загрузятся
+ */
+export const useCurrentAbsences = () => useAbsenceQuery(active);
+
+/** Кого можно выбрать сотрудником и заместителем: работающие сотрудники аппарата */
+export function useAbsencePeople() {
   return useQuery({
-    queryKey: [...absencesKey, 'all'],
-    queryFn: async () => allAbsences(),
+    queryKey: [...absencesKey, 'people'],
+    queryFn: async () =>
+      (await api.get<{ people: ApiPerson[] }>('/staff/people')).people.map(toPerson),
+    staleTime: 60_000,
   });
 }
 
-/** Действующие отсутствия — для рабочего стола и календаря */
-export function useCurrentAbsences() {
-  return useQuery({
-    queryKey: [...absencesKey, 'current'],
-    queryFn: async () => currentAbsences(),
-  });
-}
-
-function useAbsenceMutation<V, R>(fn: (vars: V) => R, successMessage: string) {
+function useAbsenceMutation<V, R>(fn: (vars: V) => Promise<R>, successMessage: string) {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (vars: V) => fn(vars),
+    mutationFn: fn,
     meta: { successMessage },
     onSuccess: () => {
       // Заместители видны в задачах, чате и «Ролях и доступе»
@@ -161,11 +187,11 @@ function useAbsenceMutation<V, R>(fn: (vars: V) => R, successMessage: string) {
   });
 }
 
-export const useCreateAbsence = (actor: string) =>
-  useAbsenceMutation((input: AbsenceInput) => createAbsence(input, actor), 'absences.created');
+export const useCreateAbsence = () =>
+  useAbsenceMutation((input: AbsenceInput) => createAbsence(input), 'absences.created');
 
-export const useCancelAbsence = (actor: string) =>
+export const useCancelAbsence = () =>
   useAbsenceMutation(
-    ({ id, reason }: { id: string; reason: string }) => cancelAbsence(id, reason, actor),
+    ({ id, reason }: { id: string; reason: string }) => cancelAbsence(id, reason),
     'absences.cancelled',
   );

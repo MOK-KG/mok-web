@@ -2,6 +2,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { type ComponentType, type FormEvent, type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { useCurrentAbsences } from '@/features/absences/api';
 import { useCan } from '@/features/auth';
 import { formatInBishkek, formatIsoDate } from '@/shared/lib/date';
 import { initials } from '@/shared/lib/text';
@@ -25,10 +26,18 @@ import {
   XIcon,
 } from '@/shared/ui/icons';
 import { absenceOf, isAbsentOn } from '../absences';
-import { useAddComment, useAddSubtask, useTask, useToggleSubtask } from '../api';
+import {
+  attachmentUrl,
+  useAddComment,
+  useAddSubtask,
+  useArchiveTask,
+  useTask,
+  useToggleSubtask,
+} from '../api';
 import { urgencyOf } from '../deadline';
 import type { HistoryEntry, HistoryKind, Person, TaskDetail, TaskStatus } from '../types';
 import { toneClasses } from '../ui';
+import { NewTaskModal } from './NewTaskModal';
 
 const sectionTitle = 'text-[10px] font-semibold uppercase tracking-[1.4px] text-dim';
 const shortDate = (d: string, lang: string) => formatIsoDate(d, 'd MMM', lang).replace('.', '');
@@ -117,6 +126,11 @@ export function TaskModal({ taskId, onClose }: { taskId: string | null; onClose:
 function TaskBody({ task }: { task: TaskDetail }) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
+  const { can } = useCan();
+  const archive = useArchiveTask();
+  const [editing, setEditing] = useState(false);
+  const headerButton =
+    'flex h-7 items-center rounded-[7px] border border-line px-[10px] text-[11px] font-medium text-sub hover:text-text disabled:opacity-50';
   const { urgency } = urgencyOf(task);
   const dueChip = {
     overdue: 'bg-danger-chip text-danger',
@@ -143,7 +157,33 @@ function TaskBody({ task }: { task: TaskDetail }) {
         <span className="ml-auto text-[11px] font-medium tracking-[0.3px] text-dim">
           {task.code}
         </span>
+        {task.archived && (
+          <span className="rounded-6 bg-muted-chip px-2 py-[3px] text-[10.5px] font-medium text-dim">
+            {t('taskCard.archivedBadge')}
+          </span>
+        )}
+        {can('tasks.edit') && !task.archived && (
+          <button type="button" className={headerButton} onClick={() => setEditing(true)}>
+            {t('taskCard.edit')}
+          </button>
+        )}
+        {can('tasks.archive') && (
+          <button
+            type="button"
+            className={headerButton}
+            disabled={archive.isPending}
+            onClick={() => archive.mutate({ id: task.id, archived: !task.archived })}
+          >
+            {t(task.archived ? 'taskCard.unarchive' : 'taskCard.archive')}
+          </button>
+        )}
       </header>
+      <NewTaskModal
+        open={editing}
+        task={task}
+        onClose={() => setEditing(false)}
+        onOpenTask={() => undefined}
+      />
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(320px,467px)]">
         <div className="min-h-0 overflow-y-auto px-7 pb-6 pt-[22px]">
           {task.escalatedAt && task.status !== 'done' && (
@@ -198,7 +238,7 @@ function TaskBody({ task }: { task: TaskDetail }) {
           </p>
           {task.knowledgeLink && (
             <Link
-              to="/knowledge"
+              to={task.knowledgeArticleId ? `/knowledge/${task.knowledgeArticleId}` : '/knowledge'}
               className="mt-3 flex h-[38px] items-center gap-[9px] rounded-9 border border-line bg-surface px-[13px] text-[12px] font-medium tracking-[-0.1px] text-info hover:opacity-90"
             >
               <BookIcon size={17} />
@@ -207,6 +247,22 @@ function TaskBody({ task }: { task: TaskDetail }) {
               </span>
               <ExternalIcon size={15} className="text-faint" />
             </Link>
+          )}
+
+          {task.attachmentItems.length > 0 && (
+            <ul className="mt-3 flex flex-wrap gap-2" aria-label={t('taskCard.attachments')}>
+              {task.attachmentItems.map((a) => (
+                <li key={a.id}>
+                  <a
+                    href={attachmentUrl(a.id)}
+                    className="flex h-8 max-w-[260px] items-center gap-[7px] rounded-8 border border-line bg-surface px-[10px] text-[11.5px] text-sub hover:text-text"
+                  >
+                    <AttachMediumIcon size={14} className="shrink-0 text-faint" />
+                    <span className="truncate">{a.filename}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
           )}
 
           <Subtasks task={task} />
@@ -258,7 +314,7 @@ function Subtasks({ task }: { task: TaskDetail }) {
                 className="peer sr-only"
                 checked={s.done}
                 disabled={!editable}
-                onChange={() => toggle.mutate({ taskId: task.id, subtaskId: s.id })}
+                onChange={() => toggle.mutate({ taskId: task.id, subtaskId: s.id, done: !s.done })}
               />
               <span
                 aria-hidden
@@ -430,6 +486,10 @@ function historyText(
       return entry.text === 'email'
         ? t('taskCard.historyCreatedEmail')
         : t('taskCard.historyCreatedManual');
+    case 'status': {
+      const [from, to] = entry.text.split('|');
+      return t('taskCard.historyStatus', { from, to });
+    }
     case 'subtask': {
       const [action, title] = entry.text.split('|');
       const key = {
@@ -447,7 +507,7 @@ function historyText(
 function Side({ task }: { task: TaskDetail }) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
-  const absence = absenceOf(task.assignee?.id);
+  const absence = absenceOf(task.assignee?.id, todayInBishkek(), useCurrentAbsences().data);
   const absentNow = absence !== null && isAbsentOn(absence, todayInBishkek());
   const row = 'grid grid-cols-[138px_minmax(0,1fr)] items-center gap-2 py-[5px]';
   const label = 'text-[11px] text-faint';

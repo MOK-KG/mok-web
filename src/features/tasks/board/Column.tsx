@@ -2,32 +2,32 @@ import { useDroppable } from '@dnd-kit/core';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowRightIcon } from '@/shared/ui/icons';
-import { type Task, type TaskStatus, WIP_LIMIT } from '../types';
+import type { Column as BoardColumn, Task } from '../types';
 import { statusDot, visibleByStatus } from '../ui';
 import { TaskCard } from './TaskCard';
 
 export type TaskGroup = { key: string; label: string | null; tasks: Task[] };
 
 type Props = {
-  status: TaskStatus;
+  column: BoardColumn;
   groups: TaskGroup[];
   /** Сколько задач в колонке всего (для счётчика «4 из 6») */
   total: number;
   /** Сейчас что-то перетаскивают */
   dragActive: boolean;
-  /** Колонка не принимает карточку (лимит «В работе») */
+  /** Колонка не принимает карточку (лимит колонки) */
   blocked: boolean;
   canDrag: boolean;
   /** Включены фильтр или поиск: счётчик показывает видимые задачи */
   filtered: boolean;
-  /** Лимит «В работе» исчерпан (по всем задачам) */
+  /** Лимит колонки исчерпан (по всем задачам) */
   limitReached: boolean;
   onOpen: (id: string) => void;
 };
 
 /** Колонка канбана (макет Figma: col/*) */
 export function Column({
-  status,
+  column,
   groups,
   total,
   dragActive,
@@ -39,7 +39,9 @@ export function Column({
 }: Props) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
-  const { setNodeRef, isOver } = useDroppable({ id: status, disabled: blocked });
+  const { setNodeRef, isOver } = useDroppable({ id: column.id, disabled: blocked });
+  const status = column.stage;
+  const wipLimit = column.wipLimit;
 
   // Видимые карточки: первые N по всем группам, пока не нажали «Показать все»
   const limit = expanded ? Number.POSITIVE_INFINITY : visibleByStatus[status];
@@ -52,11 +54,11 @@ export function Column({
     })
     .filter((g) => g.tasks.length > 0);
   const shown = visibleGroups.reduce((n, g) => n + g.tasks.length, 0);
-  const title = t(`tasks.status.${status}`);
+  const title = column.name;
 
   const counter =
-    status === 'in_progress' && !filtered
-      ? `${total} / ${WIP_LIMIT}`
+    wipLimit !== null && !filtered
+      ? `${total} / ${wipLimit}`
       : shown < total
         ? t('tasks.shownOf', { shown, total })
         : String(total);
@@ -75,7 +77,7 @@ export function Column({
         <span className="ml-[3px] rounded-[9px] bg-chip px-[7px] py-[2px] text-[10.5px] font-medium text-sub">
           {counter}
         </span>
-        {status === 'in_progress' && (
+        {wipLimit !== null && (
           <span
             className={`text-[9.5px] tracking-[0.2px] ${limitReached ? 'text-danger' : 'text-dim'}`}
           >
@@ -124,7 +126,7 @@ export function Column({
             }`}
           >
             {blocked && dragActive
-              ? t('tasks.limitReached', { limit: WIP_LIMIT })
+              ? t('tasks.limitReached', { limit: wipLimit ?? 0 })
               : t('tasks.dropHere')}
           </div>
         )}

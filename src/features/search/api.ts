@@ -33,7 +33,7 @@ export function useSearch(query: string): {
   const knowledge = useKnowledge();
   const inText = useKnowledgeSearch(allowed.knowledge ? query : '');
   const files = useFiles();
-  const messages = useMemberMessages(allowed.chat);
+  const messages = useMemberMessages(query, allowed.chat);
 
   const results = useMemo(
     () =>

@@ -45,6 +45,8 @@ export const permissions = [
   // Журнал действий — просмотр и выгрузка для проверки; изменять и удалять нельзя
   'journal.view',
   'journal.export',
+  // Ассистент: настройки ИИ и агента почты, журнал его запусков
+  'assistant.manage',
 ] as const;
 
 export type Permission = (typeof permissions)[number];
@@ -91,6 +93,7 @@ export const mockRoleMatrix: Record<RoleCode, Permission[]> = {
     'staff.deactivate',
     'roles.assign',
     'journal.view',
+    'assistant.manage',
   ],
   // Президент: чтение задач, базы знаний, делопроизводства
   R2: [...staffBase, 'tasks.view', 'knowledge.view', 'documents.view'],

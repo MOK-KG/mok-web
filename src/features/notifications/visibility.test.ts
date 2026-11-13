@@ -3,7 +3,16 @@ import { mockRoleMatrix, type Permission, type RoleCode } from '@/shared/config/
 import { type AppNotification, canSeeNotification } from './api';
 
 const note = (target: AppNotification['target'], kind: AppNotification['kind'] = 'reminder') =>
-  ({ id: 'n', kind, title: '', text: '', at: '', read: false, target }) as AppNotification;
+  ({
+    id: 'n',
+    kind,
+    title: '',
+    text: '',
+    params: null,
+    at: '',
+    read: false,
+    target,
+  }) as AppNotification;
 
 const canAs = (role: RoleCode) => (p: Permission) => mockRoleMatrix[role].includes(p);
 
@@ -17,7 +26,7 @@ describe('какие уведомления видны', () => {
   });
 
   it('задача — с доступом к задачам, чат — с чатом', () => {
-    const task = note({ kind: 'task', taskTitle: 'X' });
+    const task = note({ kind: 'task', taskId: 't-1', taskTitle: 'X' });
     const chat = note({ kind: 'chat', chatId: 'c' }, 'mention');
     expect(canSeeNotification(task, canAs('R1'))).toBe(false);
     expect(canSeeNotification(task, canAs('R9'))).toBe(true);

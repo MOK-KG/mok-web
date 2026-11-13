@@ -3,13 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import { usePageSubtitle } from '@/app/layout/AppLayout';
 import { useCurrentAbsences } from '@/features/absences/api';
-import { useCan } from '@/features/auth';
+import { useCan, useCurrentPersonId } from '@/features/auth';
 import { Avatar } from '@/features/knowledge-base/parts';
 import { absenceOf } from '@/features/tasks/absences';
 import { useTasks } from '@/features/tasks/api';
 import { DueChips } from '@/features/tasks/board/TaskCard';
 import { urgencyOf } from '@/features/tasks/deadline';
-import { currentUserId } from '@/features/tasks/directory';
 import type { Task } from '@/features/tasks/types';
 import { years } from '@/shared/config/workCalendar';
 import { formatIsoDate } from '@/shared/lib/date';
@@ -65,6 +64,7 @@ export function CalendarPage() {
   const weeks = useMemo(() => monthGrid(month), [month]);
   const norm = useMemo(() => monthNorm(month), [month]);
   const absenceList = useCurrentAbsences().data;
+  const meId = useCurrentPersonId();
   const absences = useMemo(() => absenceList ?? [], [absenceList]);
   const shownLayers = useMemo(
     () => new Set([...layers].filter((l) => canTasks || l === 'absences')),
@@ -77,9 +77,9 @@ export function CalendarPage() {
         canTasks ? (tasks.data ?? []) : [],
         absences,
         shownLayers,
-        currentUserId,
+        meId ?? '',
       ),
-    [weeks, selected, tasks.data, absences, shownLayers, canTasks],
+    [weeks, selected, tasks.data, absences, shownLayers, canTasks, meId],
   );
 
   const load = useMemo(() => monthLoad(events, month), [events, month]);
@@ -245,6 +245,7 @@ function DayCell({
   events: DayEvents | undefined;
   onPick: () => void;
 }) {
+  const meId = useCurrentPersonId();
   const { t, i18n } = useTranslation();
   const type = dayType(day);
   const off = type.type !== 'working';
@@ -307,7 +308,7 @@ function DayCell({
       {deadlines.slice(0, CELL_DEADLINES).map((task) => (
         <span
           key={task.id}
-          className={`flex min-w-0 items-center gap-1 rounded-[5px] px-[6px] py-[2px] text-[10.5px] ${deadlineChip(task)} ${
+          className={`flex min-w-0 items-center gap-1 rounded-[5px] px-[6px] py-[2px] text-[10.5px] ${deadlineChip(task, meId)} ${
             conflictIds.has(task.id) ? 'ring-1 ring-inset ring-tone-cyan' : ''
           }`}
         >
@@ -335,9 +336,9 @@ function DayCell({
   );
 }
 
-function deadlineChip(task: Task) {
+function deadlineChip(task: Task, meId: string | undefined) {
   if (urgencyOf(task).urgency === 'overdue') return 'bg-danger-chip text-danger';
-  if (task.assignee?.id === currentUserId) return 'bg-info-chip text-info-text';
+  if (meId && task.assignee?.id === meId) return 'bg-info-chip text-info-text';
   return 'bg-chip text-chip-text';
 }
 

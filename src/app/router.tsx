@@ -20,6 +20,9 @@ const FilesPage = lazy(() =>
 const JournalPage = lazy(() =>
   import('@/features/journal/JournalPage').then((m) => ({ default: m.JournalPage })),
 );
+const AssistantPage = lazy(() =>
+  import('@/features/assistant/AssistantPage').then((m) => ({ default: m.AssistantPage })),
+);
 const AbsencesPage = lazy(() =>
   import('@/features/absences/AbsencesPage').then((m) => ({ default: m.AbsencesPage })),
 );
@@ -103,6 +106,17 @@ const sectionRoutes: RouteObject[] = [
       'access',
       <RequirePermission permission="journal.view">
         <JournalPage />
+      </RequirePermission>,
+    ),
+  },
+  // Настройки ИИ и агента почты — внутри «Ролей и доступа», только с правом assistant.manage
+  {
+    path: 'access/assistant',
+    handle: { section: 'access', titleKey: 'assistant.title' } satisfies RouteHandle,
+    element: guarded(
+      'access',
+      <RequirePermission permission="assistant.manage">
+        <AssistantPage />
       </RequirePermission>,
     ),
   },

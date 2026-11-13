@@ -45,7 +45,7 @@ function Form({ kind, onClose, onCreated }: { kind: DocKind } & Omit<Props, 'kin
   const [party, setParty] = useState('');
   const [senderRef, setSenderRef] = useState('');
   const [summary, setSummary] = useState('');
-  const [files, setFiles] = useState<string[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
   const [category, setCategory] = useState<DocCategory>('request');
   const [replyDue, setReplyDue] = useState<string>(
     () => defaultReplyDue('request', todayInBishkek()) ?? '',
@@ -82,7 +82,7 @@ function Form({ kind, onClose, onCreated }: { kind: DocKind } & Omit<Props, 'kin
           party,
           senderRef,
           summary,
-          attachments: files,
+          files,
           category,
           replyDue: replyDue || null,
         },
@@ -94,7 +94,7 @@ function Form({ kind, onClose, onCreated }: { kind: DocKind } & Omit<Props, 'kin
         title,
         party,
         summary,
-        attachments: files,
+        files,
         replyTo: replyTo || null,
         email,
       };
@@ -253,8 +253,11 @@ function Form({ kind, onClose, onCreated }: { kind: DocKind } & Omit<Props, 'kin
           multiple
           hidden
           onChange={(e) => {
-            const names = [...(e.target.files ?? [])].map((f) => f.name);
-            setFiles((prev) => [...prev, ...names.filter((n) => !prev.includes(n))]);
+            const picked = [...(e.target.files ?? [])];
+            setFiles((prev) => [
+              ...prev,
+              ...picked.filter((f) => !prev.some((p) => p.name === f.name)),
+            ]);
             e.target.value = '';
           }}
         />
@@ -268,7 +271,7 @@ function Form({ kind, onClose, onCreated }: { kind: DocKind } & Omit<Props, 'kin
         </button>
         {files.length > 0 && (
           <ul className="mt-2 flex flex-wrap gap-[6px]">
-            {files.map((f) => (
+            {files.map(({ name: f }) => (
               <li
                 key={f}
                 className="flex items-center gap-[6px] rounded-6 bg-chip px-2 py-1 text-[11px] text-chip-text"
@@ -277,7 +280,7 @@ function Form({ kind, onClose, onCreated }: { kind: DocKind } & Omit<Props, 'kin
                 <button
                   type="button"
                   aria-label={t('documents.form.removeFile', { name: f })}
-                  onClick={() => setFiles((prev) => prev.filter((x) => x !== f))}
+                  onClick={() => setFiles((prev) => prev.filter((x) => x.name !== f))}
                   className="text-faint hover:text-text"
                 >
                   ×

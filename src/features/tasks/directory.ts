@@ -45,7 +45,10 @@ export const people = {
   },
 } satisfies Record<string, Person>;
 
-/** Текущий пользователь заглушки — Айбек Дуйшеев */
+/**
+ * Текущий пользователь заглушек и подставных серверов — Айбек Дуйшеев (id сессии в mock-входе).
+ * Экраны берут текущего сотрудника из сессии: useCurrentPersonId() из features/auth
+ */
 export const currentUserId = people.ad.id;
 
 export const projects = {

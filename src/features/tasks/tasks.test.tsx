@@ -6,12 +6,21 @@ import i18n from '@/app/i18n';
 import { AppProviders } from '@/app/providers';
 import { routes } from '@/app/router';
 import { mockSessionFor } from '@/features/auth/mock';
+import { api } from '@/shared/api/client';
 import { addDays } from '@/shared/lib/workDays';
-import { createTask, findSimilar, moveTask, resetTasksMock, tabCounts, WipLimitError } from './api';
+import {
+  applyMove,
+  type Board,
+  createTask,
+  moveTask,
+  resetTasksMock,
+  updateTask,
+  WipLimitError,
+} from './api';
 import { urgencyOf } from './deadline';
 import { people } from './directory';
 import { applyFilters, emptyFilters, matchesDue } from './filters';
-import { createMockTasks } from './mock';
+import { createMockTasks, mockColumnId } from './mock';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -76,9 +85,51 @@ describe('лимит «В работе»', () => {
     const { department } = createMockTasks();
     const queue = department.filter((t) => t.status === 'queue').map((t) => t.id);
     // В работе 4 задачи: ещё две можно, седьмую — нет
-    await moveTask(queue[0], 'in_progress');
-    await moveTask(queue[1], 'in_progress');
-    await expect(moveTask(queue[2], 'in_progress')).rejects.toBeInstanceOf(WipLimitError);
+    const inProgress = mockColumnId('in_progress');
+    await moveTask(queue[0], inProgress);
+    await moveTask(queue[1], inProgress);
+    await expect(moveTask(queue[2], inProgress)).rejects.toBeInstanceOf(WipLimitError);
+  });
+});
+
+describe('порядок в колонке и правка', () => {
+  it('брошенная на карточку задача встаёт перед ней; в конец — без карточки', async () => {
+    resetTasksMock();
+    const queue = mockColumnId('queue');
+    const order = (b: Pick<Board, 'tasks'>) =>
+      b.tasks
+        .filter((t) => t.columnId === queue)
+        .sort((x, y) => x.position - y.position)
+        .map((t) => t.id);
+    const board = await api.get<Board>('/tasks/board');
+    const [first, second, third] = order(board);
+    // Оптимистичный порядок на клиенте
+    const local = applyMove(board, { id: third, columnId: queue, beforeId: first });
+    expect(order(local).slice(0, 3)).toEqual([third, first, second]);
+    // Тот же порядок отдаёт сервер
+    await moveTask(third, queue, first);
+    expect(order(await api.get<Board>('/tasks/board')).slice(0, 3)).toEqual([third, first, second]);
+    // Без карточки — в конец колонки
+    await moveTask(first, queue);
+    expect(order(await api.get<Board>('/tasks/board')).at(-1)).toBe(first);
+  });
+
+  it('правка: название и срок меняются, перенос срока — в журнал', async () => {
+    resetTasksMock();
+    const [task] = createMockTasks().department.filter((t) => t.due && t.status === 'queue');
+    const due = addDays(task.due as string, 7);
+    const updated = await updateTask(task.id, {
+      title: 'Новое название задачи',
+      description: 'Описание',
+      assignee: null,
+      due,
+      project: null,
+      priority: 'high',
+    });
+    expect(updated.title).toBe('Новое название задачи');
+    expect(updated.priority).toBe('high');
+    expect(updated.history[0]).toMatchObject({ kind: 'due' });
+    expect(updated.rescheduleLog.at(-1)?.to).toBe(due);
   });
 });
 
@@ -92,17 +143,18 @@ describe('создание и похожие задачи', () => {
       due: addDays(TODAY, 3),
       project: null,
       priority: 'normal',
-      attachments: 0,
     });
     expect(task.status).toBe('queue');
     expect(task.history[0].kind).toBe('created');
-    expect(tabCounts().department).toBe(21);
+    const { counts } = await api.get<Board>('/tasks/board');
+    expect(counts.department).toBe(21);
     // Автор — текущий пользователь: «Поставленные мной» 9 → 10
-    expect(tabCounts().createdByMe).toBe(10);
+    expect(counts.createdByMe).toBe(10);
     // Похожие ищутся по словам названия
-    expect(findSimilar('Антидопинговый план на 2028 год').map((t) => t.title)).toContain(
-      'Антидопинговый план на 2027 год',
-    );
+    const similar = await api.get<{ title: string }[]>('/tasks/similar', {
+      query: { title: 'Антидопинговый план на 2028 год' },
+    });
+    expect(similar.map((t) => t.title)).toContain('Антидопинговый план на 2027 год');
   });
 });
 

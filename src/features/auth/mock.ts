@@ -40,6 +40,8 @@ export function mockSessionFor(status: Session['status'], role: RoleCode): Sessi
   return {
     status,
     user: {
+      // Как у Айбека Дуйшеева в подставных серверах (features/tasks/directory.ts)
+      id: 'u-ad',
       email: 'a.duysheyev@olympic.kg',
       name: 'Айбек Дуйшеев',
       position: 'Ген. секретарь',
@@ -57,7 +59,10 @@ const delay = (ms: number) =>
 const read = (): Session | null => {
   try {
     const raw = sessionStorage.getItem(SESSION_KEY);
-    return raw ? (JSON.parse(raw) as Session) : null;
+    if (!raw) return null;
+    const session = JSON.parse(raw) as Session;
+    // Сессия, сохранённая до появления id, — тот же вымышленный пользователь
+    return { ...session, user: { ...session.user, id: session.user.id ?? 'u-ad' } };
   } catch {
     return null;
   }

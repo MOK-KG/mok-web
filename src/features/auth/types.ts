@@ -1,6 +1,8 @@
 import type { Permission, RoleCode } from '@/shared/config/permissions';
 
 export type SessionUser = {
+  /** ID сотрудника — тот же, что у людей в задачах и отсутствиях (Person.id) */
+  id: string;
   email: string;
   name: string;
   /** Должность для подписи в меню: «Ген. секретарь» */

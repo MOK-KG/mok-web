@@ -1,6 +1,5 @@
 import { type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
 import { urgencyOf } from './deadline';
-import { currentUserId } from './mock';
 import type { Task } from './types';
 
 /** Быстрые фильтры мобильного списка (макет Figma: «Все / Просрочено / Мои / Горит») */
@@ -8,8 +7,16 @@ export type QuickFilter = 'all' | 'overdue' | 'mine' | 'hot';
 
 export const quickFilters: QuickFilter[] = ['all', 'overdue', 'mine', 'hot'];
 
-/** «Горит» — срок в ближайшие 2 дня или эскалация */
-export function matchesQuick(task: Task, filter: QuickFilter, today: IsoDate = todayInBishkek()) {
+/**
+ * «Горит» — срок в ближайшие 2 дня или эскалация; «Мои» — исполнитель meId
+ * (текущий сотрудник из сессии, useCurrentPersonId)
+ */
+export function matchesQuick(
+  task: Task,
+  filter: QuickFilter,
+  today: IsoDate = todayInBishkek(),
+  meId?: string,
+) {
   const { urgency } = urgencyOf(task, today);
   switch (filter) {
     case 'all':
@@ -17,7 +24,7 @@ export function matchesQuick(task: Task, filter: QuickFilter, today: IsoDate = t
     case 'overdue':
       return urgency === 'overdue';
     case 'mine':
-      return task.assignee?.id === currentUserId;
+      return !!meId && task.assignee?.id === meId;
     case 'hot':
       return task.status !== 'done' && (urgency === 'soon' || task.escalationHours !== null);
   }

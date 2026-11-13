@@ -2,7 +2,7 @@ import type { ComponentType, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useCurrentAbsences } from '@/features/absences/api';
-import { useCan, useSession } from '@/features/auth';
+import { useCan, useCurrentPersonId, useSession } from '@/features/auth';
 import { useChatUnread } from '@/features/chat/api';
 import { Avatar } from '@/features/knowledge-base/parts';
 import {
@@ -13,7 +13,6 @@ import {
 } from '@/features/notifications/parts';
 import { useMailQueueSummary, useTasks } from '@/features/tasks/api';
 import { DueChips } from '@/features/tasks/board/TaskCard';
-import { currentUserId } from '@/features/tasks/directory';
 import type { Task } from '@/features/tasks/types';
 import { formatIsoDate, relativeShort } from '@/shared/lib/date';
 import { todayInBishkek } from '@/shared/lib/workDays';
@@ -53,7 +52,8 @@ export function DashboardPage() {
   const tasks = useTasks('department');
   const today = todayInBishkek();
   const absences = useCurrentAbsences().data ?? [];
-  const summary = dashboardSummary(tasks.data ?? [], absences, currentUserId, today);
+  const meId = useCurrentPersonId() ?? '';
+  const summary = dashboardSummary(tasks.data ?? [], absences, meId, today);
 
   return (
     <div className="flex flex-col gap-[14px] pb-2 leading-[normal]">

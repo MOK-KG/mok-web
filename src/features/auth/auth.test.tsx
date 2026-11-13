@@ -123,3 +123,23 @@ describe('авторизация', () => {
     await waitFor(() => container.textContent?.includes('Sign in') ?? false);
   });
 });
+
+describe('сессия с бэкенда', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('ID сотрудника приходит числом, во фронте — строка (как Person.id)', async () => {
+    vi.stubEnv('VITE_AUTH_MOCK', '');
+    const { authApi } = await import('./api');
+    const user = { id: 7, email: 'a@olympic.kg', name: 'Айбек Дуйшеев', position: '' };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Response.json({
+          status: 'active',
+          user: { ...user, department: '', roles: ['R5'], permissions: [] },
+        }),
+      ),
+    );
+    expect((await authApi.getSession())?.user.id).toBe('7');
+  });
+});

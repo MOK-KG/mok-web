@@ -278,11 +278,14 @@ export type KnowledgeServer = ReturnType<typeof createKnowledgeServer>;
 /** Подменить fetch подставным сервером; снять — vi.unstubAllGlobals() */
 export function installKnowledgeServer(options?: { today?: IsoDate; roles?: RoleCode[] }) {
   const server = createKnowledgeServer(options);
+  // Остальные разделы (задачи, документы, чат…) отвечают серверы из src/test/setup.ts
+  const previous = globalThis.fetch;
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL, init: RequestInit = {}) => {
       const url = new URL(String(input), 'http://localhost');
       const path = url.pathname.replace(/^.*?\/api(?=\/)/, '');
+      if (!path.startsWith('/knowledge/')) return previous(input, init);
       const raw = init.body;
       const body = typeof raw === 'string' ? JSON.parse(raw) : raw;
       const reply = server.handle(init.method ?? 'GET', path, url.searchParams, body);

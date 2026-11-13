@@ -1,36 +1,89 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { addJournalEntry, createTask, tasksKey } from '@/features/tasks/api';
-import { currentUserId, people } from '@/features/tasks/directory';
-import { createMockTasks } from '@/features/tasks/mock';
+import { useCan } from '@/features/auth';
+import { type ApiPerson, tasksKey, toPerson } from '@/features/tasks/api';
 import type { Person } from '@/features/tasks/types';
+import { api } from '@/shared/api/client';
 import type { FeedbackMeta } from '@/shared/api/feedback';
-import { type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
-import { defaultReplyDue, deliver, isEmail } from './correspondence';
-import { defaultLetter, fillTemplate, type Letter, letterFingerprint } from './letter';
-import { createMockDocuments } from './mock';
-import type { DocCategory, DocHistoryEntry, DocKind, DocStatus, DocumentRecord } from './types';
+import type { IsoDate } from '@/shared/lib/workDays';
+import { fillTemplate, type Letter } from './letter';
+import type {
+  DocAttachment,
+  DocCategory,
+  DocHistoryEntry,
+  DocKind,
+  DocumentRecord,
+  Resolution,
+} from './types';
 
 /**
- * Данные делопроизводства. Пока бэкенда нет — заглушка в памяти (mock.ts); номера выдаёт
- * бэкенд, здесь — так же: следующий по виду и году, без пропусков.
+ * Данные делопроизводства — API бэкенда (mok-backend, apps/documents, /api/documents/*).
+ * Номера выдаёт бэкенд: следующий по виду и году, аннулированный номер остаётся занятым.
+ * Права проверяет бэкенд (403), неверный статус — 409 document_status.
+ * Журнал действий по документам пишет бэкенд.
+ *
+ * В тестах вместо бэкенда — подставной сервер testing/server.ts на данных mock.ts.
  *
  * Файл продублирован в web/ и mobile/ — правьте оба.
  */
 
-/** Сроки резолюций — из заглушки задач, чтобы совпадали с задачами */
-function mockStore(today = todayInBishkek()) {
-  const tasks = createMockTasks(today).department;
-  return createMockDocuments(today, (title) => tasks.find((t) => t.title === title)?.due ?? null);
+// --- Формат бэкенда ---------------------------------------------------------------------------
+
+type ApiAttachment = { id: string; name: string; size: number | null; mimeType?: string };
+
+export type ApiDocument = Omit<
+  DocumentRecord,
+  'author' | 'signer' | 'resolution' | 'annulment' | 'history' | 'attachments'
+> & {
+  number?: string | null;
+  author: ApiPerson;
+  signer: ApiPerson | null;
+  attachments: ApiAttachment[];
+  resolution:
+    | (Omit<Resolution, 'author' | 'assignee'> & { author: ApiPerson; assignee: ApiPerson })
+    | null;
+  annulment: { reason: string; by: ApiPerson; at: string } | null;
+  /** Только в карточке; в списке истории нет */
+  history?: {
+    id: string;
+    kind: DocHistoryEntry['kind'];
+    at: string;
+    by: ApiPerson | null;
+    text: string;
+  }[];
+};
+
+export function toDocument(d: ApiDocument): DocumentRecord {
+  return {
+    id: d.id,
+    kind: d.kind,
+    status: d.status,
+    seq: d.seq,
+    year: d.year,
+    date: d.date,
+    title: d.title,
+    party: d.party,
+    senderRef: d.senderRef,
+    summary: d.summary,
+    attachments: d.attachments.map(
+      (a): DocAttachment => ({ id: String(a.id), name: a.name, size: a.size }),
+    ),
+    author: toPerson(d.author),
+    signer: d.signer ? toPerson(d.signer) : null,
+    resolution: d.resolution && {
+      ...d.resolution,
+      author: toPerson(d.resolution.author),
+      assignee: toPerson(d.resolution.assignee),
+    },
+    annulment: d.annulment && { ...d.annulment, by: toPerson(d.annulment.by) },
+    history: (d.history ?? []).map((h) => ({ ...h, id: String(h.id), by: toPerson(h.by) })),
+    category: d.category,
+    replyDue: d.replyDue,
+    replyTo: d.replyTo,
+    delivery: d.delivery,
+    letter: d.letter,
+    fingerprint: d.fingerprint,
+  };
 }
-
-let store = mockStore();
-
-/** Сброс заглушки (для тестов) */
-export function resetDocumentsMock(today?: IsoDate) {
-  store = mockStore(today);
-}
-
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // ——— Номера ———
 
@@ -51,8 +104,8 @@ export function docRef(doc: DocumentRecord): string | null {
 }
 
 /**
- * Следующий номер по виду и году. Аннулированные номера заняты — счёт идёт от наибольшего,
- * поэтому пропусков нет.
+ * Следующий номер по виду и году (так считает бэкенд). Аннулированные номера заняты — счёт идёт
+ * от наибольшего, поэтому пропусков нет.
  */
 export function nextSeq(docs: DocumentRecord[], kind: DocKind, year: number): number {
   return (
@@ -62,82 +115,59 @@ export function nextSeq(docs: DocumentRecord[], kind: DocKind, year: number): nu
   );
 }
 
-/** Входящие, ждущие резолюции, — счётчик в меню */
-export const awaitingResolution = (docs: DocumentRecord[] = store) =>
+/** Входящие, ждущие резолюции */
+export const awaitingResolution = (docs: DocumentRecord[]) =>
   docs.filter((d) => d.kind === 'incoming' && d.status === 'registered').length;
 
-// ——— Действия ———
+/** Документ по ссылке из Базы знаний («Вх. №2026-0884 · Минюст») */
+export const findByRef = (ref: string, docs: DocumentRecord[]) =>
+  docs.find((d) => docRef(d) === ref)?.id ?? null;
 
-const me = (): Person => Object.values(people).find((p) => p.id === currentUserId) ?? people.ad;
-const now = () => new Date().toISOString();
-let seq = 0;
-const historyEntry = (kind: DocHistoryEntry['kind'], text = ''): DocHistoryEntry => ({
-  id: `dh-new-${++seq}`,
-  kind,
-  at: now(),
-  by: me(),
-  text,
-});
+/** Скачать вложение документа */
+export const attachmentUrl = (id: string) => api.url(`/documents/attachments/${id}/download`);
 
-function find(id: string) {
-  const doc = store.find((d) => d.id === id);
-  if (!doc) throw new Error('not-found');
-  return doc;
+// ——— Запросы ———
+
+/** Все документы, новые сверху: черновики, затем по дате и номеру. Без истории */
+export async function fetchDocuments(): Promise<DocumentRecord[]> {
+  return (await api.get<ApiDocument[]>('/documents/items')).map(toDocument);
 }
 
-function assertStatus(doc: DocumentRecord, ...allowed: DocStatus[]) {
-  if (!allowed.includes(doc.status)) throw new Error('wrong-status');
+export async function fetchDocument(id: string): Promise<DocumentRecord> {
+  return toDocument(await api.get<ApiDocument>(`/documents/items/${id}`));
 }
 
-const journal = (action: Parameters<typeof addJournalEntry>[0]['action'], doc: DocumentRecord) =>
-  addJournalEntry({
-    author: me().short,
-    action,
-    details: `${docNumber(doc) ?? doc.title} · ${doc.title}`,
-  });
+/** Файлы загружаются после создания документа; в ответе — документ с ними */
+async function upload(doc: ApiDocument, files: File[] | undefined): Promise<DocumentRecord> {
+  if (!files?.length) return toDocument(doc);
+  for (const file of files) {
+    const form = new FormData();
+    form.append('file', file);
+    await api.post(`/documents/items/${doc.id}/attachments`, form);
+  }
+  return fetchDocument(doc.id);
+}
 
 export type IncomingInput = {
   title: string;
   party: string;
   senderRef: string;
   summary: string;
-  attachments: string[];
+  /** Файлы — загружаются после регистрации */
+  files?: File[];
   category: DocCategory;
   /** Срок ответа; undefined — по категории, null — ответ не нужен */
   replyDue?: IsoDate | null;
 };
 
 /** Зарегистрировать входящий: номер выдаётся сразу */
-export function registerIncoming(input: IncomingInput, today = todayInBishkek()): DocumentRecord {
-  const year = Number(today.slice(0, 4));
-  const doc: DocumentRecord = {
-    id: `doc-incoming-${year}-new-${++seq}`,
-    kind: 'incoming',
-    status: 'registered',
-    seq: nextSeq(store, 'incoming', year),
-    year,
-    date: today,
-    title: input.title.trim(),
-    party: input.party.trim(),
-    senderRef: input.senderRef.trim() || null,
-    summary: input.summary.trim(),
-    attachments: input.attachments,
-    author: me(),
-    signer: null,
-    resolution: null,
-    annulment: null,
-    history: [historyEntry('registered')],
-    letter: null,
-    fingerprint: null,
-    category: input.category,
-    replyDue:
-      input.replyDue === undefined ? defaultReplyDue(input.category, today) : input.replyDue,
-    replyTo: null,
-    delivery: null,
-  };
-  store.push(doc);
-  journal('documentRegistered', doc);
-  return structuredClone(doc);
+export async function registerIncoming(input: IncomingInput): Promise<DocumentRecord> {
+  const { files, replyDue, ...rest } = input;
+  const doc = await api.post<ApiDocument>('/documents/items/incoming', {
+    ...rest,
+    ...(replyDue === undefined ? {} : { replyDue }),
+  });
+  return upload(doc, files);
 }
 
 export type DraftInput = {
@@ -145,7 +175,7 @@ export type DraftInput = {
   title: string;
   party: string | null;
   summary: string;
-  attachments: string[];
+  files?: File[];
   /** Язык и шаблон письма; по умолчанию — русский, стандартный бланк */
   letter?: Letter;
   /** В ответ на входящий (ID) */
@@ -155,188 +185,66 @@ export type DraftInput = {
 };
 
 /** Проект исходящего или приказа — без номера, пока не отправят или не подпишут */
-export function createDraft(input: DraftInput, today = todayInBishkek()): DocumentRecord {
-  const doc: DocumentRecord = {
-    id: `doc-${input.kind}-draft-new-${++seq}`,
+export async function createDraft(input: DraftInput): Promise<DocumentRecord> {
+  const letter =
+    input.kind === 'outgoing'
+      ? (input.letter ?? {
+          lang: 'ru',
+          templateId: 'standard',
+          addressee: input.party?.trim() ?? '',
+          body: fillTemplate('standard', 'ru'),
+          email: input.email?.trim() ?? '',
+        })
+      : null;
+  const doc = await api.post<ApiDocument>('/documents/items/drafts', {
     kind: input.kind,
-    status: 'draft',
-    seq: null,
-    year: Number(today.slice(0, 4)),
-    date: today,
-    title: input.title.trim(),
-    party: input.kind === 'order' ? null : (input.party?.trim() ?? null),
-    senderRef: null,
-    summary: input.summary.trim(),
-    attachments: input.attachments,
-    author: me(),
-    signer: null,
-    resolution: null,
-    annulment: null,
-    history: [historyEntry('created')],
-    letter:
-      input.kind === 'outgoing'
-        ? (input.letter ?? {
-            lang: 'ru',
-            templateId: 'standard',
-            addressee: input.party?.trim() ?? '',
-            body: fillTemplate('standard', 'ru'),
-            email: input.email?.trim() ?? '',
-          })
-        : null,
-    fingerprint: null,
-    category: null,
-    replyDue: null,
-    replyTo: input.kind === 'outgoing' ? (input.replyTo ?? null) : null,
-    delivery: null,
-  };
-  store.push(doc);
-  return structuredClone(doc);
+    title: input.title,
+    party: input.party ?? '',
+    summary: input.summary,
+    letter,
+    replyTo: input.replyTo ?? null,
+    email: input.email ?? '',
+  });
+  return upload(doc, input.files);
 }
+
+const action = async (id: string, name: string, body: object = {}) =>
+  toDocument(await api.post<ApiDocument>(`/documents/items/${id}/${name}`, body));
 
 /** Отправить исходящий или подписать приказ: в этот момент выдаётся номер (глоссарий) */
-export function issue(id: string, today = todayInBishkek()): DocumentRecord {
-  const doc = find(id);
-  assertStatus(doc, 'draft');
-  const year = Number(today.slice(0, 4));
-  doc.year = year;
-  doc.seq = nextSeq(store, doc.kind, year);
-  doc.date = today;
-  doc.signer = me();
-  doc.status = doc.kind === 'outgoing' ? 'sent' : 'signed';
-  if (doc.kind === 'outgoing') {
-    doc.letter ??= defaultLetter(doc.party, doc.summary);
-    // С этого момента письмо неизменяемо: отпечаток меняется от любой правки
-    doc.fingerprint = letterFingerprint({
-      number: docNumber(doc),
-      date: doc.date,
-      title: doc.title,
-      letter: doc.letter,
-      signer: doc.signer.short,
-    });
-  }
-  doc.history.unshift(historyEntry(doc.kind === 'outgoing' ? 'sent' : 'signed'));
-  journal('documentSent', doc);
-  if (doc.kind === 'outgoing' && doc.letter?.email) sendByEmail(doc, doc.letter.email);
-  return structuredClone(doc);
-}
+export const issue = (id: string) => action(id, 'issue');
 
 /** Правка письма — только в проекте; отправленное письмо неизменяемо */
-export function updateLetter(id: string, letter: Letter, title?: string): DocumentRecord {
-  const doc = find(id);
-  if (doc.kind !== 'outgoing') throw new Error('not-letter');
-  if (doc.status !== 'draft') throw new Error('immutable');
-  doc.letter = { ...letter, addressee: letter.addressee.trim(), body: letter.body.trim() };
-  if (title?.trim()) doc.title = title.trim();
-  doc.history.unshift(historyEntry('edited'));
-  return structuredClone(doc);
-}
-
-/** Отправка по почте: доставка или недоставка — в историю; недоставка — и в журнал */
-function sendByEmail(doc: DocumentRecord, email: string) {
-  const result = deliver(email);
-  doc.delivery = {
-    email: email.trim(),
-    status: result.status,
-    error: result.error,
-    at: now(),
-    attempts: (doc.delivery?.attempts ?? 0) + 1,
-  };
-  if (result.status === 'bounced') {
-    doc.history.unshift(historyEntry('bounced', `${email.trim()}: ${result.error}`));
-    journal('documentBounced', doc);
-  }
-}
+export const updateLetter = (id: string, letter: Letter, title?: string) =>
+  action(id, 'letter', { letter, title: title ?? '' });
 
 /**
  * Повторная отправка после недоставки — на исправленный адрес. Номер тот же: письмо уже
  * зарегистрировано, текст и отпечаток не меняются.
  */
-export function resend(id: string, email: string): DocumentRecord {
-  const doc = find(id);
-  if (doc.kind !== 'outgoing' || doc.status !== 'sent') throw new Error('wrong-status');
-  if (!isEmail(email)) throw new Error('bad-email');
-  doc.history.unshift(historyEntry('resent', email.trim()));
-  sendByEmail(doc, email);
-  return structuredClone(doc);
-}
+export const resend = (id: string, email: string) => action(id, 'resend', { email });
 
 export type ResolutionInput = { text: string; assignee: Person; due: IsoDate };
 
-/** Резолюция на входящем: создаётся задача исполнителю со сроком резолюции */
-export async function resolve(id: string, input: ResolutionInput): Promise<DocumentRecord> {
-  const doc = find(id);
-  assertStatus(doc, 'registered');
-  if (input.text.trim().length < 3) throw new Error('text-required');
-  const number = docNumber(doc);
-  const task = await createTask({
-    title: doc.title,
-    description: `${number} · ${doc.party}\n\n${input.text.trim()}`,
-    assignee: input.assignee,
-    due: input.due,
-    project: null,
-    priority: 'normal',
-    attachments: doc.attachments.length,
-  });
-  doc.resolution = {
-    text: input.text.trim(),
-    author: me(),
-    at: now(),
-    assignee: input.assignee,
-    due: input.due,
-    taskTitle: task.title,
-  };
-  doc.status = 'inWork';
-  doc.history.unshift(historyEntry('resolution', input.text.trim()));
-  journal('documentResolved', doc);
-  return structuredClone(doc);
-}
+/** Резолюция на входящем: бэкенд создаёт задачу исполнителю со сроком резолюции */
+export const resolve = (id: string, input: ResolutionInput) =>
+  action(id, 'resolve', { text: input.text, assigneeId: input.assignee.id, due: input.due });
 
 /** Исполнено — входящий снят с контроля */
-export function markDone(id: string): DocumentRecord {
-  const doc = find(id);
-  assertStatus(doc, 'inWork');
-  doc.status = 'done';
-  doc.history.unshift(historyEntry('done'));
-  journal('documentDone', doc);
-  return structuredClone(doc);
-}
+export const markDone = (id: string) => action(id, 'done');
 
 /** Аннулировать с причиной. Номер остаётся занятым, документ не удаляется */
-export function annul(id: string, reason: string): DocumentRecord {
-  const doc = find(id);
-  if (doc.status === 'annulled') throw new Error('wrong-status');
-  if (reason.trim().length < 5) throw new Error('reason-required');
-  doc.status = 'annulled';
-  doc.annulment = { reason: reason.trim(), by: me(), at: now() };
-  doc.history.unshift(historyEntry('annulled', reason.trim()));
-  journal('documentAnnulled', doc);
-  return structuredClone(doc);
-}
+export const annul = (id: string, reason: string) => action(id, 'annul', { reason });
 
 // ——— Хуки ———
 
 export const documentsKey = ['documents'] as const;
 
-/** Все документы, новые сверху: черновики, затем по дате и номеру */
-export function fetchDocuments(): DocumentRecord[] {
-  return structuredClone(
-    [...store].sort(
-      (a, b) =>
-        Number(b.seq === null) - Number(a.seq === null) ||
-        b.date.localeCompare(a.date) ||
-        (b.seq ?? 0) - (a.seq ?? 0),
-    ),
-  );
-}
-
 export function useDocuments(enabled = true) {
   return useQuery({
     enabled,
     queryKey: [...documentsKey, 'list'],
-    queryFn: async () => {
-      await delay(100);
-      return fetchDocuments();
-    },
+    queryFn: fetchDocuments,
   });
 }
 
@@ -344,36 +252,37 @@ export function useDocument(id: string | null) {
   return useQuery({
     enabled: id !== null,
     queryKey: [...documentsKey, 'detail', id],
-    queryFn: async () => {
-      await delay(60);
-      const doc = store.find((d) => d.id === id);
-      return doc ? structuredClone(doc) : null;
-    },
+    queryFn: () => fetchDocument(id as string),
+    retry: false,
   });
 }
 
-/** Документ по ссылке из Базы знаний («Вх. №2026-0884 · Минюст») */
-export const findByRef = (ref: string) => store.find((d) => docRef(d) === ref)?.id ?? null;
+/** ID документа по ссылке из Базы знаний; null — нет такого или нет права documents.view */
+export function useDocumentIdByRef(ref: string | null) {
+  const { can } = useCan();
+  const docs = useDocuments(ref !== null && can('documents.view')).data;
+  return ref && docs ? findByRef(ref, docs) : null;
+}
 
+/** Входящие, ждущие резолюции, — счётчик в меню (только с правом documents.view) */
 export function useAwaitingResolution() {
+  const { can } = useCan();
   return useQuery({
+    enabled: can('documents.view'),
     queryKey: [...documentsKey, 'awaiting'],
-    queryFn: async () => awaitingResolution(),
+    queryFn: async () => (await api.get<{ count: number }>('/documents/awaiting')).count,
   }).data;
 }
 
-function useDocMutation<V, R>(
-  fn: (vars: V) => R | Promise<R>,
+function useDocMutation<V>(
+  fn: (vars: V) => Promise<DocumentRecord>,
   successMessage?: FeedbackMeta['successMessage'],
 ) {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (vars: V) => {
-      await delay(80);
-      return fn(vars);
-    },
+    mutationFn: fn,
     meta: successMessage ? { successMessage } : undefined,
-    onSuccess: () => {
+    onSettled: () => {
       client.invalidateQueries({ queryKey: documentsKey });
       client.invalidateQueries({ queryKey: tasksKey });
     },
@@ -387,16 +296,12 @@ const withNumber = (key: string) => (doc: DocumentRecord) => ({
 });
 
 export const useRegisterIncoming = () =>
-  useDocMutation(
-    (input: IncomingInput) => registerIncoming(input),
-    withNumber('documents.registered'),
-  );
+  useDocMutation(registerIncoming, withNumber('documents.registered'));
 
 export const useCreateDraft = () =>
-  useDocMutation((input: DraftInput) => createDraft(input), withNumber('documents.draftCreated'));
+  useDocMutation(createDraft, withNumber('documents.draftCreated'));
 
-export const useIssue = () =>
-  useDocMutation((id: string) => issue(id), withNumber('documents.issued'));
+export const useIssue = () => useDocMutation(issue, withNumber('documents.issued'));
 
 export const useResolve = () =>
   useDocMutation(
@@ -421,8 +326,7 @@ export const useResend = () =>
     }),
   );
 
-export const useMarkDone = () =>
-  useDocMutation((id: string) => markDone(id), 'documents.doneToast');
+export const useMarkDone = () => useDocMutation(markDone, 'documents.doneToast');
 
 export const useAnnul = () =>
   useDocMutation(

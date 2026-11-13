@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fetchMemberMessages, resetChatMock } from '../chat/api';
-import { fetchDocuments, resetDocumentsMock } from '../documents/api';
+import { fetchMemberMessages } from '../chat/api';
+import { fetchDocuments } from '../documents/api';
+import { installDocumentsServer } from '../documents/testing/server';
 import { fetchKnowledge, searchKnowledge } from '../knowledge-base/api';
 import { installKnowledgeServer } from '../knowledge-base/testing/server';
 import { createMockTasks } from '../tasks/mock';
@@ -10,8 +11,7 @@ import { highlight, type SearchSources, searchAll, snippetOf } from './search';
 const TODAY = '2026-09-09';
 
 beforeEach(() => {
-  resetDocumentsMock(TODAY);
-  resetChatMock();
+  installDocumentsServer({ today: TODAY });
   sessionStorage.clear();
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -22,13 +22,15 @@ async function sourcesFor(
   query: string,
   docs: boolean,
 ): Promise<SearchSources> {
+  const documents = docs ? await fetchDocuments() : [];
   installKnowledgeServer({ today: TODAY, roles });
   return {
     tasks: (({ department, archive }) => [...department, ...archive])(createMockTasks(TODAY)),
-    documents: docs ? fetchDocuments() : [],
+    documents,
     articles: (await fetchKnowledge()).articles,
     articleIds: query.trim().length > 1 ? (await searchKnowledge(query)).ids : [],
-    messages: fetchMemberMessages(),
+    // Подставной сервер чата — из src/test/setup.ts
+    messages: await fetchMemberMessages(query),
   };
 }
 

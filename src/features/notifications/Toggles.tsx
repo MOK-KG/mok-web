@@ -1,10 +1,14 @@
 import { useTranslation } from 'react-i18next';
-import { notificationKinds as kindList, type NotificationSettings } from './api';
+import {
+  notificationKinds as kindList,
+  lockedNotificationKinds,
+  type NotificationSettings,
+} from './api';
 import { notificationKinds } from './parts';
 
 /**
  * Переключатели видов уведомлений — в окне настроек и в профиле (S-27).
- * Эскалацию выключить нельзя: это правило платформы.
+ * Назначения и эскалацию выключить нельзя: по непрочитанному назначению считается эскалация.
  */
 export function NotificationToggles({
   value,
@@ -19,7 +23,7 @@ export function NotificationToggles({
   return (
     <ul className={`flex flex-col gap-[6px] ${className}`}>
       {kindList.map((k) => {
-        const locked = k === 'escalation';
+        const locked = lockedNotificationKinds.includes(k);
         const on = locked || !!value?.[k];
         const { Icon, color } = notificationKinds[k];
         return (

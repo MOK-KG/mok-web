@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useCan } from '@/features/auth';
-import { chatMembers, useChatFiles } from '@/features/chat/api';
+import { useChatFiles, useChatMembers } from '@/features/chat/api';
 import { useDocuments } from '@/features/documents/api';
 import { useKnowledgeFiles } from '@/features/knowledge-base/api';
 import { collectFiles, type FileSource } from './collect';
@@ -21,6 +21,7 @@ export function useFiles() {
   const documents = useDocuments(allowed.documents);
   const knowledge = useKnowledgeFiles(allowed.knowledge);
   const chat = useChatFiles(allowed.chat);
+  const chatMembers = useChatMembers(allowed.chat);
 
   const items = useMemo(
     () =>
@@ -30,7 +31,15 @@ export function useFiles() {
         chat: allowed.chat ? chat.data : [],
         memberName: (id) => chatMembers[id]?.short ?? null,
       }),
-    [allowed.documents, allowed.knowledge, allowed.chat, documents.data, knowledge.data, chat.data],
+    [
+      allowed.documents,
+      allowed.knowledge,
+      allowed.chat,
+      documents.data,
+      knowledge.data,
+      chat.data,
+      chatMembers,
+    ],
   );
 
   const pending =

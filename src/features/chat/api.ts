@@ -1,45 +1,99 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { absenceOf, isAbsentOn } from '@/features/tasks/absences';
-import { todayInBishkek } from '@/shared/lib/workDays';
-import { chatMembers, createMockChat, currentMemberId } from './mock';
-import type { Chat, ChatMessage, ChatSummary } from './types';
+import { type ApiPerson, toPerson } from '@/features/tasks/api';
+import { api } from '@/shared/api/client';
+import type { RoleCode } from '@/shared/config/permissions';
+import type { Chat, ChatMember, ChatMessage, ChatSummary } from './types';
 
 /**
- * Данные чата. Пока бэкенда нет — заглушка в памяти (mock.ts); реальное время, доставка
- * и пуши — на стороне платформы. Когда появится API, меняются только функции, хуки остаются.
+ * Данные чата — API бэкенда (mok-backend, apps/chat, /api/chat/*). Чат видят только его
+ * участники; непрочитанные считает сервер. Новые сообщения — опросом: открытая переписка
+ * раз в 5 секунд догружает только новое (`?after=<ID последнего>`), список — раз в 15 секунд.
+ *
+ * В тестах вместо бэкенда — подставной сервер testing/server.ts на данных mock.ts.
  *
  * Файл продублирован в web/ и mobile/ — правьте оба.
  */
-let store = createMockChat();
-let seq = 0;
 
-// Без import.meta.env: файл общий для web и mobile (Expo), задержки короткие и в тестах
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// --- Формат бэкенда ---------------------------------------------------------------------------
 
-/** Сброс заглушки (для тестов) */
-export function resetChatMock(now?: number) {
-  store = createMockChat(now);
+export type ApiChatMember = ApiPerson & { role: RoleCode | ''; active: boolean };
+
+export type ApiChatMessage = {
+  id: string;
+  chatId: string;
+  authorId: string | null;
+  at: string;
+  kind: ChatMessage['kind'];
+  text: string;
+  threadId: string | null;
+  task: NonNullable<ChatMessage['task']> | null;
+  system: NonNullable<ChatMessage['system']> | null;
+  file: { name: string; ext: string; size: number } | null;
+};
+
+export type ApiChatSummary = Chat & { last: ApiChatMessage | null; unread: number };
+
+export type ApiChatFile = Omit<ChatFile, 'size'> & { size: number };
+
+export type ApiSearchHit = { message: ApiChatMessage; chatTitle: string; author: string | null };
+
+// --- Преобразования ---------------------------------------------------------------------------
+
+export const toChatMember = (m: ApiChatMember): ChatMember => {
+  const p = toPerson(m);
+  return {
+    id: p.id,
+    name: p.name,
+    short: p.short,
+    tone: p.tone,
+    role: (m.role || 'R5') as RoleCode,
+    department: m.department ?? '',
+    active: m.active,
+  };
+};
+
+export function toMessage(m: ApiChatMessage): ChatMessage {
+  return {
+    id: String(m.id),
+    chatId: String(m.chatId),
+    authorId: m.authorId === null ? null : String(m.authorId),
+    at: m.at,
+    kind: m.kind,
+    text: m.text,
+    ...(m.threadId ? { threadId: String(m.threadId) } : {}),
+    ...(m.task ? { task: m.task } : {}),
+    ...(m.system ? { system: m.system } : {}),
+    ...(m.file ? { file: m.file } : {}),
+  };
 }
 
-/** Непрочитанные: чужие и системные сообщения после readAt */
-const unreadOf = (chat: Chat) =>
-  store.messages.filter(
-    (m) => m.chatId === chat.id && m.authorId !== currentMemberId && m.at > chat.readAt,
-  ).length;
+const toSummary = (c: ApiChatSummary): ChatSummary => ({
+  ...c,
+  id: String(c.id),
+  memberIds: c.memberIds.map(String),
+  peerId: c.peerId === null ? null : String(c.peerId),
+  last: c.last ? toMessage(c.last) : null,
+});
 
-export function fetchChats(): ChatSummary[] {
-  return store.chats
-    .map((chat) => {
-      const own = store.messages.filter((m) => m.chatId === chat.id);
-      // Последнее в ленте — без ответов в ветках, как в канале
-      const last = own.filter((m) => !m.threadId).at(-1) ?? null;
-      return structuredClone({ ...chat, last, unread: unreadOf(chat) });
-    })
-    .sort((a, b) => (b.last?.at ?? '').localeCompare(a.last?.at ?? ''));
+// --- Запросы ----------------------------------------------------------------------------------
+
+/** Участники переписки (с ролью и департаментом) по ID */
+export async function fetchChatMembers(): Promise<Record<string, ChatMember>> {
+  const list = await api.get<ApiChatMember[]>('/chat/members');
+  return Object.fromEntries(list.map((m) => [String(m.id), toChatMember(m)]));
 }
 
-export const fetchMessages = (chatId: string): ChatMessage[] =>
-  structuredClone(store.messages.filter((m) => m.chatId === chatId));
+/** Чаты пользователя: последнее сообщение ленты, непрочитанные; новые сверху */
+export const fetchChats = async (): Promise<ChatSummary[]> =>
+  (await api.get<ApiChatSummary[]>('/chat/chats')).map(toSummary);
+
+/** Сообщения переписки по порядку; after — только новее сообщения с этим ID */
+export async function fetchMessages(chatId: string, after?: string): Promise<ChatMessage[]> {
+  const list = await api.get<ApiChatMessage[]>(`/chat/chats/${chatId}/messages`, {
+    query: after ? { after } : undefined,
+  });
+  return list.map(toMessage);
+}
 
 /** Ветки ответов: ID сообщения → ответы по времени */
 export function threadsOf(messages: ChatMessage[]): Map<string, ChatMessage[]> {
@@ -54,13 +108,7 @@ export function threadsOf(messages: ChatMessage[]): Map<string, ChatMessage[]> {
 }
 
 /** Всего непрочитанных — для счётчика в меню и в шапке */
-export const unreadTotal = () => store.chats.reduce((sum, c) => sum + unreadOf(c), 0);
-
-const find = (chatId: string) => {
-  const chat = store.chats.find((c) => c.id === chatId);
-  if (!chat) throw new Error('chat-not-found');
-  return chat;
-};
+export const unreadTotal = async () => (await api.get<{ total: number }>('/chat/unread')).total;
 
 /** Файл из переписки — для раздела «Файлы» */
 export type ChatFile = {
@@ -69,143 +117,133 @@ export type ChatFile = {
   chatTitle: string;
   name: string;
   ext: string;
+  size?: number;
   authorId: string | null;
   at: string;
 };
 
 /** Файлы из переписок, где пользователь участник */
-export const fetchChatFiles = (): ChatFile[] =>
-  store.messages.flatMap((m) => {
-    const chat = store.chats.find((c) => c.id === m.chatId);
-    if (!m.file || !chat?.memberIds.includes(currentMemberId)) return [];
-    return [
-      {
-        messageId: m.id,
-        chatId: chat.id,
-        chatTitle: chat.title,
-        name: m.file.name,
-        ext: m.file.ext,
-        authorId: m.authorId,
-        at: m.at,
-      },
-    ];
-  });
+export const fetchChatFiles = async (): Promise<ChatFile[]> =>
+  (await api.get<ApiChatFile[]>('/chat/files')).map((f) => ({
+    ...f,
+    messageId: String(f.messageId),
+    chatId: String(f.chatId),
+    authorId: f.authorId === null ? null : String(f.authorId),
+  }));
 
-/** Сообщения из переписок, где пользователь участник, — для поиска по системе */
-export const fetchMemberMessages = () =>
-  store.messages.flatMap((message) => {
-    const chat = store.chats.find((c) => c.id === message.chatId);
-    if (!chat?.memberIds.includes(currentMemberId)) return [];
-    const author = message.authorId ? (chatMembers[message.authorId]?.short ?? null) : null;
-    return [structuredClone({ message, chatTitle: chat.title, author })];
-  });
+/** Скачать файл сообщения */
+export const chatFileUrl = (messageId: string) => api.url(`/chat/messages/${messageId}/file`);
 
-export function markChatRead(chatId: string) {
-  const chat = find(chatId);
-  const last = store.messages.filter((m) => m.chatId === chatId).at(-1);
-  if (last && last.at > chat.readAt) chat.readAt = last.at;
+/** Сообщения из переписок пользователя со словами запроса — для поиска по системе */
+export async function fetchMemberMessages(query: string) {
+  if (query.trim().length < 2) return [];
+  const hits = await api.get<ApiSearchHit[]>('/chat/search', { query: { q: query } });
+  return hits.map((h) => ({
+    message: toMessage(h.message),
+    chatTitle: h.chatTitle,
+    author: h.author,
+  }));
 }
 
-export type OutgoingMessage = Pick<ChatMessage, 'text' | 'kind' | 'task' | 'file' | 'threadId'>;
+export async function markChatRead(chatId: string) {
+  await api.post(`/chat/chats/${chatId}/read`);
+}
+
+export type OutgoingMessage = Pick<ChatMessage, 'text' | 'kind' | 'task' | 'threadId'> & {
+  /** Файл-вложение: уходит отдельным запросом multipart */
+  upload?: File;
+};
 
 /**
- * Отправить сообщение. В личной переписке с тем, кто в отпуске, приходит автоответ
- * с заместителем — как в макете.
+ * Отправить сообщение. В личной переписке с тем, кто сегодня отсутствует, сервер следом
+ * добавляет автоответ с заместителем — как в макете.
  */
-export function sendMessage(chatId: string, message: OutgoingMessage): ChatMessage {
-  const chat = find(chatId);
-  const at = new Date().toISOString();
-  const sent: ChatMessage = {
-    id: `m-new-${++seq}`,
-    chatId,
-    authorId: currentMemberId,
-    at,
-    ...message,
-  };
-  store.messages.push(sent);
-  chat.readAt = at;
-
-  if (chat.kind === 'direct' && chat.peerId) {
-    const absence = absenceOf(chat.peerId);
-    if (absence && isAbsentOn(absence, todayInBishkek())) {
-      store.messages.push({
-        id: `m-new-${++seq}`,
-        chatId,
-        authorId: null,
-        at,
-        kind: 'system',
-        text: absence.deputy.short,
-        system: { kind: 'autoreply', title: absence.to },
-      });
-      chat.readAt = at;
-    }
+export async function sendMessage(chatId: string, message: OutgoingMessage): Promise<ChatMessage> {
+  if (message.upload) {
+    const form = new FormData();
+    form.append('file', message.upload);
+    form.append('text', message.text);
+    if (message.threadId) form.append('threadId', message.threadId);
+    return toMessage(await api.post<ApiChatMessage>(`/chat/chats/${chatId}/files`, form));
   }
-  return structuredClone(sent);
+  return toMessage(
+    await api.post<ApiChatMessage>(`/chat/chats/${chatId}/messages`, {
+      kind: message.kind,
+      text: message.text,
+      threadId: message.threadId ?? null,
+      ...(message.kind === 'task' ? { taskId: message.task?.id ?? null } : {}),
+    }),
+  );
 }
 
 /** Личная переписка с сотрудником: открыть существующую или начать новую */
-export function startDirect(peerId: string): string {
-  const existing = store.chats.find((c) => c.kind === 'direct' && c.peerId === peerId);
-  if (existing) return existing.id;
-  const peer = chatMembers[peerId];
-  if (!peer) throw new Error('member-not-found');
-  const chat: Chat = {
-    id: `c-${peerId}`,
-    kind: 'direct',
-    title: peer.name,
-    fullTitle: peer.name,
-    memberIds: [currentMemberId, peerId],
-    peerId,
-    readAt: new Date().toISOString(),
-    muted: false,
-  };
-  store.chats.push(chat);
-  return chat.id;
+export async function startDirect(peerId: string): Promise<string> {
+  return String((await api.post<ApiChatSummary>('/chat/chats/direct', { peerId })).id);
 }
 
-export function setMuted(chatId: string, muted: boolean) {
-  find(chatId).muted = muted;
+export async function setMuted(chatId: string, muted: boolean) {
+  await api.post(`/chat/chats/${chatId}/mute`, { muted });
 }
+
+// --- Хуки -------------------------------------------------------------------------------------
 
 export const chatKey = ['chat'] as const;
+
+const noMembers: Record<string, ChatMember> = {};
+
+/** Справочник участников по ID; пока не загружен — пустой */
+export function useChatMembers(enabled = true): Record<string, ChatMember> {
+  return (
+    useQuery({
+      enabled,
+      queryKey: [...chatKey, 'members'],
+      queryFn: fetchChatMembers,
+      staleTime: 5 * 60_000,
+    }).data ?? noMembers
+  );
+}
 
 export function useChats() {
   return useQuery({
     queryKey: [...chatKey, 'list'],
-    queryFn: async () => {
-      await delay(100);
-      return fetchChats();
-    },
+    queryFn: fetchChats,
+    refetchInterval: 15_000,
   });
 }
 
+/**
+ * Сообщения открытой переписки. Сообщения только добавляются, поэтому повторный запрос
+ * (опрос раз в 5 секунд или после отправки) догружает только новые и дописывает их в конец.
+ */
 export function useMessages(chatId: string | null) {
+  const client = useQueryClient();
+  const queryKey = [...chatKey, 'messages', chatId];
   return useQuery({
     enabled: chatId !== null,
-    queryKey: [...chatKey, 'messages', chatId],
+    queryKey,
     queryFn: async () => {
-      await delay(80);
-      return chatId ? fetchMessages(chatId) : [];
+      if (!chatId) return [];
+      const known = client.getQueryData<ChatMessage[]>(queryKey) ?? [];
+      const last = known.at(-1)?.id;
+      if (!last) return fetchMessages(chatId);
+      const fresh = await fetchMessages(chatId, last);
+      if (fresh.length === 0) return known;
+      const ids = new Set(known.map((m) => m.id));
+      return [...known, ...fresh.filter((m) => !ids.has(m.id))];
     },
+    refetchInterval: 5_000,
   });
 }
 
 export function useChatFiles(enabled = true) {
-  return useQuery({
-    enabled,
-    queryKey: [...chatKey, 'files'],
-    queryFn: async () => {
-      await delay(60);
-      return fetchChatFiles();
-    },
-  });
+  return useQuery({ enabled, queryKey: [...chatKey, 'files'], queryFn: fetchChatFiles });
 }
 
-export function useMemberMessages(enabled = true) {
+export function useMemberMessages(query: string, enabled = true) {
   return useQuery({
-    enabled,
-    queryKey: [...chatKey, 'search'],
-    queryFn: async () => fetchMemberMessages(),
+    enabled: enabled && query.trim().length > 1,
+    queryKey: [...chatKey, 'search', query.trim()],
+    queryFn: () => fetchMemberMessages(query),
   });
 }
 
@@ -213,17 +251,15 @@ export function useMemberMessages(enabled = true) {
 export function useChatUnread() {
   return useQuery({
     queryKey: [...chatKey, 'unread'],
-    queryFn: async () => unreadTotal(),
+    queryFn: unreadTotal,
+    refetchInterval: 30_000,
   }).data;
 }
 
-function useChatMutation<V, R>(fn: (vars: V) => R) {
+function useChatMutation<V, R>(fn: (vars: V) => Promise<R>) {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (vars: V) => {
-      await delay(60);
-      return fn(vars);
-    },
+    mutationFn: fn,
     onSuccess: () => client.invalidateQueries({ queryKey: chatKey }),
   });
 }
@@ -241,5 +277,3 @@ export const useSetMuted = () =>
   useChatMutation(({ chatId, muted }: { chatId: string; muted: boolean }) =>
     setMuted(chatId, muted),
   );
-
-export { chatMembers, currentMemberId };

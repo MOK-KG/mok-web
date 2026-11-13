@@ -22,6 +22,10 @@ export type Suggestion = {
   project: Project | null;
   priority: Task['priority'];
   flags: Partial<Record<SuggestionField, FieldFlag>>;
+  /** Почему агент так предложил — по базе знаний и загрузке сотрудников */
+  reasoning?: string;
+  /** Статьи базы знаний, на которые опирался агент */
+  sources?: { id: string; title: string }[];
 };
 
 export type Letter = {

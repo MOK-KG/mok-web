@@ -21,12 +21,31 @@ export type Project = {
   tone: Tone;
 };
 
+/**
+ * Колонка канбана. Колонки настраиваются (API /tasks/columns), но каждая относится к одному
+ * из этапов TaskStatus: по этапу — цвет точки и правило «готово»
+ */
+export type Column = {
+  id: string;
+  name: string;
+  stage: TaskStatus;
+  position: number;
+  /** Сколько задач может быть в колонке; null — без лимита */
+  wipLimit: number | null;
+  /** Незаархивированных задач в колонке — для счётчика лимита */
+  count: number;
+};
+
 export type Task = {
   id: string;
   /** Номер задачи: ЗД-2026-0412 */
   code: string;
   title: string;
+  /** Этап колонки, в которой задача */
   status: TaskStatus;
+  columnId: string;
+  /** Место в колонке: доска показывает задачи в этом порядке (перетаскиванием) */
+  position: number;
   /** null — без проекта */
   project: Project | null;
   /** Срок; null — без срока */
@@ -46,6 +65,8 @@ export type Task = {
   /** Исполнитель в отпуске — задачу ведёт заместитель */
   deputy: Person | null;
 };
+
+export type TaskAttachment = { id: string; filename: string; size: number };
 
 export type Subtask = { id: string; title: string; done: boolean; assignee: Person | null };
 
@@ -68,7 +89,13 @@ export type Reschedule = { from: IsoDate; to: IsoDate; by: Person };
 /** Полные данные задачи для карточки (модального окна) */
 export type TaskDetail = Task & {
   description: string;
+  /** Название статьи базы знаний */
   knowledgeLink: string | null;
+  /** Адрес статьи базы знаний (/knowledge/:id) */
+  knowledgeArticleId: string | null;
+  attachmentItems: TaskAttachment[];
+  /** В архиве (вкладка «Завершённые») */
+  archived?: boolean;
   subtaskItems: Subtask[];
   commentItems: Comment[];
   history: HistoryEntry[];
@@ -86,5 +113,5 @@ export type TaskTab = 'mine' | 'department' | 'createdByMe' | 'completed';
 
 export const taskTabs: TaskTab[] = ['mine', 'department', 'createdByMe', 'completed'];
 
-/** Лимит задач «В работе» (WIP) */
+/** Лимит задач «В работе» (WIP) по умолчанию; настоящий — у колонки (Column.wipLimit) */
 export const WIP_LIMIT = 6;

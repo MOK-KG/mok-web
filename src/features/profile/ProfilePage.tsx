@@ -12,7 +12,6 @@ import {
   useSaveNotificationSettings,
 } from '@/features/notifications/api';
 import { NotificationToggles } from '@/features/notifications/Toggles';
-import { currentUserId } from '@/features/tasks/directory';
 import { type Language, languageLabels, languages } from '@/shared/config/i18n';
 import type { RoleCode } from '@/shared/config/permissions';
 import { formatIsoDate } from '@/shared/lib/date';
@@ -34,8 +33,9 @@ export function ProfilePage() {
   const settings = useNotificationSettings().data;
   const save = useSaveNotificationSettings();
   const [draft, setDraft] = useState<NotificationSettings | null>(null);
+  const meId = user?.id;
   const absences = (useCurrentAbsences().data ?? []).filter(
-    (a) => a.person.id === currentUserId || a.deputy.id === currentUserId,
+    (a) => a.person.id === meId || a.deputy.id === meId,
   );
   const current = (i18n.resolvedLanguage ?? 'ru') as Language;
 
@@ -137,7 +137,7 @@ export function ProfilePage() {
               {absences.map((a) => (
                 <li key={a.id} className="flex items-center gap-2 text-[12.5px] text-sub">
                   <PlaneIcon size={12} className="shrink-0 text-info" />
-                  {a.person.id === currentUserId
+                  {a.person.id === meId
                     ? t('profile.myAbsence', {
                         kind: t(`absences.kind.${a.kind}`),
                         from: date(a.from),

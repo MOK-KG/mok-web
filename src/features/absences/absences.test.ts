@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { journalEntries, resetJournal } from '../journal/store';
-import { currentAbsences, deputyFor, resetAbsences } from '../tasks/absences';
+import { journalServer } from '../journal/testing/server';
+import { currentAbsences, deputyFor } from '../tasks/absences';
+import { fetchBoard } from '../tasks/api';
 import { people } from '../tasks/directory';
 import {
   type AbsenceInput,
@@ -8,7 +9,9 @@ import {
   absenceWorkingDays,
   cancelAbsence,
   createAbsence,
+  fetchAbsences,
 } from './api';
+import { installAbsencesServer } from './testing/server';
 
 // Среда, 9 сентября 2026 — «сегодня» в макете
 const TODAY = '2026-09-09';
@@ -25,24 +28,26 @@ const input = (patch: Partial<AbsenceInput> = {}): AbsenceInput => ({
 
 const codes = (i: AbsenceInput) => absenceProblems(i, currentAbsences(), TODAY).map((p) => p.code);
 
+// Подставной бэкенд с «сегодня» макета; кэш помощников (deputyFor) — его данные
 beforeEach(() => {
-  resetAbsences(TODAY);
-  resetJournal();
+  installAbsencesServer({ today: TODAY });
 });
 
+const lastJournal = () => journalServer.entries.at(-1);
+
 describe('оформление отсутствия', () => {
-  it('без заместителя сохранить нельзя (приёмка 11.10)', () => {
+  it('без заместителя сохранить нельзя (приёмка 11.10)', async () => {
     expect(codes(input({ deputy: null }))).toContain('deputyRequired');
-    expect(() => createAbsence(input({ deputy: null }), 'А. Дуйшеев', TODAY)).toThrow(
-      'deputyRequired',
-    );
+    await expect(createAbsence(input({ deputy: null }), TODAY)).rejects.toThrow('deputyRequired');
   });
 
-  it('с заместителем — сохраняется и пишется в журнал', () => {
+  it('с заместителем — сохраняется на сервере, журнал пишет сервер', async () => {
     expect(codes(input())).toEqual([]);
-    const a = createAbsence(input(), 'А. Дуйшеев', TODAY);
-    expect(a.status).toBe('active');
-    expect(journalEntries().at(-1)).toMatchObject({ action: 'absenceCreated' });
+    const a = await createAbsence(input(), TODAY);
+    expect(a).toMatchObject({ status: 'active', person: { id: people.ad.id }, from: '2026-09-21' });
+    expect(a.deputy.short).toBe('Ю. Ведерникова');
+    expect(lastJournal()).toMatchObject({ action: 'absenceCreated' });
+    expect((await fetchAbsences()).map((x) => x.id)).toContain(a.id);
   });
 
   it('проверки дат и заместителя', () => {
@@ -65,23 +70,41 @@ describe('оформление отсутствия', () => {
 });
 
 describe('заместитель по датам (приёмка 11.11)', () => {
-  it('действует только в дни отсутствия и прекращается сам', () => {
-    createAbsence(input(), 'А. Дуйшеев', TODAY);
+  it('действует только в дни отсутствия и прекращается сам', async () => {
+    await createAbsence(input(), TODAY);
+    await fetchAbsences();
     expect(deputyFor(people.ad.id, '2026-09-20')).toBeNull();
     expect(deputyFor(people.ad.id, '2026-09-21')?.id).toBe(people.ju.id);
     expect(deputyFor(people.ad.id, '2026-09-25')?.id).toBe(people.ju.id);
     expect(deputyFor(people.ad.id, '2026-09-26')).toBeNull();
   });
 
-  it('отмена — запись остаётся, заместитель больше не действует', () => {
-    const a = createAbsence(input({ from: TODAY }), 'А. Дуйшеев', TODAY);
+  it('отмена — запись остаётся, заместитель больше не действует', async () => {
+    const a = await createAbsence(input({ from: TODAY }), TODAY);
+    await fetchAbsences();
     expect(deputyFor(people.ad.id, TODAY)?.id).toBe(people.ju.id);
-    expect(() => cancelAbsence(a.id, 'нет', 'А. Дуйшеев')).toThrow('reason-required');
-    cancelAbsence(a.id, 'Отпуск перенесён', 'А. Дуйшеев');
+    await expect(cancelAbsence(a.id, 'нет')).rejects.toMatchObject({ code: 'reason_required' });
+    const cancelled = await cancelAbsence(a.id, 'Отпуск перенесён');
+    expect(cancelled.cancellation).toMatchObject({ reason: 'Отпуск перенесён', by: 'А. Дуйшеев' });
+    const all = await fetchAbsences();
+    expect(all.find((x) => x.id === a.id)?.status).toBe('cancelled');
     expect(deputyFor(people.ad.id, TODAY)).toBeNull();
-    expect(journalEntries().at(-1)).toMatchObject({
+    expect(lastJournal()).toMatchObject({
       action: 'absenceCancelled',
       reason: 'Отпуск перенесён',
     });
+  });
+});
+
+describe('заместитель в задачах', () => {
+  it('приходит с бэкенда: исполнитель в отпуске сегодня, задача не готова', async () => {
+    const { tasks } = await fetchBoard();
+    const open = tasks.filter((t) => t.assignee?.id === people.nb.id && t.status !== 'done');
+    expect(open.length).toBeGreaterThan(0);
+    expect(open.every((t) => t.deputy?.id === people.ka.id)).toBe(true);
+    const done = tasks.filter((t) => t.status === 'done');
+    expect(done.every((t) => t.deputy === null)).toBe(true);
+    const present = tasks.filter((t) => t.assignee?.id === people.ju.id);
+    expect(present.every((t) => t.deputy === null)).toBe(true);
   });
 });

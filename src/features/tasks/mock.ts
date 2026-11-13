@@ -1,7 +1,7 @@
 import { addDays, type IsoDate, nextWorkingDay, todayInBishkek } from '@/shared/lib/workDays';
 import { absenceOf, isAbsentOn, mockAbsences } from './absences';
 import { currentUserId, people, projects } from './directory';
-import type { HistoryEntry, Person, Project, TaskDetail, TaskStatus } from './types';
+import type { Column, HistoryEntry, Person, Project, TaskDetail, TaskStatus } from './types';
 
 export { currentUserId, people, projects };
 
@@ -35,6 +35,26 @@ type Seed = {
   reschedules?: [number, number, Person][];
   reminderDays?: number;
 };
+
+/** Колонки заглушки — по одной на этап, как колонки бэкенда по умолчанию */
+export const mockColumnId = (status: TaskStatus) => `col-${status}`;
+
+export const mockColumns = (): Column[] =>
+  (
+    [
+      ['queue', 'Очередь', null],
+      ['in_progress', 'В работе', 6],
+      ['review', 'На проверке', null],
+      ['done', 'Готово', null],
+    ] as const
+  ).map(([stage, name, wipLimit], position) => ({
+    id: mockColumnId(stage),
+    name,
+    stage,
+    position,
+    wipLimit,
+    count: 0,
+  }));
 
 /** Момент времени в Бишкеке: день со смещением и время HH:MM → ISO */
 export const atBishkek = (day: IsoDate, time: string) => `${day}T${time}:00+06:00`;
@@ -126,6 +146,9 @@ function make(seed: Seed, today: IsoDate): TaskDetail {
     code: `ЗД-2026-${String(counter).padStart(4, '0')}`,
     title: seed.title,
     status: seed.status,
+    columnId: mockColumnId(seed.status),
+    // Порядок в колонке — по сроку: ближайший сверху, без срока — в конце
+    position: seed.dueIn ?? 999,
     project: seed.project,
     due,
     assignee,
@@ -134,12 +157,18 @@ function make(seed: Seed, today: IsoDate): TaskDetail {
     subtasks: subtaskItems.length,
     comments: commentItems.length,
     attachments: seed.attachments ?? 0,
+    attachmentItems: Array.from({ length: seed.attachments ?? 0 }, (_, i) => ({
+      id: nextId('a'),
+      filename: `Файл ${i + 1}.pdf`,
+      size: 120_000,
+    })),
     fromEmail: seed.fromEmail ?? false,
     reschedules: rescheduleLog.length,
     escalationHours: seed.escalationHours ?? null,
     deputy,
     description: seed.description ?? '',
     knowledgeLink: seed.knowledgeLink ?? null,
+    knowledgeArticleId: null,
     subtaskItems,
     commentItems,
     history,

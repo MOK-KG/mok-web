@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { usePageSubtitle } from '@/app/layout/AppLayout';
+import { useCurrentPersonId } from '@/features/auth';
 import { PlusIcon, SearchIcon } from '@/shared/ui/icons';
-import { chatMembers, currentMemberId, useChats, useChatUnread } from './api';
+import { useChatMembers, useChats, useChatUnread } from './api';
 import { Conversation } from './Conversation';
 import { NewChatDialog } from './dialogs';
 import {
@@ -126,6 +127,8 @@ function ChatRow({
   const preview = usePreview();
   const dayLabel = useDayLabel();
   const line = useMemberLine(c.peerId);
+  const chatMembers = useChatMembers();
+  const me = useCurrentPersonId() ?? '';
   const peer = c.peerId ? chatMembers[c.peerId] : null;
   const when = c.last
     ? dayOf(c.last.at) === dayOf(new Date().toISOString())
@@ -164,7 +167,7 @@ function ChatRow({
           </span>
           <span className="mt-[3px] flex items-center gap-2">
             <span className="min-w-0 flex-1 truncate text-[11.5px] text-sub">
-              {preview(c.last, currentMemberId)}
+              {preview(c.last, me)}
             </span>
             {c.unread > 0 && (
               <span

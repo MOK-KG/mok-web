@@ -1,10 +1,11 @@
 import { useTranslation } from 'react-i18next';
+import { useCurrentAbsences } from '@/features/absences/api';
 import { absenceOf, isAbsentOn } from '@/features/tasks/absences';
 import { toneClasses } from '@/features/tasks/ui';
 import { formatIsoDate } from '@/shared/lib/date';
 import { initials } from '@/shared/lib/text';
 import { addDays, todayInBishkek } from '@/shared/lib/workDays';
-import { chatMembers } from './api';
+import { useChatMembers } from './api';
 import type { ChatMember, ChatMessage } from './types';
 
 /** Аватар участника; точка — в отпуске (как в макете у М. Эсеновой) */
@@ -42,8 +43,10 @@ export function RoleChip({ role }: { role: string }) {
 
 /** Отпуск, который идёт сейчас: до какого дня и кто замещает */
 export function useAway(memberId: string | null) {
+  // Подписка: отсутствия загрузятся — строка перерисуется
+  const absences = useCurrentAbsences().data;
   if (!memberId) return null;
-  const absence = absenceOf(memberId);
+  const absence = absenceOf(memberId, todayInBishkek(), absences);
   return absence && isAbsentOn(absence, todayInBishkek()) ? absence : null;
 }
 
@@ -58,7 +61,8 @@ export const shortDay = (day: string, lang: string) =>
 export function useMemberLine(memberId: string | null) {
   const { t, i18n } = useTranslation();
   const away = useAway(memberId);
-  const member = memberId ? chatMembers[memberId] : null;
+  const members = useChatMembers();
+  const member = memberId ? members[memberId] : null;
   if (!member) return '';
   const where = away
     ? t('chat.vacationUntil', { date: shortDay(away.to, i18n.language) })
@@ -95,6 +99,7 @@ export const timeOf = (iso: string) =>
 /** Короткая подпись последнего сообщения для списка чатов */
 export function usePreview() {
   const { t } = useTranslation();
+  const chatMembers = useChatMembers();
   return (m: ChatMessage | null, me: string) => {
     if (!m) return '';
     if (m.kind === 'system') {

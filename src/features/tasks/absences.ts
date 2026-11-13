@@ -29,7 +29,8 @@ export type Absence = {
 };
 
 /**
- * ЗАГЛУШКА отпусков (до бэкенда). Даты — смещением от сегодня, как в макете:
+ * Данные подставного сервера для тестов (features/absences/testing/server.ts) и заглушки чата.
+ * Даты — смещением от сегодня, как в макете:
  * Н. Бакиров в отпуске до +13 дней, Д. Токтосунова — через 5 дней на неделю,
  * М. Эсенова — до +20 дней. Заместитель у всех — К. Асанов.
  */
@@ -67,26 +68,23 @@ export function mockAbsences(today: IsoDate = todayInBishkek()): Absence[] {
   ];
 }
 
-let store: Absence[] = mockAbsences();
+/**
+ * Последние загруженные с бэкенда отсутствия (features/absences/api.ts наполняет кэш при каждом
+ * запросе). Синхронные помощники ниже читают его — их зовут задачи, чат, календарь; экраны,
+ * которым нужно перерисоваться после загрузки, подписываются хуком useCurrentAbsences.
+ */
+let cache: Absence[] = [];
 
-/** Все отсутствия, включая отменённые (копии) */
-export const allAbsences = (): Absence[] => structuredClone(store);
+/** Все загруженные отсутствия, включая отменённые (копии) */
+export const allAbsences = (): Absence[] => structuredClone(cache);
 
 /** Действующие отсутствия — по ним считаются заместители */
 export const currentAbsences = (): Absence[] =>
-  structuredClone(store.filter((a) => a.status === 'active'));
+  structuredClone(cache.filter((a) => a.status === 'active'));
 
-/** Изменить хранилище — только из features/absences/api.ts */
-export const absenceStore = {
-  add: (a: Absence) => {
-    store.push(a);
-  },
-  find: (id: string) => store.find((a) => a.id === id),
-};
-
-/** Сброс заглушки (для тестов) */
-export function resetAbsences(today?: IsoDate) {
-  store = mockAbsences(today);
+/** Заменить кэш — только из features/absences/api.ts (ответ бэкенда) и подставного сервера */
+export function setAbsenceCache(absences: Absence[]) {
+  cache = absences;
 }
 
 /** Отпуск сотрудника, который идёт сейчас или начнётся позже (ближайший) */

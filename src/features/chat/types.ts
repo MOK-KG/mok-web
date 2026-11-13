@@ -10,6 +10,8 @@ export type ChatMember = {
   tone: Tone;
   role: RoleCode;
   department: string;
+  /** false — сотрудник уволен: его сообщения остаются, новую переписку не начать */
+  active?: boolean;
 };
 
 /**
@@ -26,8 +28,8 @@ export type ChatMessage = {
   at: string;
   kind: 'text' | 'task' | 'system';
   text: string;
-  /** Для task: задача по названию (ID появится с бэкендом) */
-  task?: { title: string; status: TaskStatus; assignee: string; due: string | null };
+  /** Для task: задача из доски — её состояние сейчас (assignee — короткое имя) */
+  task?: { id?: string; title: string; status: TaskStatus; assignee: string; due: string | null };
   /**
    * Для system: escalation — title заголовок, text пояснение;
    * autoreply — title дата конца отпуска (IsoDate), text заместитель
@@ -35,8 +37,8 @@ export type ChatMessage = {
   system?: { kind: 'escalation' | 'autoreply'; title: string };
   /** Ответ в ветке (S-33): ID сообщения, к которому ветка; в общей ленте канала не показывается */
   threadId?: string;
-  /** Файл: в заглушке хранится только имя */
-  file?: { name: string; ext: string };
+  /** Файл-вложение; скачать — chatFileUrl(id сообщения) */
+  file?: { name: string; ext: string; size?: number };
 };
 
 /** Канал департамента или личная переписка */

@@ -6,34 +6,36 @@ import i18n from '@/app/i18n';
 import { AppProviders } from '@/app/providers';
 import { routes } from '@/app/router';
 import { mockSessionFor } from '@/features/auth/mock';
-import {
-  createFromLetter,
-  journalEntries,
-  queueSummary,
-  rejectLetter,
-  resetTasksMock,
-  tabCounts,
-} from '../api';
+import { fetchJournal } from '@/features/journal/store';
+import { api } from '@/shared/api/client';
+import { type Board, createFromLetter, rejectLetter, resetTasksMock } from '../api';
 import { canCreate, createMockQueue } from '../mailQueue';
+
+const queueSummary = () => api.get<{ ready: number; manual: number }>('/tasks/mail/summary');
 
 describe('очередь из почты (логика)', () => {
   beforeEach(() => resetTasksMock());
 
-  it('3 письма разобраны, 1 — вручную', () => {
-    expect(queueSummary()).toEqual({ ready: 3, manual: 1 });
+  it('3 письма разобраны, 1 — вручную', async () => {
+    expect(await queueSummary()).toEqual({ ready: 3, manual: 1 });
   });
 
   it('создание из письма: письмо уходит, задача в очереди с источником «письмо»', async () => {
     const [letter] = createMockQueue();
     if (!letter.suggestion) throw new Error('у первого письма есть предложение');
-    const task = await createFromLetter(letter.id, letter.suggestion);
+    const task = await createFromLetter(letter, letter.suggestion);
     expect(task.status).toBe('queue');
     expect(task.fromEmail).toBe(true);
     expect(task.source.kind).toBe('email');
     expect(task.history[0]).toMatchObject({ kind: 'created', text: 'email' });
-    expect(queueSummary()).toEqual({ ready: 2, manual: 1 });
-    expect(tabCounts().department).toBe(21);
-    expect(journalEntries()[0].action).toBe('mailAccepted');
+    expect(await queueSummary()).toEqual({ ready: 2, manual: 1 });
+    expect((await api.get<Board>('/tasks/board')).counts.department).toBe(21);
+    // Запись в журнал делает бэкенд — читаем её через API журнала
+    const [entry] = (await fetchJournal()).items;
+    expect(entry).toMatchObject({
+      action: 'mailAccepted',
+      details: `${letter.subject} → ${task.code}`,
+    });
   });
 
   it('письмо без исполнителя создать нельзя', () => {
@@ -42,10 +44,12 @@ describe('очередь из почты (логика)', () => {
   });
 
   it('отклонение требует причину; причина и автор — в журнале', async () => {
-    await expect(rejectLetter('mail-2', 'нет')).rejects.toThrow('reason-required');
-    await rejectLetter('mail-2', 'Дубль задачи про Генассамблею');
-    expect(queueSummary()).toEqual({ ready: 2, manual: 1 });
-    expect(journalEntries()[0]).toMatchObject({
+    const letter = createMockQueue().find((l) => l.id === 'mail-2');
+    if (!letter) throw new Error('нет письма mail-2');
+    await expect(rejectLetter(letter, 'нет')).rejects.toMatchObject({ code: 'reason_required' });
+    await rejectLetter(letter, 'Дубль задачи про Генассамблею');
+    expect(await queueSummary()).toEqual({ ready: 2, manual: 1 });
+    expect((await fetchJournal()).items[0]).toMatchObject({
       action: 'mailRejected',
       author: 'А. Дуйшеев',
       details: 'Приглашение на Генеральную ассамблею: Дубль задачи про Генассамблею',
@@ -119,6 +123,6 @@ describe('очередь из почты (интерфейс)', () => {
     );
     await act(async () => confirm?.click());
     expect(page()).toContain('Укажите причину — хотя бы 5 символов');
-    expect(queueSummary().ready).toBe(3);
+    expect((await queueSummary()).ready).toBe(3);
   });
 });

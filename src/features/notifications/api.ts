@@ -1,14 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useChatUnread } from '@/features/chat/api';
 import { useAwaitingResolution } from '@/features/documents/api';
+import { api } from '@/shared/api/client';
 import type { Permission } from '@/shared/config/permissions';
-import { addDays, nextWorkingDay, todayInBishkek } from '@/shared/lib/workDays';
 
 /**
- * Уведомления. Файл продублирован в web/ и mobile/ — правьте оба.
- * Доставка, пуши и эскалация по статусу «не открыто» — на стороне платформы.
+ * Уведомления — API бэкенда (mok-backend, apps/notifications, /api/notifications/).
+ * Создаёт их сервер: назначение задачи, «готово», письма в очереди, упоминание в чате;
+ * напоминания, просрочки и эскалации — периодическая проверка (run_scheduler).
+ * В тестах — подставной сервер testing/server.ts. Файл продублирован в web/ и mobile/ — правьте оба.
  */
 export type NotificationKind =
+  | 'assigned'
   | 'escalation'
   | 'overdue'
   | 'mailQueue'
@@ -17,6 +20,7 @@ export type NotificationKind =
   | 'done';
 
 export const notificationKinds: NotificationKind[] = [
+  'assigned',
   'escalation',
   'overdue',
   'mailQueue',
@@ -25,17 +29,25 @@ export const notificationKinds: NotificationKind[] = [
   'done',
 ];
 
+/** Не выключаются: эскалация считается по непрочитанному назначению — правило платформы */
+export const lockedNotificationKinds: NotificationKind[] = ['assigned', 'escalation'];
+
 /** Куда ведёт кнопка уведомления */
 export type NotificationTarget =
-  | { kind: 'task'; taskTitle: string }
+  | { kind: 'task'; taskId: string; taskTitle: string }
   | { kind: 'mailQueue' }
   | { kind: 'chat'; chatId: string };
+
+/** Подстановки для перевода заголовка и текста (task, actor, date, hours, chat…) */
+export type NotificationParams = Record<string, string | number | boolean>;
 
 export type AppNotification = {
   id: string;
   kind: NotificationKind;
+  /** Заголовок и текст по-русски от сервера; на других языках — по params */
   title: string;
   text: string;
+  params: NotificationParams | null;
   /** ISO-время события */
   at: string;
   read: boolean;
@@ -45,7 +57,7 @@ export type AppNotification = {
 /**
  * Видно ли уведомление при этих правах: только если можно открыть то, о чём оно.
  * Очередь из почты — тем, кто создаёт задачи; задачи — с доступом к задачам; чат — с чатом.
- * Иначе кнопка вела бы на экран 403, а счётчик считал бы недоступное.
+ * Иначе кнопка вела бы на экран 403, а счётчик считал бы недоступное. Сервер фильтрует так же.
  */
 export function canSeeNotification(n: AppNotification, can: (p: Permission) => boolean) {
   switch (n.target?.kind) {
@@ -60,105 +72,37 @@ export function canSeeNotification(n: AppNotification, can: (p: Permission) => b
   }
 }
 
-/** Какие уведомления получать; эскалацию выключить нельзя — это правило платформы */
+/** Какие уведомления получать; назначения и эскалацию выключить нельзя — правило платформы */
 export type NotificationSettings = Record<NotificationKind, boolean>;
 
-/**
- * ЗАГЛУШКА уведомлений до появления бэкенда: тексты из макета, время — относительно «сейчас»,
- * задачи — из заглушки задач (эскалация, просрочка, срок через два дня).
- * Данные вымышленные (см. CLAUDE.md, раздел «Данные»).
- */
-function createMockNotifications(now = Date.now()): AppNotification[] {
-  const minutesAgo = (m: number) => new Date(now - m * 60_000).toISOString();
-  const reminderDue = nextWorkingDay(addDays(todayInBishkek(), 2));
-  return [
-    {
-      id: 'n1',
-      kind: 'escalation',
-      title: 'Эскалация · «Перевод устава на кыргызский»',
-      text: 'Уведомление не открыто 4 часа. Передано директору департамента.',
-      at: minutesAgo(12),
-      read: false,
-      target: { kind: 'task', taskTitle: 'Перевод устава на кыргызский язык' },
-    },
-    {
-      id: 'n2',
-      kind: 'overdue',
-      title: 'Срок истёк · «Ответить на запрос МОК»',
-      text: 'Просрочено на 1 день. Вы — исполнитель.',
-      at: minutesAgo(60),
-      read: false,
-      target: { kind: 'task', taskTitle: 'Ответить на запрос МОК по антидопинговой программе' },
-    },
-    {
-      id: 'n3',
-      kind: 'mailQueue',
-      title: '4 письма в очереди из почты',
-      text: 'info@olympic.kg · ждут проверки перед созданием задач.',
-      at: minutesAgo(120),
-      read: false,
-      target: { kind: 'mailQueue' },
-    },
-    {
-      id: 'n4',
-      kind: 'mention',
-      title: 'Д. Токтосунова упомянула вас в чате',
-      text: 'Канал «Медицинский» — нужен комментарий по статье 4.2 сметы.',
-      at: minutesAgo(180),
-      read: false,
-      target: { kind: 'chat', chatId: 'c-medical' },
-    },
-    {
-      id: 'n5',
-      kind: 'reminder',
-      title: 'Напоминание · «Обновить регламент аккредитации»',
-      // Дата — в тексте сразу: срок задачи через два дня (заглушка задач, dueIn 2, на рабочий день)
-      text: reminderDue,
-      at: minutesAgo(24 * 60),
-      read: true,
-      target: { kind: 'task', taskTitle: 'Обновить регламент аккредитации журналистов' },
-    },
-    {
-      id: 'n6',
-      kind: 'done',
-      title: '«Квартальный отчёт для ОКС» завершён',
-      text: 'К. Асанов перевёл задачу в «Готово».',
-      at: minutesAgo(26 * 60),
-      read: true,
-      target: null,
-    },
-  ];
-}
+/** Уведомление в формате бэкенда (NotificationSerializer) */
+export type ApiNotification = Omit<AppNotification, 'id' | 'params'> & {
+  id: number;
+  params: NotificationParams | null;
+};
 
-let mockNotifications = createMockNotifications();
-let mockSettings: NotificationSettings = Object.fromEntries(
-  notificationKinds.map((k) => [k, true]),
-) as NotificationSettings;
+export const toNotification = (n: ApiNotification): AppNotification => ({
+  ...n,
+  id: String(n.id),
+  params: n.params && Object.keys(n.params).length ? n.params : null,
+});
 
-/** Сброс заглушки (для тестов) */
-export function resetNotificationsMock(now?: number) {
-  mockNotifications = createMockNotifications(now);
-  mockSettings = Object.fromEntries(
-    notificationKinds.map((k) => [k, true]),
-  ) as NotificationSettings;
-}
+export const notificationsKey = ['notifications'] as const;
+const key = notificationsKey;
 
-const key = ['notifications'] as const;
-
-/** Уведомления по настройкам: выключенные виды не приходят и не считаются */
+/** Свои уведомления; выключенные виды и недоступное по правам сервер не присылает */
 export function useNotifications() {
   return useQuery({
     queryKey: key,
-    queryFn: async () => mockNotifications.filter((n) => mockSettings[n.kind]),
+    queryFn: async () => (await api.get<ApiNotification[]>('/notifications/')).map(toNotification),
+    refetchInterval: 60_000,
   });
 }
 
 export function useMarkAllRead() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
-      mockNotifications = mockNotifications.map((n) => ({ ...n, read: true }));
-    },
+    mutationFn: () => api.post('/notifications/read-all'),
     onSuccess: () => client.invalidateQueries({ queryKey: key }),
   });
 }
@@ -167,9 +111,7 @@ export function useMarkAllRead() {
 export function useMarkRead() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      mockNotifications = mockNotifications.map((n) => (n.id === id ? { ...n, read: true } : n));
-    },
+    mutationFn: (id: string) => api.post(`/notifications/${id}/read`),
     onSuccess: () => client.invalidateQueries({ queryKey: key }),
   });
 }
@@ -177,16 +119,15 @@ export function useMarkRead() {
 export function useNotificationSettings() {
   return useQuery({
     queryKey: [...key, 'settings'],
-    queryFn: async () => ({ ...mockSettings }),
+    queryFn: () => api.get<NotificationSettings>('/notifications/settings'),
   });
 }
 
 export function useSaveNotificationSettings() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async (settings: NotificationSettings) => {
-      mockSettings = { ...settings, escalation: true };
-    },
+    mutationFn: (settings: NotificationSettings) =>
+      api.put<NotificationSettings>('/notifications/settings', settings),
     meta: { successMessage: 'notifications.settingsSaved' },
     onSuccess: () => client.invalidateQueries({ queryKey: key }),
   });

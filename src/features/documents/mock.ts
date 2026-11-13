@@ -14,7 +14,8 @@ import { defaultLetter, type Letter, letterFingerprint } from './letter';
 import type { DocCategory, DocHistoryEntry, DocKind, DocumentRecord, Resolution } from './types';
 
 /**
- * ЗАГЛУШКА делопроизводства до бэкенда.
+ * Данные делопроизводства для подставного сервера в тестах (testing/server.ts); в приложении
+ * данные — с бэкенда (api.ts).
  *
  * Номера за год сквозные и без пропусков: входящие 1…896, исходящие 1…413, приказы 1…59.
  * Даты растут вместе с номером — по рабочим дням от середины января до вчера.
@@ -39,7 +40,7 @@ type Special = {
   attachments?: string[];
   status?: DocumentRecord['status'];
   author?: Person;
-  resolution?: Omit<Resolution, 'at' | 'author'> & { daysAfter?: number };
+  resolution?: Omit<Resolution, 'at' | 'author' | 'taskId' | 'taskCode'> & { daysAfter?: number };
   annulment?: string;
   letter?: Omit<Letter, 'email'>;
   category?: DocCategory;
@@ -334,7 +335,7 @@ function build(
     if (special?.resolution) {
       const { daysAfter = 0, ...rest } = special.resolution;
       const resolvedAt = at(addDays(date, daysAfter), '15:40');
-      resolution = { ...rest, author: head, at: resolvedAt };
+      resolution = { ...rest, author: head, at: resolvedAt, taskId: null, taskCode: null };
       history.push(entry('resolution', resolvedAt, head, rest.text));
       status = 'inWork';
     } else {
@@ -362,8 +363,9 @@ function build(
     status = 'annulled';
   }
 
+  const id = number === null ? nextId(`doc-${kind}-draft`) : `doc-${kind}-${year}-${number}`;
   return {
-    id: number === null ? nextId(`doc-${kind}-draft`) : `doc-${kind}-${year}-${number}`,
+    id,
     kind,
     status,
     seq: number,
@@ -373,7 +375,11 @@ function build(
     party: kind === 'order' ? null : (special?.party ?? archive.party),
     senderRef: special?.senderRef ?? null,
     summary: special?.summary ?? '',
-    attachments: special?.attachments ?? [],
+    attachments: (special?.attachments ?? []).map((name, i) => ({
+      id: `${id}-a${i}`,
+      name,
+      size: null,
+    })),
     author,
     signer: kind === 'incoming' || number === null ? null : head,
     resolution,

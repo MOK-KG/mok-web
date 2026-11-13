@@ -1,19 +1,18 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import i18n from '@/app/i18n';
 import { AppProviders } from '@/app/providers';
 import { routes } from '@/app/router';
 import { mockSessionFor } from '@/features/auth/mock';
-import { resetNotificationsMock } from '@/features/notifications/api';
 import { resetTasksMock } from '@/features/tasks/api';
 import { people } from '@/features/tasks/directory';
 import {
+  fetchChatMembers,
   fetchChats,
   fetchMessages,
   markChatRead,
-  resetChatMock,
   sendMessage,
   startDirect,
   unreadTotal,
@@ -21,36 +20,41 @@ import {
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+// Подставной сервер чата ставится перед каждым тестом (src/test/setup.ts)
 describe('чат (логика)', () => {
-  beforeEach(() => resetChatMock());
-
-  it('непрочитанные как в макете: 2 в «Административном», 1 в «Медицинском», всего 3', () => {
-    const chats = fetchChats();
+  it('непрочитанные как в макете: 2 в «Административном», 1 в «Медицинском», всего 3', async () => {
+    const chats = await fetchChats();
     expect(chats.find((c) => c.id === 'c-admin')?.unread).toBe(2);
     expect(chats.find((c) => c.id === 'c-medical')?.unread).toBe(1);
-    expect(unreadTotal()).toBe(3);
-    markChatRead('c-admin');
-    expect(unreadTotal()).toBe(1);
+    expect(await unreadTotal()).toBe(3);
+    await markChatRead('c-admin');
+    expect(await unreadTotal()).toBe(1);
   });
 
-  it('список — по последнему сообщению; своё сообщение не непрочитанное', () => {
-    sendMessage('c-at', { kind: 'text', text: 'Спасибо' });
-    const chats = fetchChats();
+  it('список — по последнему сообщению; своё сообщение не непрочитанное', async () => {
+    await sendMessage('c-at', { kind: 'text', text: 'Спасибо' });
+    const chats = await fetchChats();
     expect(chats[0].id).toBe('c-at');
     expect(chats[0].unread).toBe(0);
   });
 
-  it('личная переписка с тем, кто в отпуске: автоответ с заместителем', () => {
-    sendMessage('c-me', { kind: 'text', text: 'Вопрос по смете' });
-    const last = fetchMessages('c-me').at(-1);
+  it('личная переписка с тем, кто в отпуске: автоответ с заместителем', async () => {
+    await sendMessage('c-me', { kind: 'text', text: 'Вопрос по смете' });
+    const last = (await fetchMessages('c-me')).at(-1);
     expect(last).toMatchObject({ kind: 'system', text: people.ka.short });
     expect(last?.system?.kind).toBe('autoreply');
   });
 
-  it('новая переписка с сотрудником создаётся один раз', () => {
-    const id = startDirect('u-ju');
-    expect(startDirect('u-ju')).toBe(id);
-    expect(fetchChats().filter((c) => c.peerId === 'u-ju')).toHaveLength(1);
+  it('новая переписка с сотрудником создаётся один раз', async () => {
+    const id = await startDirect('u-ju');
+    expect(await startDirect('u-ju')).toBe(id);
+    expect((await fetchChats()).filter((c) => c.peerId === 'u-ju')).toHaveLength(1);
+  });
+
+  it('участники — с ролью и департаментом', async () => {
+    const members = await fetchChatMembers();
+    expect(members['u-ka']).toMatchObject({ short: 'К. Асанов', role: 'R6' });
+    expect(members['u-ka'].department).toBe('Административный');
   });
 });
 
@@ -69,8 +73,6 @@ async function open(url: string) {
   vi.stubEnv('VITE_AUTH_MOCK', 'active');
   sessionStorage.clear();
   sessionStorage.setItem('nok.mockSession', JSON.stringify(mockSessionFor('active', 'R3')));
-  resetChatMock();
-  resetNotificationsMock();
   resetTasksMock();
   await i18n.changeLanguage('ru');
   const router = createMemoryRouter(routes, { initialEntries: [url] });

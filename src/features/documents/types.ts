@@ -40,8 +40,18 @@ export type Resolution = {
   at: string;
   assignee: Person;
   due: IsoDate;
-  /** Задача по резолюции — по названию, как в уведомлениях и чате (ID — с бэкендом) */
+  /** Задача по резолюции: название, как в уведомлениях и чате; ID и номер — для ссылки */
   taskTitle: string | null;
+  taskId: string | null;
+  taskCode: string | null;
+};
+
+/** Вложение документа — файл на сервере (скачивание — attachmentUrl(id) из api.ts) */
+export type DocAttachment = {
+  id: string;
+  name: string;
+  /** Байт; null — неизвестно */
+  size: number | null;
 };
 
 export type DocHistoryKind =
@@ -80,7 +90,7 @@ export type DocumentRecord = {
   /** Исходящий номер отправителя у входящего: «№ 12-04/518» */
   senderRef: string | null;
   summary: string;
-  attachments: string[];
+  attachments: DocAttachment[];
   /** Кто зарегистрировал или подготовил */
   author: Person;
   /** Кто подписал исходящий или приказ */

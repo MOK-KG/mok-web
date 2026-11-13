@@ -67,7 +67,22 @@ export function errorMessageKey(error: unknown, knownCodes: readonly string[] = 
 }
 
 /** Коды бэкенда, для которых есть свой текст в errors.code.* */
-export const knownErrorCodes = ['wip_limit', 'deadline_not_working_day'] as const;
+export const knownErrorCodes = [
+  'wip_limit',
+  'deadline_not_working_day',
+  'last_admin',
+  'deactivate_self',
+  'user_deactivated',
+  'user_not_active',
+  'absence_invalid',
+  'document_status',
+  'document_immutable',
+  'assistant_disabled',
+  'run_in_progress',
+  'openai_key_missing',
+  'agent_failed',
+  'invalid_value',
+] as const;
 
 /**
  * Тело ответа с ошибкой. Ожидаемый формат (уточнится с OpenAPI):

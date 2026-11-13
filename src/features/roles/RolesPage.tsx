@@ -15,6 +15,7 @@ import {
   PlusIcon,
   SearchIcon,
   ShieldCheckIcon,
+  SparkleIcon,
 } from '@/shared/ui/icons';
 import { Tooltip } from '@/shared/ui/Tooltip';
 import { type StaffRow, useStaff } from './api';
@@ -150,6 +151,15 @@ export function RolesPage() {
             >
               <ShieldCheckIcon size={15} />
               {t('journal.title')}
+            </Link>
+          </Can>
+          <Can permission="assistant.manage">
+            <Link
+              to="/access/assistant"
+              className="flex h-8 items-center gap-[6px] rounded-9 border border-line bg-control px-3 text-[12.5px] font-medium text-sub hover:text-text"
+            >
+              <SparkleIcon size={15} />
+              {t('assistant.title')}
             </Link>
           </Can>
           <Can permission="staff.manage">

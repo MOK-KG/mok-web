@@ -246,7 +246,14 @@
     "historySubtaskUndone": "Subtask reopened: “{{title}}”",
     "historySubtaskAdded": "Subtask added: “{{title}}”",
     "journalNote": "The activity log is immutable — entries are never deleted.",
-    "historyDeactivated": "staff member deactivated"
+    "historyDeactivated": "staff member deactivated",
+    "attachments": "Attachments",
+    "edit": "Edit",
+    "archive": "Archive",
+    "unarchive": "Restore from archive",
+    "archivedToast": "Task archived",
+    "restoredToast": "Task restored from archive",
+    "archivedBadge": "Archived"
   },
   "newTask": {
     "title": "New task",
@@ -280,7 +287,11 @@
     "errorDuePast": "The deadline cannot be in the past",
     "errorDueHoliday": "The deadline falls on a non-working day — {{name}}",
     "errorDueWeekend": "The deadline falls on a weekend",
-    "created": "Task “{{title}}” created in the queue"
+    "created": "Task “{{title}}” created in the queue",
+    "editTitle": "Edit task",
+    "save": "Save",
+    "saved": "Changes saved",
+    "assigneeLocked": "Only staff with the assign permission can change the assignee"
   },
   "mailQueue": {
     "title": "Mail queue",
@@ -321,7 +332,9 @@
     "rejected": "Letter rejected; the reason is recorded in the log",
     "notFilled": "Fill in the fields marked “fill in”",
     "mailQueueNote_one": "{{count}} email in the mail queue",
-    "mailQueueNote_other": "{{count}} emails in the mail queue"
+    "mailQueueNote_other": "{{count}} emails in the mail queue",
+    "why": "Why this suggestion",
+    "sources": "Based on knowledge base articles:"
   },
   "errors": {
     "unknown": "Something went wrong. Please try again.",
@@ -339,7 +352,19 @@
     "requestId": "Request ID: {{id}}",
     "code": {
       "wip_limit": "The “In progress” column is already at its limit.",
-      "deadline_not_working_day": "The deadline falls on a non-working day."
+      "deadline_not_working_day": "The deadline falls on a non-working day.",
+      "last_admin": "No one would be left who can assign roles.",
+      "deactivate_self": "You cannot deactivate yourself.",
+      "user_deactivated": "The employee is deactivated.",
+      "user_not_active": "The employee is already deactivated.",
+      "absence_invalid": "The absence cannot be saved: check the dates and the deputy.",
+      "document_status": "The document status has changed — refresh the card.",
+      "document_immutable": "A sent document cannot be changed.",
+      "assistant_disabled": "The agent is off — turn it on in AI settings.",
+      "run_in_progress": "The agent is already processing mail — wait for it to finish.",
+      "openai_key_missing": "The OpenAI key (OPENAI_API_KEY) is not set on the server.",
+      "agent_failed": "The model did not respond. Try again.",
+      "invalid_value": "Invalid value."
     }
   },
   "toast": {
@@ -684,12 +709,31 @@
     "save": "Save",
     "cancel": "Cancel",
     "kinds": {
+      "assigned": "Tasks assigned to me",
       "escalation": "Escalations",
       "overdue": "Overdue deadlines",
       "mailQueue": "Emails in the queue",
       "mention": "Chat mentions",
       "reminder": "Deadline reminders",
       "done": "Completed tasks"
+    },
+    "titles": {
+      "assigned": "New task · “{{task}}”",
+      "escalation": "Escalation · “{{task}}”",
+      "overdue": "Overdue · “{{task}}”",
+      "mention": "{{actor}} mentioned you in chat",
+      "reminder": "Reminder · “{{task}}”",
+      "done": "“{{task}}” completed"
+    },
+    "texts": {
+      "assignedBy": "Assigned by {{actor}}",
+      "due": "due {{date}}",
+      "escalation_one": "Notification not opened for {{count}} hour. Assignee: {{assignee}}.",
+      "escalation_other": "Notification not opened for {{count}} hours. Assignee: {{assignee}}.",
+      "overdue_assignee": "The deadline was {{date}}. You are the assignee.",
+      "overdue_author": "The deadline was {{date}}. You set this task.",
+      "mention": "{{chat}} — {{excerpt}}",
+      "done": "{{actor}} moved the task to “{{column}}”."
     },
     "escalationLocked": "Always on — a platform rule",
     "settingsSaved": "Notification settings saved",
@@ -1103,7 +1147,9 @@
     "errorReason": "Enter grounds of at least 5 characters",
     "exportSubmit": "Export CSV",
     "exportDetails": "CSV, entries: {{count}}",
-    "exported": "Log exported; the export was logged"
+    "exported": "Log exported; the export was logged",
+    "shownOf": "Showing {{shown}} of {{total}}",
+    "more": "Show more"
   },
   "absences": {
     "title": "Leave and business trips",
@@ -1185,6 +1231,80 @@
     "loading": "Searching…",
     "nothing": "Nothing found for “{{query}}”.",
     "note": "We only search where you have access: closed items are not shown and not counted."
+  },
+  "assistant": {
+    "title": "AI settings",
+    "statusOn": "Mail agent is on",
+    "statusOff": "Mail agent is off",
+    "settingsTitle": "Agent settings",
+    "agentTitle": "Mail agent",
+    "enabled": "Process incoming mail",
+    "enabledHint": "The agent only suggests a task — a person creates it in the mail queue",
+    "openaiKeySet": "OpenAI key is set in the server environment",
+    "openaiKeyMissing": "OpenAI key is not set (OPENAI_API_KEY) — the agent cannot work",
+    "model": "Model",
+    "modelDefault": "Default: {{model}}",
+    "pollMinutes": "Polling interval, min",
+    "maxLetters": "Letters per run",
+    "instructions": "Organization instructions",
+    "instructionsHint": "Added to the system prompt: rules missing from the knowledge base. E.g. “Letters from the IOC are high priority”.",
+    "mailboxTitle": "Mailbox (IMAP)",
+    "imapHost": "Server",
+    "imapPort": "Port",
+    "imapUser": "Login",
+    "imapFolder": "Folder",
+    "imapSsl": "SSL encryption",
+    "passwordSet": "Mailbox password is set in the server environment",
+    "passwordMissing": "Mailbox password is not set (MAIL_AGENT_PASSWORD) — mail is not fetched",
+    "knowledgeTitle": "Knowledge base access",
+    "knowledgeHint": "Which restricted sections the agent can read — as the selected roles. None selected — only sections open to everyone.",
+    "save": "Save",
+    "saved": "AI settings saved",
+    "invalid": "Invalid value",
+    "queueTitle": "Mail queue",
+    "queueHint": "Process letters without a suggestion now, without waiting for the mailbox poll.",
+    "runNow": "Process queue now",
+    "running": "Processing…",
+    "runDone": "Letters processed: {{analyzed}}, errors: {{failed}}",
+    "disabledNote": "The agent is off.",
+    "dryRunTitle": "Test on a letter",
+    "dryRunHint": "Paste a subject and text — the agent will suggest a task. Nothing is saved.",
+    "subject": "Subject",
+    "body": "Letter text",
+    "dryRun": "Test",
+    "thinking": "Thinking…",
+    "needKey": "OpenAI key required",
+    "result": "Agent suggestion",
+    "taskTitle": "Task",
+    "reasoning": "Why",
+    "sources": "Knowledge base articles",
+    "toolCalls": "Steps: {{list}}",
+    "tool": {
+      "search_knowledge": "knowledge search",
+      "read_document": "reading an article",
+      "list_people": "staff",
+      "list_projects": "projects"
+    },
+    "flag": {
+      "confirm": "check",
+      "missing": "not filled"
+    },
+    "runsTitle": "Recent runs",
+    "noRuns": "The agent has not run yet.",
+    "inProgress": "Running…",
+    "col": {
+      "at": "Started",
+      "trigger": "Run",
+      "fetched": "Fetched",
+      "analyzed": "Processed",
+      "failed": "Errors",
+      "error": "Details"
+    },
+    "trigger": {
+      "schedule": "Scheduled",
+      "manual": "Manual",
+      "command": "Command"
+    }
   },
   "profile": {
     "title": "Profile",

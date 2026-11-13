@@ -16,6 +16,16 @@ export function useSession() {
   });
 }
 
+/** Текущий сотрудник из сессии; undefined — сессия ещё не загружена */
+export function useMe() {
+  return useSession().data?.user;
+}
+
+/** ID текущего сотрудника — для сравнения с людьми из API (исполнитель, отсутствующий…) */
+export function useCurrentPersonId(): string | undefined {
+  return useMe()?.id;
+}
+
 export function useSignIn() {
   const queryClient = useQueryClient();
   return useMutation({

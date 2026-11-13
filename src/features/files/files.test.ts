@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { chatMembers, fetchChatFiles, resetChatMock } from '../chat/api';
-import { fetchDocuments, resetDocumentsMock } from '../documents/api';
+import { type ChatFile, fetchChatFiles, fetchChatMembers } from '../chat/api';
+import type { ChatMember } from '../chat/types';
+import { fetchDocuments } from '../documents/api';
+import { installDocumentsServer } from '../documents/testing/server';
+import type { DocumentRecord } from '../documents/types';
 import { fetchKnowledgeFiles, type KbFile } from '../knowledge-base/api';
 import { installKnowledgeServer } from '../knowledge-base/testing/server';
 import { collectFiles, fileTypeOf, filterFiles, formatSize, splitName } from './collect';
@@ -8,29 +11,35 @@ import { collectFiles, fileTypeOf, filterFiles, formatSize, splitName } from './
 // Среда, 9 сентября 2026 — «сегодня» в макете
 const TODAY = '2026-09-09';
 
+let documents: DocumentRecord[] = [];
 let knowledge: KbFile[] = [];
+let chatFiles: ChatFile[] = [];
+let members: Record<string, ChatMember> = {};
 
 beforeEach(async () => {
-  resetDocumentsMock(TODAY);
-  resetChatMock();
+  installDocumentsServer({ today: TODAY });
+  documents = await fetchDocuments();
   sessionStorage.clear();
   installKnowledgeServer({ today: TODAY, roles: ['R1'] });
   knowledge = await fetchKnowledgeFiles();
+  // Подставной сервер чата — из src/test/setup.ts
+  chatFiles = await fetchChatFiles();
+  members = await fetchChatMembers();
 });
 afterEach(() => vi.unstubAllGlobals());
 
 const all = () =>
   collectFiles({
-    documents: fetchDocuments(),
+    documents,
     knowledge,
-    chat: fetchChatFiles(),
-    memberName: (id) => chatMembers[id]?.short ?? null,
+    chat: chatFiles,
+    memberName: (id) => members[id]?.short ?? null,
   });
 
 describe('файлы из разделов', () => {
   it('все вложения документов, статей и переписок — по одному разу', () => {
     const items = all();
-    const fromDocs = fetchDocuments().reduce((n, d) => n + d.attachments.length, 0);
+    const fromDocs = documents.reduce((n, d) => n + d.attachments.length, 0);
     expect(items.filter((f) => f.source === 'documents')).toHaveLength(fromDocs);
     expect(items.filter((f) => f.source === 'knowledge')).toHaveLength(knowledge.length);
     expect(knowledge.length).toBeGreaterThan(0);

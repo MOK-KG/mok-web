@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePageSubtitle } from '@/app/layout/AppLayout';
-import { useCan } from '@/features/auth';
+import { useCan, useMe } from '@/features/auth';
 import {
   FieldError,
   FormDialog,
@@ -13,7 +13,6 @@ import {
 import { Avatar } from '@/features/knowledge-base/parts';
 import { type Absence, type AbsenceKind, absenceKinds } from '@/features/tasks/absences';
 import { useTasks } from '@/features/tasks/api';
-import { currentUserId, people } from '@/features/tasks/directory';
 import type { Person } from '@/features/tasks/types';
 import { formatIsoDate } from '@/shared/lib/date';
 import { diffDays, type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
@@ -23,13 +22,19 @@ import {
   type AbsenceProblem,
   absenceProblems,
   absenceWorkingDays,
+  useAbsencePeople,
   useAbsences,
   useCancelAbsence,
   useCreateAbsence,
 } from './api';
 
-const staff: Person[] = [people.ad, people.nb, people.dt, people.ka, people.me, people.ju];
-const me = staff.find((p) => p.id === currentUserId) ?? people.ad;
+/** Текущий сотрудник как Person: из справочника, пока он грузится — из сессии */
+function useMePerson(staff: Person[]): Person {
+  const user = useMe();
+  const id = user?.id ?? '';
+  const name = user?.name ?? '';
+  return staff.find((p) => p.id === id) ?? { id, name, short: name, tone: 'blue' };
+}
 
 type Group = 'now' | 'upcoming' | 'past' | 'cancelled';
 const groupsOrder: Group[] = ['now', 'upcoming', 'past', 'cancelled'];
@@ -75,6 +80,8 @@ export function AbsencesPage() {
   const [creating, setCreating] = useState(false);
   const [cancelling, setCancelling] = useState<Absence | null>(null);
   const [onlyMine, setOnlyMine] = useState(!canManage);
+  const staff = useAbsencePeople().data ?? [];
+  const me = useMePerson(staff);
 
   const visible = list.filter((a) => !onlyMine || a.person.id === me.id || a.deputy.id === me.id);
   const grouped = groupsOrder.map((g) => ({
@@ -196,7 +203,12 @@ export function AbsencesPage() {
       ))}
 
       <FormDialog open={creating} title={t('absences.new')} onClose={() => setCreating(false)}>
-        <AbsenceForm canManage={canManage} onDone={() => setCreating(false)} />
+        <AbsenceForm
+          canManage={canManage}
+          staff={staff}
+          me={me}
+          onDone={() => setCreating(false)}
+        />
       </FormDialog>
       <FormDialog
         open={cancelling !== null}
@@ -210,9 +222,19 @@ export function AbsencesPage() {
   );
 }
 
-function AbsenceForm({ canManage, onDone }: { canManage: boolean; onDone: () => void }) {
+function AbsenceForm({
+  canManage,
+  staff,
+  me,
+  onDone,
+}: {
+  canManage: boolean;
+  staff: Person[];
+  me: Person;
+  onDone: () => void;
+}) {
   const { t } = useTranslation();
-  const create = useCreateAbsence(me.short);
+  const create = useCreateAbsence();
   const problemText = useProblemText();
   const today = todayInBishkek();
   const [kind, setKind] = useState<AbsenceKind>('vacation');
@@ -387,7 +409,7 @@ function AbsenceForm({ canManage, onDone }: { canManage: boolean; onDone: () => 
 
 function CancelForm({ absence, onDone }: { absence: Absence; onDone: () => void }) {
   const { t } = useTranslation();
-  const cancel = useCancelAbsence(me.short);
+  const cancel = useCancelAbsence();
   const [reason, setReason] = useState('');
   const [tried, setTried] = useState(false);
   const error = reason.trim().length < 5 ? t('absences.errorReason') : null;

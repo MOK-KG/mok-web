@@ -1,186 +1,340 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { addJournalEntry, resetJournal } from '@/features/journal/store';
-import { ApiError } from '@/shared/api/errors';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { resetJournal } from '@/features/journal/store';
+import { ApiError, api } from '@/shared/api/client';
 import type { FeedbackMeta } from '@/shared/api/feedback';
+import { type Tone, toneNames } from '@/shared/config/tokens';
 import { addDays, type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
-import { deputyFor } from './absences';
-import { createMockQueue, type Letter, type Suggestion } from './mailQueue';
-import { atBishkek, createMockTasks, currentUserId, people } from './mock';
-import {
-  type HistoryKind,
-  type Person,
-  type Project,
-  type Task,
-  type TaskDetail,
-  type TaskStatus,
-  type TaskTab,
-  WIP_LIMIT,
+import type { Letter, Suggestion } from './mailQueue';
+import type {
+  Column,
+  HistoryEntry,
+  Person,
+  Project,
+  Task,
+  TaskDetail,
+  TaskStatus,
+  TaskTab,
 } from './types';
 
 /**
- * Данные задач. Пока бэкенда нет — заглушка в памяти (mock.ts); когда появится API,
- * меняются только функции fetch*, хуки и интерфейс остаются.
+ * Данные задач — API бэкенда (mok-backend, apps/tasks, /api/tasks/*). Колонки доски
+ * настраиваются на бэкенде; у каждой есть этап (TaskStatus) — по нему работают цвета и правила.
+ * Права проверяет бэкенд: без права — 403, лимит колонки — 409 wip_limit.
+ *
+ * В тестах вместо бэкенда — подставной сервер testing/server.ts на данных mock.ts.
  */
-let store = createMockTasks();
-let queue: Letter[] = createMockQueue();
 
 // Журнал действий — общий модуль features/journal/store.ts (цепочка хешей)
 export { addJournalEntry, type JournalEntry, journalEntries } from '@/features/journal/store';
 
-const delay = (ms: number) =>
-  new Promise((r) => setTimeout(r, import.meta.env.MODE === 'test' ? 0 : ms));
+// --- Формат бэкенда ---------------------------------------------------------------------------
 
-/** Сброс заглушки (для тестов) */
-export function resetTasksMock() {
-  store = createMockTasks();
-  queue = createMockQueue();
-  resetJournal();
+export type ApiPerson = {
+  id: string;
+  email: string;
+  name: string;
+  position?: string;
+  department?: string;
+};
+
+type ApiProject = { id: string; name: string; tone: Tone; archived?: boolean };
+
+export type ApiTask = Omit<Task, 'assignee' | 'author' | 'deputy' | 'project' | 'id'> & {
+  id: string;
+  assignee: ApiPerson | null;
+  author: ApiPerson | null;
+  deputy: ApiPerson | null;
+  project: ApiProject | null;
+  position: number;
+  subtasksDone?: number;
+  archived?: boolean;
+};
+
+type ApiAttachment = { id: string; filename: string; size: number; mimeType?: string };
+
+export type ApiTaskDetail = ApiTask & {
+  description: string;
+  knowledgeLink: { id: string; title: string } | null;
+  subtaskItems: { id: string; title: string; done: boolean; assignee: ApiPerson | null }[];
+  commentItems: { id: string; author: ApiPerson | null; at: string; text: string }[];
+  attachmentItems: ApiAttachment[];
+  history: { id: string; kind: HistoryEntry['kind']; text: string; at: string }[];
+  rescheduleLog: { from: IsoDate; to: IsoDate; by: ApiPerson | null }[];
+  reminderDays: number | null;
+  escalatedAt: string | null;
+  source: { kind: 'email'; mailbox: string; at: string; letterId?: string } | { kind: 'manual' };
+  department: string;
+};
+
+type ApiSuggestion = Omit<Suggestion, 'assignee' | 'project'> & {
+  assignee: ApiPerson | null;
+  project: ApiProject | null;
+};
+
+export type ApiLetter = Omit<Letter, 'attachments' | 'suggestion'> & {
+  attachments: ApiAttachment[];
+  suggestion: ApiSuggestion | null;
+};
+
+export type Board = {
+  columns: Column[];
+  tasks: Task[];
+  counts: Record<TaskTab, number>;
+};
+
+export type Directory = { people: Person[]; projects: Project[]; columns: Column[] };
+
+// --- Преобразования ---------------------------------------------------------------------------
+
+/** Цвет аватара — по ID сотрудника, одинаковый на всех экранах */
+const toneOf = (id: string): Tone => {
+  let hash = 0;
+  for (const ch of id) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  return toneNames[hash % toneNames.length];
+};
+
+/** «Нурлан Бакиров» → «Н. Бакиров» */
+const shortName = (name: string) => {
+  const parts = name.trim().split(/\s+/);
+  return parts.length > 1 ? `${parts[0][0]}. ${parts.slice(1).join(' ')}` : name;
+};
+
+const nobody: Person = { id: 'system', name: '—', short: '—', tone: 'blue' };
+
+export function toPerson(p: ApiPerson | null): Person {
+  if (!p) return nobody;
+  return {
+    id: String(p.id),
+    name: p.name,
+    short: shortName(p.name),
+    tone: toneOf(String(p.id)),
+    ...(p.department ? { unit: p.department } : {}),
+  };
 }
 
-function tasksFor(tab: TaskTab): Task[] {
-  switch (tab) {
-    case 'mine':
-      return store.department.filter((t) => t.assignee?.id === currentUserId);
-    case 'department':
-      return store.department;
-    case 'createdByMe':
-      return store.department.filter((t) => t.author.id === currentUserId);
-    case 'completed':
-      return store.archive;
-  }
-}
+const maybePerson = (p: ApiPerson | null) => (p ? toPerson(p) : null);
+
+const toProject = (p: ApiProject | null): Project | null =>
+  p ? { id: p.id, name: p.name, tone: p.tone } : null;
 
 /**
- * Заместитель — по действующим отсутствиям на сегодня, а не сохранённый в задаче:
- * оформили отпуск — задача сразу у заместителя, отпуск кончился — права заместителя
- * прекратились сами (приёмка 11.11)
+ * Заместитель считает бэкенд — по действующему отсутствию исполнителя на сегодня (у готовой
+ * задачи его нет): оформили отпуск — задача сразу у заместителя, отпуск кончился — права
+ * заместителя прекратились сами (приёмка 11.11)
  */
-const withDeputy = <T extends Task>(task: T): T =>
-  task.status === 'done' ? task : { ...task, deputy: deputyFor(task.assignee?.id) };
+export function toTask(t: ApiTask): Task {
+  return {
+    id: t.id,
+    code: t.code,
+    title: t.title,
+    status: t.status,
+    columnId: t.columnId,
+    position: t.position,
+    project: toProject(t.project),
+    due: t.due,
+    assignee: maybePerson(t.assignee),
+    author: toPerson(t.author),
+    priority: t.priority,
+    subtasks: t.subtasks,
+    comments: t.comments,
+    attachments: t.attachments,
+    fromEmail: t.fromEmail,
+    reschedules: t.reschedules,
+    escalationHours: t.escalationHours,
+    deputy: maybePerson(t.deputy),
+  };
+}
+
+export function toTaskDetail(t: ApiTaskDetail): TaskDetail {
+  return {
+    ...toTask(t),
+    description: t.description,
+    knowledgeLink: t.knowledgeLink?.title ?? null,
+    knowledgeArticleId: t.knowledgeLink?.id ?? null,
+    attachmentItems: t.attachmentItems.map(({ id, filename, size }) => ({ id, filename, size })),
+    subtaskItems: t.subtaskItems.map((s) => ({ ...s, assignee: maybePerson(s.assignee) })),
+    commentItems: t.commentItems.map((c) => ({ ...c, author: toPerson(c.author) })),
+    history: t.history.map(({ id, kind, text, at }) => ({ id, kind, text, at })),
+    rescheduleLog: t.rescheduleLog.map((r) => ({ from: r.from, to: r.to, by: toPerson(r.by) })),
+    reminderDays: t.reminderDays,
+    escalatedAt: t.escalatedAt,
+    archived: t.archived ?? false,
+    source:
+      t.source.kind === 'email'
+        ? { kind: 'email', mailbox: t.source.mailbox, at: t.source.at }
+        : { kind: 'manual' },
+    department: t.department,
+  };
+}
+
+export function toLetter(l: ApiLetter): Letter {
+  return {
+    id: l.id,
+    sender: l.sender,
+    address: l.address,
+    organization: l.organization,
+    subject: l.subject,
+    receivedAt: l.receivedAt,
+    body: l.body,
+    attachments: l.attachments.map((a) => a.filename),
+    suggestion: l.suggestion && {
+      ...l.suggestion,
+      assignee: maybePerson(l.suggestion.assignee),
+      project: toProject(l.suggestion.project),
+    },
+  };
+}
+
+// --- Доска ------------------------------------------------------------------------------------
 
 export const tasksKey = ['tasks'] as const;
 
+/** Доска вкладки: колонки, задачи и счётчики всех вкладок */
+export async function fetchBoard(tab: TaskTab = 'department'): Promise<Board> {
+  const board = await api.get<Omit<Board, 'tasks'> & { tasks: ApiTask[] }>('/tasks/board', {
+    query: { tab },
+  });
+  return { ...board, tasks: board.tasks.map(toTask) };
+}
+
+export function useBoard(tab: TaskTab) {
+  return useQuery({
+    queryKey: [...tasksKey, 'board', tab],
+    queryFn: () => fetchBoard(tab),
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** Задачи вкладки (для доски и других разделов: календарь, дашборд, поиск) */
 export function useTasks(tab: TaskTab) {
-  return useQuery({
-    queryKey: [...tasksKey, tab],
-    queryFn: async () => {
-      await delay(120);
-      // Копии, как от настоящего API: изменения в заглушке не должны менять уже выданные данные
-      return structuredClone(tasksFor(tab)).map(withDeputy);
-    },
-  });
+  const board = useBoard(tab);
+  return { ...board, data: board.data?.tasks };
 }
 
-/** Счётчики вкладок — из тех же данных, что и содержимое вкладок */
 /** Счётчики вкладок — те же списки, что и содержимое вкладок */
-export const tabCounts = (): Record<TaskTab, number> => ({
-  mine: tasksFor('mine').length,
-  department: tasksFor('department').length,
-  createdByMe: tasksFor('createdByMe').length,
-  completed: tasksFor('completed').length,
-});
-
 export function useTabCounts() {
+  const board = useBoard('department');
+  return { ...board, data: board.data?.counts };
+}
+
+export function useDirectory() {
   return useQuery({
-    queryKey: [...tasksKey, 'counts'],
-    queryFn: async (): Promise<Record<TaskTab, number>> => {
-      await delay(60);
-      return tabCounts();
+    queryKey: [...tasksKey, 'directory'],
+    queryFn: async (): Promise<Directory> => {
+      const d = await api.get<{ people: ApiPerson[]; projects: ApiProject[]; columns: Column[] }>(
+        '/tasks/directory',
+      );
+      return {
+        people: d.people.map(toPerson),
+        projects: d.projects.map((p) => toProject(p) as Project),
+        columns: d.columns,
+      };
     },
+    staleTime: 60_000,
   });
 }
 
-/** Как ответит бэкенд: 409 с кодом wip_limit — текст ошибки возьмётся из errors.code.* */
+/** 409 wip_limit — текст ошибки возьмётся из errors.code.* */
 export class WipLimitError extends ApiError {
-  constructor() {
+  constructor(limit?: number) {
     super(409, 'wip-limit', { code: 'wip_limit' });
+    this.limit = limit;
+  }
+
+  readonly limit?: number;
+}
+
+/** Перенос задачи в колонку (и на место в ней); лимит колонки — 409 wip_limit */
+export async function moveTask(id: string, columnId: string, beforeId?: string | null) {
+  try {
+    await api.post(`/tasks/items/${id}/move`, { columnId, beforeId: beforeId ?? null });
+  } catch (error) {
+    if (error instanceof ApiError && error.code === 'wip_limit') throw new WipLimitError();
+    throw error;
   }
 }
 
-/** Перенос задачи в другую колонку; «В работе» — не больше WIP_LIMIT задач */
-export async function moveTask(id: string, status: TaskStatus) {
-  await delay(80);
-  const task = store.department.find((t) => t.id === id);
-  if (!task || task.status === status) return;
-  const inProgress = store.department.filter((t) => t.status === 'in_progress').length;
-  if (status === 'in_progress' && inProgress >= WIP_LIMIT) throw new WipLimitError();
-  task.status = status;
+type MoveVars = { id: string; columnId: string; beforeId?: string | null };
+
+/**
+ * Задачи доски после переноса: задача встаёт в колонку перед beforeId (или в конец),
+ * позиции колонки пересчитываются. Так доска показывает перенос сразу, не дожидаясь ответа.
+ */
+export function applyMove(board: Board, { id, columnId, beforeId }: MoveVars): Board {
+  const moving = board.tasks.find((t) => t.id === id);
+  const column = board.columns.find((c) => c.id === columnId);
+  if (!moving || !column) return board;
+  const siblings = board.tasks
+    .filter((t) => t.columnId === columnId && t.id !== id)
+    .sort((a, b) => a.position - b.position);
+  const at = beforeId ? siblings.findIndex((t) => t.id === beforeId) : -1;
+  siblings.splice(at < 0 ? siblings.length : at, 0, {
+    ...moving,
+    columnId,
+    status: column.stage,
+  });
+  const placed = new Map(siblings.map((t, i) => [t.id, { ...t, position: i }]));
+  return { ...board, tasks: board.tasks.map((t) => placed.get(t.id) ?? t) };
 }
 
 export function useMoveTask() {
   const client = useQueryClient();
+  const boards = { queryKey: [...tasksKey, 'board'] };
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: TaskStatus }) => moveTask(id, status),
+    mutationFn: ({ id, columnId, beforeId }: MoveVars) => moveTask(id, columnId, beforeId),
+    onMutate: async (vars) => {
+      await client.cancelQueries(boards);
+      const previous = client.getQueriesData<Board>(boards);
+      client.setQueriesData<Board>(boards, (board) => (board ? applyMove(board, vars) : board));
+      return { previous };
+    },
+    // Не получилось (лимит колонки) — вернуть доску как была
+    onError: (_error, _vars, context) => {
+      for (const [key, data] of context?.previous ?? []) client.setQueryData(key, data);
+    },
+    // Текст ошибки показывает доска сама (лимит колонки)
+    meta: { errorMessage: false },
     onSettled: () => client.invalidateQueries({ queryKey: tasksKey }),
   });
 }
 
-export const mailQueueKey = ['mailQueue'] as const;
+// --- Очередь из почты -------------------------------------------------------------------------
 
-/** Сколько писем разобрано (есть предложение) и сколько нужно оформить вручную */
-export const queueSummary = () => ({
-  ready: queue.filter((l) => l.suggestion).length,
-  manual: queue.filter((l) => !l.suggestion).length,
-});
+export const mailQueueKey = ['mailQueue'] as const;
 
 export function useMailQueueSummary() {
   return useQuery({
     queryKey: [...mailQueueKey, 'summary'],
-    queryFn: async () => queueSummary(),
+    queryFn: () => api.get<{ ready: number; manual: number }>('/tasks/mail/summary'),
   });
 }
 
 export function useMailQueue() {
   return useQuery({
     queryKey: [...mailQueueKey, 'list'],
-    queryFn: async () => {
-      await delay(80);
-      return structuredClone(queue);
-    },
+    queryFn: async () => (await api.get<ApiLetter[]>('/tasks/mail/letters')).map(toLetter),
   });
 }
 
-/** Создать задачу из предложения модели; письмо уходит из очереди */
-export async function createFromLetter(letterId: string, suggestion: Suggestion) {
-  const letter = queue.find((l) => l.id === letterId);
-  if (!letter) throw new Error('not-found');
-  if (!suggestion.assignee || !suggestion.due) throw new Error('incomplete');
-  const task = await createTask({
-    title: suggestion.title,
-    description: letter.body,
-    assignee: suggestion.assignee,
-    due: suggestion.due,
-    project: suggestion.project,
-    priority: suggestion.priority,
-    attachments: letter.attachments.length,
-    letter,
-  });
-  queue = queue.filter((l) => l.id !== letterId);
-  addJournalEntry({
-    author: me().short,
-    action: 'mailAccepted',
-    details: `${letter.subject} → ${task.code}`,
-  });
-  return task;
+/**
+ * Создать задачу из предложения агента (поля — как их поправил человек); письмо уходит из очереди.
+ * Запись «Задача из письма» в журнал действий делает бэкенд.
+ */
+export async function createFromLetter(letter: Letter, suggestion: Suggestion) {
+  return toTaskDetail(
+    await api.post<ApiTaskDetail>(`/tasks/mail/letters/${letter.id}/accept`, {
+      title: suggestion.title,
+      assigneeId: suggestion.assignee?.id ?? null,
+      due: suggestion.due,
+      projectId: suggestion.project?.id ?? null,
+      priority: suggestion.priority,
+    }),
+  );
 }
 
-/** Отклонить письмо с причиной — причина и автор попадают в журнал */
-export async function rejectLetter(letterId: string, reason: string) {
-  await delay(60);
-  const letter = queue.find((l) => l.id === letterId);
-  if (!letter) throw new Error('not-found');
-  if (reason.trim().length < 5) throw new Error('reason-required');
-  queue = queue.filter((l) => l.id !== letterId);
-  addJournalEntry({
-    author: me().short,
-    action: 'mailRejected',
-    details: `${letter.subject}: ${reason.trim()}`,
-  });
-}
-
-/** Письмо оформили задачей вручную — убрать из очереди */
-export function consumeLetter(letterId: string) {
-  queue = queue.filter((l) => l.id !== letterId);
+/** Отклонить письмо с причиной — причину и автора бэкенд записывает в журнал действий */
+export async function rejectLetter(letter: Letter, reason: string) {
+  await api.post(`/tasks/mail/letters/${letter.id}/reject`, { reason: reason.trim() });
 }
 
 function useQueueMutation<V, R>(fn: (vars: V) => Promise<R>, meta?: FeedbackMeta) {
@@ -197,8 +351,8 @@ function useQueueMutation<V, R>(fn: (vars: V) => Promise<R>, meta?: FeedbackMeta
 
 export const useCreateFromLetter = () =>
   useQueueMutation(
-    ({ letterId, suggestion }: { letterId: string; suggestion: Suggestion }) =>
-      createFromLetter(letterId, suggestion),
+    ({ letter, suggestion }: { letter: Letter; suggestion: Suggestion }) =>
+      createFromLetter(letter, suggestion),
     {
       successMessage: (task: TaskDetail) => ({
         key: 'mailQueue.created',
@@ -209,73 +363,56 @@ export const useCreateFromLetter = () =>
 
 export const useRejectLetter = () =>
   useQueueMutation(
-    ({ letterId, reason }: { letterId: string; reason: string }) => rejectLetter(letterId, reason),
+    ({ letter, reason }: { letter: Letter; reason: string }) => rejectLetter(letter, reason),
     { successMessage: 'mailQueue.rejected' },
   );
 
-// ——— Карточка задачи ———
-
-const allTasks = () => [...store.department, ...store.archive];
-
-const me = (): Person => Object.values(people).find((p) => p.id === currentUserId) ?? people.ad;
-
-const now = () => new Date().toISOString();
-
-let seq = 0;
-const id = (prefix: string) => `${prefix}-new-${++seq}`;
-
-/** Журнал изменений только дополняется — записи не меняются и не удаляются */
-function log(task: TaskDetail, kind: HistoryKind, text: string) {
-  task.history.unshift({ id: id('h'), kind, text, at: now() });
-}
+// --- Карточка задачи --------------------------------------------------------------------------
 
 export function useTask(taskId: string | null) {
   return useQuery({
     queryKey: [...tasksKey, 'detail', taskId],
     enabled: taskId !== null,
     queryFn: async () => {
-      await delay(80);
-      const task = allTasks().find((t) => t.id === taskId);
-      return task ? withDeputy(structuredClone(task)) : null;
+      try {
+        return toTaskDetail(await api.get<ApiTaskDetail>(`/tasks/items/${taskId}`));
+      } catch (error) {
+        // Нет такой задачи — карточка покажет «не найдена»
+        if (error instanceof ApiError && (error.status === 404 || error.status === 400))
+          return null;
+        throw error;
+      }
     },
   });
 }
 
-function useTaskMutation<V>(fn: (task: TaskDetail, vars: V) => void) {
+function useTaskMutation<V>(fn: (taskId: string, vars: V) => Promise<unknown>) {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: async ({ taskId, ...vars }: V & { taskId: string }) => {
-      await delay(60);
-      const task = allTasks().find((t) => t.id === taskId);
-      if (!task) throw new Error('not-found');
-      fn(task, vars as unknown as V);
-    },
+    mutationFn: ({ taskId, ...vars }: V & { taskId: string }) => fn(taskId, vars as unknown as V),
     onSettled: () => client.invalidateQueries({ queryKey: tasksKey }),
   });
 }
 
 export const useToggleSubtask = () =>
-  useTaskMutation<{ subtaskId: string }>((task, { subtaskId }) => {
-    const sub = task.subtaskItems.find((s) => s.id === subtaskId);
-    if (!sub) return;
-    sub.done = !sub.done;
-    log(task, 'subtask', `${sub.done ? 'done' : 'undone'}|${sub.title}`);
-  });
+  useTaskMutation<{ subtaskId: string; done: boolean }>((taskId, { subtaskId, done }) =>
+    api.patch(`/tasks/items/${taskId}/subtasks/${subtaskId}`, { done }),
+  );
 
 export const useAddSubtask = () =>
-  useTaskMutation<{ title: string }>((task, { title }) => {
-    task.subtaskItems.push({ id: id('s'), title, done: false, assignee: null });
-    task.subtasks = task.subtaskItems.length;
-    log(task, 'subtask', `added|${title}`);
-  });
+  useTaskMutation<{ title: string }>((taskId, { title }) =>
+    api.post(`/tasks/items/${taskId}/subtasks`, { title }),
+  );
 
 export const useAddComment = () =>
-  useTaskMutation<{ text: string }>((task, { text }) => {
-    task.commentItems.push({ id: id('c'), author: me(), at: now(), text });
-    task.comments = task.commentItems.length;
-  });
+  useTaskMutation<{ text: string }>((taskId, { text }) =>
+    api.post(`/tasks/items/${taskId}/comments`, { text }),
+  );
 
-// ——— Новая задача ———
+/** Скачать вложение задачи */
+export const attachmentUrl = (id: string) => api.url(`/tasks/attachments/${id}/download`);
+
+// --- Новая задача -----------------------------------------------------------------------------
 
 export type NewTaskInput = {
   title: string;
@@ -284,44 +421,78 @@ export type NewTaskInput = {
   due: IsoDate;
   project: Project | null;
   priority: Task['priority'];
-  attachments: number;
-  /** Письмо из очереди, из которого создана задача */
+  /** Файлы — загружаются после создания задачи */
+  files?: File[];
+  /** Письмо из очереди, которое оформляют задачей вручную */
   letter?: Letter;
 };
 
-/** Новая задача попадает в «Очередь»; в журнал — запись о создании */
+/** Новая задача попадает в первую колонку этапа «Очередь»; файлы загружаются следом */
 export async function createTask(input: NewTaskInput): Promise<TaskDetail> {
-  const { letter: _letter, ...rest } = input;
-  await delay(120);
-  const number = 400 + store.department.length + store.archive.length + seq + 1;
-  const task: TaskDetail = {
-    id: id('t'),
-    code: `ЗД-2026-${String(number).padStart(4, '0')}`,
-    status: 'queue',
-    author: me(),
-    subtasks: 0,
-    comments: 0,
-    fromEmail: input.letter !== undefined,
-    reschedules: 0,
-    escalationHours: null,
-    deputy: null,
-    knowledgeLink: null,
-    subtaskItems: [],
-    commentItems: [],
-    history: [],
-    rescheduleLog: [],
-    reminderDays: null,
-    escalatedAt: null,
-    source: input.letter
-      ? { kind: 'email', mailbox: 'info@olympic.kg', at: input.letter.receivedAt }
-      : { kind: 'manual' },
-    department: 'Административный',
-    ...rest,
-  };
-  log(task, 'created', input.letter ? 'email' : 'manual');
-  if (input.letter) consumeLetter(input.letter.id);
-  store.department.unshift(task);
-  return structuredClone(task);
+  const created = await api.post<ApiTaskDetail>('/tasks/items', {
+    title: input.title,
+    description: input.description,
+    assigneeId: input.assignee.id,
+    due: input.due,
+    projectId: input.project?.id ?? null,
+    priority: input.priority,
+    letterId: input.letter?.id ?? null,
+  });
+  for (const file of input.files ?? []) {
+    const form = new FormData();
+    form.append('file', file);
+    await api.post(`/tasks/items/${created.id}/attachments`, form);
+  }
+  const task = toTaskDetail(created);
+  return input.files?.length
+    ? { ...task, attachments: task.attachments + input.files.length }
+    : task;
+}
+
+export type TaskChanges = Omit<NewTaskInput, 'letter' | 'assignee'> & {
+  /** null — исполнителя не меняли (смена исполнителя требует tasks.assign) */
+  assignee: Person | null;
+};
+
+/** Правка задачи: поля — PATCH, новые файлы — следом. Смена срока и исполнителя — в журнал задачи */
+export async function updateTask(id: string, changes: TaskChanges): Promise<TaskDetail> {
+  const updated = await api.patch<ApiTaskDetail>(`/tasks/items/${id}`, {
+    title: changes.title,
+    description: changes.description,
+    due: changes.due,
+    projectId: changes.project?.id ?? null,
+    priority: changes.priority,
+    ...(changes.assignee ? { assigneeId: changes.assignee.id } : {}),
+  });
+  for (const file of changes.files ?? []) {
+    const form = new FormData();
+    form.append('file', file);
+    await api.post(`/tasks/items/${id}/attachments`, form);
+  }
+  return toTaskDetail(updated);
+}
+
+export function useUpdateTask() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...changes }: TaskChanges & { id: string }) => updateTask(id, changes),
+    meta: { successMessage: 'newTask.saved' },
+    onSettled: () => client.invalidateQueries({ queryKey: tasksKey }),
+  });
+}
+
+/** В архив и обратно (право tasks.archive). Задачи не удаляются */
+export function useArchiveTask() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, archived }: { id: string; archived: boolean }) =>
+      api.post<{ archived: boolean }>(`/tasks/items/${id}/archive`, { archived }),
+    meta: {
+      successMessage: (task: { archived: boolean }) =>
+        task.archived ? 'taskCard.archivedToast' : 'taskCard.restoredToast',
+    },
+    onSettled: () => client.invalidateQueries({ queryKey: tasksKey }),
+  });
 }
 
 export function useCreateTask() {
@@ -341,54 +512,24 @@ export function useCreateTask() {
   });
 }
 
-const stem = (word: string) => word.toLocaleLowerCase('ru').slice(0, 6);
-const words = (text: string) =>
-  new Set(
-    text
-      .split(/[^\p{L}\p{N}]+/u)
-      .filter((w) => w.length >= 4 || /\d{4}/.test(w))
-      .map(stem),
-  );
-
-/** Похожие активные задачи по совпадению слов в названии — не блокируют создание */
-export function findSimilar(title: string, limit = 2): Task[] {
-  const target = words(title);
-  if (target.size < 2) return [];
-  return store.department
-    .filter((t) => t.status !== 'done')
-    .map((t) => {
-      const common = [...words(t.title)].filter((w) => target.has(w)).length;
-      return { t, common };
-    })
-    .filter(({ common }) => common >= 2)
-    .sort((a, b) => b.common - a.common)
-    .slice(0, limit)
-    .map(({ t }) => t);
+/** Похожие незакрытые задачи по словам названия — предупреждают, но не блокируют создание */
+export function useSimilarTasks(title: string) {
+  const query = title.trim();
+  return useQuery({
+    queryKey: [...tasksKey, 'similar', query],
+    enabled: query.length >= 6,
+    queryFn: async () =>
+      (await api.get<ApiTask[]>('/tasks/similar', { query: { title: query } })).map(toTask),
+    placeholderData: keepPreviousData,
+  });
 }
 
 /** Ближайший рабочий день не раньше завтрашнего — срок по умолчанию */
 export const defaultDue = () => addDays(todayInBishkek(), 2);
-export { atBishkek };
 
-// ——— Для раздела «Роли и доступ» ———
-
-/** Незакрытые задачи сотрудника: сколько и сколько из них с эскалацией */
-export function activeTasksOf(personId: string) {
-  const tasks = store.department.filter((t) => t.assignee?.id === personId && t.status !== 'done');
-  return { count: tasks.length, escalated: tasks.filter((t) => t.escalationHours).length };
+/** Сброс состояния между тестами: журнал действий */
+export function resetTasksMock() {
+  resetJournal();
 }
 
-/**
- * Увольнение: незакрытые задачи сотрудника переходят к `to`, в истории каждой задачи —
- * запись о смене исполнителя. Автор задач и прошлые записи не меняются.
- */
-export function reassignTasksOf(personId: string, to: Person): number {
-  const tasks = store.department.filter((t) => t.assignee?.id === personId && t.status !== 'done');
-  for (const task of tasks) {
-    const from = task.assignee as Person;
-    task.assignee = to;
-    task.deputy = null;
-    log(task, 'assignee', `${from.short}|${to.short}|deactivated`);
-  }
-  return tasks.length;
-}
+export type { TaskStatus };

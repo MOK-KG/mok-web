@@ -1,4 +1,4 @@
-import { useDraggable } from '@dnd-kit/core';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
 import type { ComponentType, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatIsoDate } from '@/shared/lib/date';
@@ -98,12 +98,18 @@ type Props = {
 /** Мини-карточка задачи на доске (макет Figma: card/*) */
 export function TaskCard({ task, onOpen, draggable = false, overlay = false }: Props) {
   const drag = useDraggable({ id: task.id, data: { task }, disabled: !draggable || overlay });
+  // Карточка — и место для броска: брошенная на неё задача встаёт перед ней
+  const drop = useDroppable({ id: `card:${task.id}`, disabled: !draggable || overlay });
   return (
     <CardView
       task={task}
       overlay={overlay}
       dragging={drag.isDragging}
-      setRef={drag.setNodeRef}
+      dropBefore={drop.isOver && !drag.isDragging}
+      setRef={(el) => {
+        drag.setNodeRef(el);
+        drop.setNodeRef(el);
+      }}
       attributes={draggable ? drag.attributes : undefined}
       listeners={draggable ? drag.listeners : undefined}
       onOpen={overlay ? undefined : onOpen}
@@ -115,6 +121,7 @@ function CardView({
   task,
   overlay,
   dragging,
+  dropBefore,
   setRef,
   attributes,
   listeners,
@@ -124,6 +131,8 @@ function CardView({
   onOpen?: (id: string) => void;
   overlay: boolean;
   dragging: boolean;
+  /** Над карточкой держат другую — она встанет перед этой (линия сверху) */
+  dropBefore?: boolean;
   setRef: (el: HTMLElement | null) => void;
   attributes?: Drag['attributes'];
   listeners?: Drag['listeners'];
@@ -144,6 +153,9 @@ function CardView({
         listeners ? 'cursor-grab active:cursor-grabbing' : ''
       } ${dragging ? 'opacity-40' : ''} ${overlay ? 'rotate-[1.5deg] shadow-[0_12px_32px_rgba(0,0,0,0.35)]' : ''}`}
     >
+      {dropBefore && (
+        <span aria-hidden className="absolute inset-x-0 top-0 h-[3px] rounded-full bg-info" />
+      )}
       {stripeClass && (
         <span aria-hidden className={`absolute inset-y-0 left-0 w-[2.5px] ${stripeClass}`} />
       )}

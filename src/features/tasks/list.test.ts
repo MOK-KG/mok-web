@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { addDays, isWorkingDay } from '@/shared/lib/workDays';
 import { matchesQuick, sortForList } from './list';
-import { createMockTasks } from './mock';
+import { createMockTasks, currentUserId } from './mock';
 
 // Среда, 9 сентября 2026 — «сегодня» в макете
 const TODAY = '2026-09-09';
@@ -9,7 +9,7 @@ const TODAY = '2026-09-09';
 describe('мобильный список задач', () => {
   const { department } = createMockTasks(TODAY);
   const count = (q: Parameters<typeof matchesQuick>[1]) =>
-    department.filter((t) => matchesQuick(t, q, TODAY)).length;
+    department.filter((t) => matchesQuick(t, q, TODAY, currentUserId)).length;
 
   it('быстрые фильтры как в макете: Все 20, Просрочено 1, Мои 7, Горит 2', () => {
     expect([count('all'), count('overdue'), count('mine'), count('hot')]).toEqual([20, 1, 7, 2]);

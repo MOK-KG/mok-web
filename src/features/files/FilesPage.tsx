@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import { usePageSubtitle } from '@/app/layout/AppLayout';
+import { attachmentUrl as documentAttachmentUrl } from '@/features/documents/api';
 import { attachmentUrl } from '@/features/knowledge-base/api';
 import { formatInBishkek } from '@/shared/lib/date';
 import { DownloadIcon, SearchIcon } from '@/shared/ui/icons';
@@ -36,13 +37,18 @@ export const targetHref = (target: FileTarget) =>
       ? `/knowledge/${target.id}`
       : `/chat?c=${target.chatId}`;
 
-/** Скачать: вложение статьи — с бэкенда Базы знаний, остальное — демо-файл до бэкенда */
+/** Скачать: вложения статей и документов — с бэкенда, остальное — демо-файл до бэкенда */
 function download(file: FileItem) {
   const full = file.ext ? `${file.name}.${file.ext}` : file.name;
   const a = document.createElement('a');
   a.download = full;
   if (file.target.kind === 'article') {
     a.href = attachmentUrl(file.id.split(':')[2]);
+    a.click();
+    return;
+  }
+  if (file.target.kind === 'document') {
+    a.href = documentAttachmentUrl(file.id.split(':')[2]);
     a.click();
     return;
   }

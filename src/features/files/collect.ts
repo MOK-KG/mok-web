@@ -90,13 +90,13 @@ export function collectFiles({
 }: FileSources): FileItem[] {
   const items: FileItem[] = [
     ...documents.flatMap((doc) =>
-      doc.attachments.map((full, i): FileItem => {
-        const { name, ext } = splitName(full);
+      doc.attachments.map((file): FileItem => {
+        const { name, ext } = splitName(file.name);
         return {
-          id: `doc:${doc.id}:${i}`,
+          id: `doc:${doc.id}:${file.id}`,
           name,
           ext,
-          size: null,
+          size: file.size,
           type: fileTypeOf(ext),
           source: 'documents',
           place: `${docNumber(doc) ?? doc.title}${docNumber(doc) ? ` · ${doc.title}` : ''}`,

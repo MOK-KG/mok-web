@@ -6,94 +6,101 @@ import i18n from '@/app/i18n';
 import { AppProviders } from '@/app/providers';
 import { routes } from '@/app/router';
 import { mockSessionFor } from '@/features/auth/mock';
-import { journalEntries, resetTasksMock } from '@/features/tasks/api';
+import { journalServer } from '@/features/journal/testing/server';
+import { tasksServer } from '@/features/tasks/testing/server';
 import { ApiError } from '@/shared/api/errors';
 import type { RoleCode } from '@/shared/config/permissions';
-import { changeRole, deactivateStaff, fetchStaff, inviteStaff, resetStaffMock } from './api';
+import { changeRole, deactivateStaff, fetchStaff, inviteStaff } from './api';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const ME = { email: 'a.duysheyev@olympic.kg', role: 'R1' as RoleCode };
-const ACTOR = { id: 's-ad', short: 'А. Дуйшеев' };
-const row = (id: string) => fetchStaff(ME).find((r) => r.id === id);
-const codeOf = (fn: () => unknown) => {
+// Текущий сотрудник подставных серверов — Айбек Дуйшеев (s-ad, u-ad)
+const ME = 'u-ad';
+const row = async (id: string) => (await fetchStaff(ME)).find((r) => r.id === id);
+const codeOf = async (fn: () => Promise<unknown>) => {
   try {
-    fn();
+    await fn();
   } catch (e) {
     return e instanceof ApiError ? e.code : 'other';
   }
   return null;
 };
+const lastJournal = () => journalServer.entries.at(-1);
 
-describe('роли и доступ (логика)', () => {
-  beforeEach(() => {
-    resetStaffMock();
-    resetTasksMock();
-  });
+describe('роли и доступ (логика, через API)', () => {
+  beforeEach(() => sessionStorage.clear());
 
-  it('17 строк: 13 сотрудников аппарата, 3 внешних, 1 вакансия; своя роль — из сессии', () => {
-    const rows = fetchStaff(ME);
+  it('17 строк: 13 сотрудников аппарата, 3 внешних, 1 вакансия; «я» — по ID из сессии', async () => {
+    const rows = await fetchStaff(ME);
     expect(rows).toHaveLength(17);
     expect(rows.filter((r) => r.status === 'active' || r.status === 'invited')).toHaveLength(13);
     expect(rows.filter((r) => r.status === 'external')).toHaveLength(3);
     expect(rows.filter((r) => r.status === 'vacancy')).toHaveLength(1);
-    expect(row('s-ad')).toMatchObject({ isMe: true, role: 'R1' });
+    expect(await row('s-ad')).toMatchObject({ isMe: true, role: 'R3', short: 'А. Дуйшеев' });
+    // Отпуск и заместитель — от сервера отсутствий
+    expect(await row('s-nb')).toMatchObject({ badge: 'vacation', deputy: 'К. Асанов' });
   });
 
-  it('увольнение: вход закрыт, сессии прекращены, задачи — директору, запись в журнале', () => {
-    const before = row('s-nb');
+  it('увольнение: сессии прекращены, задачи — директору с записью в истории, журнал', async () => {
+    const before = await row('s-nb');
     expect(before?.plan).toMatchObject({ tasks: 1, reassignTo: { short: 'Б. Осмонов' } });
-    expect(deactivateStaff('s-nb', ACTOR)).toEqual({ reassigned: 1 });
+    expect(await deactivateStaff('s-nb')).toEqual({ reassigned: 1 });
 
-    const after = row('s-nb');
+    const after = await row('s-nb');
     expect(after).toMatchObject({ status: 'deactivated', badge: 'deactivated', sessions: 0 });
     expect(after?.plan.tasks).toBe(0);
-    expect(journalEntries().at(-1)).toMatchObject({ action: 'userDeactivated' });
+    const moved = tasksServer.tasks.find((t) =>
+      t.history.some((h) => h.text.endsWith('deactivated')),
+    );
+    expect(moved?.assignee?.short).toBe('Б. Осмонов');
+    expect(lastJournal()).toMatchObject({ action: 'userDeactivated' });
     // Запись не удалена — сотрудник остаётся в списке
-    expect(fetchStaff(ME)).toHaveLength(17);
+    expect(await fetchStaff(ME)).toHaveLength(17);
   });
 
-  it('себя и вакансию деактивировать нельзя', () => {
-    expect(codeOf(() => deactivateStaff('s-ad', ACTOR))).toBe('deactivate_self');
-    expect(codeOf(() => deactivateStaff('s-vacancy-lawyer', ACTOR))).toBe('user_not_active');
+  it('себя и вакансию деактивировать нельзя', async () => {
+    expect(await codeOf(() => deactivateStaff('s-ad'))).toBe('deactivate_self');
+    expect(await codeOf(() => deactivateStaff('s-vacancy-lawyer'))).toBe('not_found');
   });
 
-  it('приглашение: только @olympic.kg, без повторов; на вакансию — вместо её строки', () => {
+  it('приглашение: только @olympic.kg, без повторов; на вакансию — вместо её строки', async () => {
     const base = {
       name: 'Асель Орозова',
       position: 'Юрист',
       department: 'Правовой',
       role: 'R8' as RoleCode,
     };
-    expect(codeOf(() => inviteStaff({ ...base, email: 'a.orozova@gmail.com' }, 'А. Дуйшеев'))).toBe(
+    expect(await codeOf(() => inviteStaff({ ...base, email: 'a.orozova@gmail.com' }))).toBe(
       'email_domain',
     );
-    expect(
-      codeOf(() => inviteStaff({ ...base, email: 'N.Bakirov@olympic.kg' }, 'А. Дуйшеев')),
-    ).toBe('email_exists');
-    const member = inviteStaff(
-      { ...base, email: ' A.Orozova@olympic.kg ', vacancyId: 's-vacancy-lawyer' },
-      'А. Дуйшеев',
+    expect(await codeOf(() => inviteStaff({ ...base, email: 'N.Bakirov@olympic.kg' }))).toBe(
+      'email_exists',
     );
+    const member = await inviteStaff({
+      ...base,
+      email: ' A.Orozova@olympic.kg ',
+      vacancyId: 's-vacancy-lawyer',
+    });
     expect(member).toMatchObject({
       email: 'a.orozova@olympic.kg',
       short: 'А. Орозова',
       status: 'invited',
     });
-    const rows = fetchStaff(ME);
+    expect(lastJournal()).toMatchObject({ action: 'userInvited' });
+    const rows = await fetchStaff(ME);
     expect(rows).toHaveLength(17);
     expect(rows.some((r) => r.status === 'vacancy')).toBe(false);
   });
 
-  it('смена роли пишется в журнал; у уволенного роль не меняется', () => {
-    changeRole('s-dt', 'R4', 'А. Дуйшеев');
-    expect(row('s-dt')?.role).toBe('R4');
-    expect(journalEntries().at(-1)).toMatchObject({
+  it('смена роли пишется в журнал; у уволенного роль не меняется', async () => {
+    await changeRole('s-dt', 'R4');
+    expect((await row('s-dt'))?.role).toBe('R4');
+    expect(lastJournal()).toMatchObject({
       action: 'roleChanged',
       details: expect.stringContaining('R5 → R4'),
     });
-    deactivateStaff('s-dt', ACTOR);
-    expect(codeOf(() => changeRole('s-dt', 'R5', 'А. Дуйшеев'))).toBe('user_deactivated');
+    await deactivateStaff('s-dt');
+    expect(await codeOf(() => changeRole('s-dt', 'R5'))).toBe('user_deactivated');
   });
 });
 
@@ -114,8 +121,6 @@ async function open(url: string, role: RoleCode = 'R1') {
   vi.stubEnv('VITE_AUTH_MOCK', 'active');
   sessionStorage.clear();
   sessionStorage.setItem('nok.mockSession', JSON.stringify(mockSessionFor('active', role)));
-  resetStaffMock();
-  resetTasksMock();
   await i18n.changeLanguage('ru');
   const router = createMemoryRouter(routes, { initialEntries: [url] });
   container = document.createElement('div');
@@ -161,7 +166,7 @@ describe('роли и доступ (экраны)', () => {
     await act(async () => button('Да, деактивировать Н. Бакиров')?.click());
     await waitFor(() => text().includes('Сотрудник деактивирован'));
     await waitFor(() => !!container.querySelector('tbody') && text().includes('Деактивирован'));
-    expect(fetchStaff(ME).find((r) => r.id === 's-nb')?.plan.tasks).toBe(0);
+    expect((await row('s-nb'))?.plan.tasks).toBe(0);
   });
 
   it('без права staff.view — 403 по прямой ссылке', async () => {

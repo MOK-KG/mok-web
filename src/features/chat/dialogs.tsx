@@ -1,10 +1,11 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCurrentPersonId } from '@/features/auth';
 import { useTasks } from '@/features/tasks/api';
 import type { Task } from '@/features/tasks/types';
 import { SearchIcon, TasksIcon, XIcon } from '@/shared/ui/icons';
-import { chatMembers, currentMemberId, useStartDirect } from './api';
+import { useChatMembers, useStartDirect } from './api';
 import { MemberAvatar, useMemberLine } from './parts';
 import type { ChatMember } from './types';
 
@@ -103,11 +104,14 @@ export function NewChatDialog({
 function PeopleList({ onOpened }: { onOpened: (chatId: string) => void }) {
   const { t } = useTranslation();
   const start = useStartDirect();
+  const chatMembers = useChatMembers();
+  const me = useCurrentPersonId();
   const [query, setQuery] = useState('');
   const needle = query.trim().toLowerCase();
   const people = Object.values(chatMembers).filter(
     (m) =>
-      m.id !== currentMemberId &&
+      m.id !== me &&
+      m.active !== false &&
       (!needle ||
         [m.name, m.department, m.role, t(`access.roles.${m.role}`)].some((v) =>
           v.toLowerCase().includes(needle),

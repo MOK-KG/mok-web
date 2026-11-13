@@ -2,7 +2,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useCan } from '@/features/auth';
-import { findByRef } from '@/features/documents/api';
+import { useDocumentIdByRef } from '@/features/documents/api';
 import { BookIcon, DocSmallIcon, XIcon } from '@/shared/ui/icons';
 import { useDocumentArticles } from './api';
 import { capsTitle } from './parts';
@@ -45,7 +45,7 @@ export function DocumentDialog({
   const articles = useDocumentArticles(doc);
   const parsed = doc ? parseDocumentNumber(doc.number) : null;
   const { can } = useCan();
-  const docId = doc ? findByRef(doc.number) : null;
+  const docId = useDocumentIdByRef(doc ? doc.number : null);
   const row = 'flex gap-3 py-[7px] text-[12px]';
 
   return (

@@ -13,6 +13,7 @@ import {
   CheckSmallIcon,
   ClockIcon,
   MailIcon,
+  TasksIcon,
 } from '@/shared/ui/icons';
 import {
   type AppNotification,
@@ -27,6 +28,7 @@ export const notificationKinds: Record<
   NotificationKind,
   { Icon: ComponentType<{ size?: number }>; stripe: string; color: string }
 > = {
+  assigned: { Icon: TasksIcon, stripe: 'bg-info', color: 'text-info' },
   escalation: { Icon: BoltIcon, stripe: 'bg-warning', color: 'text-warning' },
   overdue: { Icon: ClockIcon, stripe: 'bg-brand-red', color: 'text-brand-red' },
   mailQueue: { Icon: MailIcon, stripe: 'bg-brand-gold', color: 'text-brand-gold' },
@@ -36,6 +38,61 @@ export const notificationKinds: Record<
 };
 
 export type NotificationView = AppNotification & { shownTitle: string; shownText: string };
+
+/**
+ * Заголовок и текст на языке интерфейса: по params от сервера (`notifications.titles.*`,
+ * `notifications.texts.*`); без params — как прислал сервер.
+ */
+function translated(
+  n: AppNotification,
+  t: (key: string, options?: Record<string, unknown>) => string,
+  language: string,
+): { title: string; text: string } {
+  const p = n.params;
+  if (!p) return { title: n.title, text: n.text };
+  const date =
+    typeof p.date === 'string' && p.date ? formatIsoDate(p.date, 'd MMMM', language) : '';
+  const values = { ...p, date };
+  switch (n.kind) {
+    case 'assigned':
+      return {
+        title: t('notifications.titles.assigned', values),
+        text: [
+          p.actor ? t('notifications.texts.assignedBy', values) : '',
+          date ? t('notifications.texts.due', values) : '',
+        ]
+          .filter(Boolean)
+          .join(' · '),
+      };
+    case 'escalation':
+      return {
+        title: t('notifications.titles.escalation', values),
+        text: t('notifications.texts.escalation', { ...values, count: Number(p.hours) }),
+      };
+    case 'overdue':
+      return {
+        title: t('notifications.titles.overdue', values),
+        text: t(
+          `notifications.texts.overdue_${p.role === 'author' ? 'author' : 'assignee'}`,
+          values,
+        ),
+      };
+    case 'mention':
+      return {
+        title: t('notifications.titles.mention', values),
+        text: t('notifications.texts.mention', values),
+      };
+    case 'reminder':
+      return { title: t('notifications.titles.reminder', values), text: n.text };
+    case 'done':
+      return {
+        title: t('notifications.titles.done', values),
+        text: p.actor ? t('notifications.texts.done', values) : '',
+      };
+    default:
+      return { title: n.title, text: n.text };
+  }
+}
 
 /**
  * Уведомления для показа. Письма в очереди считаются по самой очереди: пустая очередь —
@@ -49,7 +106,9 @@ export function useVisibleNotifications(): NotificationView[] {
   const queueCount = queue ? queue.ready + queue.manual : 0;
   const today = todayInBishkek();
 
-  return data.flatMap((n): NotificationView[] => {
+  return data.flatMap((raw): NotificationView[] => {
+    const shown = translated(raw, t, i18n.language);
+    const n = { ...raw, title: shown.title, text: shown.text };
     if (n.kind === 'mailQueue') {
       if (queueCount === 0) return [];
       return [
@@ -108,9 +167,10 @@ export function useOpenNotification() {
     if (target.kind === 'mailQueue') navigate('/tasks?queue=1');
     else if (target.kind === 'chat') navigate(`/chat?c=${target.chatId}`);
     else {
-      const task = tasks?.find((x) => x.title === target.taskTitle);
-      if (task) navigate(`/tasks?task=${task.id}`);
-      else toast.info({ title: t('notifications.taskGone') });
+      // Доска ещё грузится — открываем по id; загружена и задачи нет — её закрыли
+      if (!tasks || tasks.some((x) => x.id === target.taskId)) {
+        navigate(`/tasks?task=${target.taskId}`);
+      } else toast.info({ title: t('notifications.taskGone') });
     }
   };
 }

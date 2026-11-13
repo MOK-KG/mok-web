@@ -1,6 +1,7 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { type ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { formatInBishkek, formatIsoDate, relativeShort } from '@/shared/lib/date';
 import {
   AlertMiniIcon,
@@ -17,20 +18,17 @@ import {
   XIcon,
 } from '@/shared/ui/icons';
 import {
-  findSimilar,
-  queueSummary,
   useCreateFromLetter,
+  useDirectory,
   useMailQueue,
   useRejectLetter,
+  useSimilarTasks,
 } from '../api';
 import { dueProblem } from '../deadline';
-import { people, projects } from '../directory';
 import { canCreate, type Letter, type Suggestion, type SuggestionField } from '../mailQueue';
 import { dueMessage } from './NewTaskModal';
 
 const sectionTitle = 'text-[10px] font-semibold uppercase tracking-[1.4px] text-dim';
-const staff = [people.ad, people.nb, people.dt, people.ka, people.me];
-const projectList = Object.values(projects);
 const fields: SuggestionField[] = ['title', 'assignee', 'due', 'project', 'priority'];
 
 type Props = {
@@ -129,7 +127,8 @@ export function QueueModal({ open, onClose, onOpenTask, onManual }: Props) {
                     letter={selected}
                     onCreated={(taskId) => {
                       setSelectedId(null);
-                      if (queueSummary().ready === 0) onClose();
+                      // Это было последнее разобранное письмо — очередь больше не нужна
+                      if (ready.length <= 1) onClose();
                       onOpenTask(taskId);
                     }}
                     onRejected={() => setSelectedId(null)}
@@ -276,11 +275,15 @@ function ParsedLetter({
   const [editing, setEditing] = useState<SuggestionField | null>(null);
   const [rejecting, setRejecting] = useState(false);
   const create = useCreateFromLetter();
+  // Кому можно назначить и проекты — справочник бэкенда
+  const directory = useDirectory().data;
+  const staff = directory?.people ?? [];
+  const projectList = directory?.projects ?? [];
   useEffect(() => setDraft(letter.suggestion as Suggestion), [letter]);
 
   const problem = draft.due ? dueProblem(draft.due) : null;
   const ready = canCreate(draft) && !problem;
-  const similar = findSimilar(draft.title);
+  const similar = useSimilarTasks(draft.title).data ?? [];
 
   const confirmField = (field: SuggestionField) => {
     setDraft((d) => {
@@ -515,6 +518,30 @@ function ParsedLetter({
         })}
       </dl>
 
+      {(letter.suggestion?.reasoning || letter.suggestion?.sources?.length) && (
+        <div className="mt-3 rounded-9 border border-line bg-surface px-[13px] py-[10px]">
+          <p className={sectionTitle}>{t('mailQueue.why')}</p>
+          {letter.suggestion?.reasoning && (
+            <p className="mt-1 text-[11.5px] leading-[17px] text-sub">
+              {letter.suggestion.reasoning}
+            </p>
+          )}
+          {letter.suggestion?.sources?.length ? (
+            <p className="mt-1 text-[11px] text-dim">
+              {t('mailQueue.sources')}{' '}
+              {letter.suggestion.sources.map((source, i) => (
+                <span key={source.id}>
+                  {i > 0 && ', '}
+                  <Link to={`/knowledge/${source.id}`} className="text-info hover:underline">
+                    {source.title}
+                  </Link>
+                </span>
+              ))}
+            </p>
+          ) : null}
+        </div>
+      )}
+
       <div className="mt-3 flex items-center gap-2">
         <button
           type="button"
@@ -522,7 +549,7 @@ function ParsedLetter({
           title={ready ? undefined : t('mailQueue.notFilled')}
           onClick={() =>
             create.mutate(
-              { letterId: letter.id, suggestion: draft },
+              { letter, suggestion: draft },
               { onSuccess: (task) => onCreated(task.id) },
             )
           }
@@ -543,7 +570,7 @@ function ParsedLetter({
       <p className="mt-2 text-[10.5px] leading-[14px] text-dim">{t('mailQueue.rejectNote')}</p>
       <RejectDialog
         open={rejecting}
-        letterId={letter.id}
+        letter={letter}
         onClose={() => setRejecting(false)}
         onRejected={onRejected}
       />
@@ -553,12 +580,12 @@ function ParsedLetter({
 
 function RejectDialog({
   open,
-  letterId,
+  letter,
   onClose,
   onRejected,
 }: {
   open: boolean;
-  letterId: string;
+  letter: Letter;
   onClose: () => void;
   onRejected: () => void;
 }) {
@@ -573,7 +600,7 @@ function RejectDialog({
       return;
     }
     reject.mutate(
-      { letterId, reason },
+      { letter, reason },
       {
         onSuccess: () => {
           setReason('');

@@ -1,9 +1,9 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useDeferredValue, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { usePageSubtitle } from '@/app/layout/AppLayout';
-import { useCan, useSession } from '@/features/auth';
+import { useCan } from '@/features/auth';
 import {
   FieldError,
   FormDialog,
@@ -12,40 +12,23 @@ import {
   primaryButton,
   secondaryButton,
 } from '@/features/documents/parts';
+import { errorText } from '@/shared/api/feedback';
 import { formatInBishkek } from '@/shared/lib/date';
-import { toast } from '@/shared/lib/toast';
 import { ChevronLeftIcon, DownloadIcon, SearchIcon, ShieldCheckIcon } from '@/shared/ui/icons';
 import {
-  addJournalEntry,
-  groupOf,
-  type JournalEntry,
+  exportJournal,
   type JournalGroup,
-  journalEntries,
+  journalActions,
   journalGroups,
-  verifyJournal,
+  journalKey,
+  useJournal,
+  useJournalIntegrity,
 } from './store';
 
-const journalKey = ['journal'] as const;
+/** Записей на экране за раз; дальше — «Показать ещё» */
+const PAGE = 200;
 
 const groups = Object.keys(journalGroups) as JournalGroup[];
-
-/** «Айбек Дуйшеев» → «А. Дуйшеев» */
-const shortName = (name: string) => {
-  const [first, ...rest] = name.split(' ');
-  return rest.length ? `${first.charAt(0)}. ${rest.join(' ')}` : name;
-};
-
-/** CSV для выгрузки: разделитель «;», кавычки удваиваются — открывается в Excel */
-function toCsv(entries: readonly JournalEntry[]) {
-  const cell = (v: string) => `"${v.replaceAll('"', '""')}"`;
-  const head = ['id', 'at', 'author', 'action', 'details', 'reason', 'prevHash', 'hash'];
-  const rows = entries.map((e) =>
-    [e.id, e.at, e.author, e.action, e.details, e.reason ?? '', e.prevHash, e.hash]
-      .map(cell)
-      .join(';'),
-  );
-  return `﻿${[head.join(';'), ...rows].join('\n')}\n`;
-}
 
 /**
  * Журнал действий (право journal.view): кто, что и когда сделал. Записи нельзя изменить
@@ -58,24 +41,23 @@ export function JournalPage() {
   const { can } = useCan();
   const [group, setGroup] = useState<JournalGroup | null>(null);
   const [query, setQuery] = useState('');
+  const [limit, setLimit] = useState(PAGE);
   const [exporting, setExporting] = useState(false);
-  const entries = useQuery({
-    queryKey: journalKey,
-    queryFn: async () => journalEntries(),
-    refetchOnMount: 'always',
-  }).data;
-  const all = entries ?? [];
-  const integrity = verifyJournal(all);
-  const needle = query.trim().toLocaleLowerCase('ru');
-  const inGroup = (e: JournalEntry, g: JournalGroup | null) => !g || groupOf(e.action) === g;
-  const matches = (e: JournalEntry) =>
-    !needle ||
-    [e.author, e.details, e.reason, t(`journal.action.${e.action}`)].some((v) =>
-      v?.toLocaleLowerCase('ru').includes(needle),
-    );
-  const shown = all.filter((e) => inGroup(e, group) && matches(e)).reverse();
+  const needle = useDeferredValue(query.trim().toLocaleLowerCase('ru'));
+  // Названия действий переводит фронт — сервер ищет по ним через qActions
+  const qActions = needle
+    ? journalActions.filter((a) =>
+        t(`journal.action.${a}`).toLocaleLowerCase('ru').includes(needle),
+      )
+    : [];
+  const journal = useJournal({ group, q: needle, qActions, limit });
+  const integrity = useJournalIntegrity().data;
+  const page = journal.data;
+  const shown = page?.items ?? [];
+  const counts = page?.counts;
+  const allCount = counts ? Object.values(counts).reduce((sum, n) => sum + n, 0) : 0;
 
-  usePageSubtitle(t('journal.subtitle', { count: all.length }));
+  usePageSubtitle(t('journal.subtitle', { count: page?.size ?? 0 }));
 
   return (
     <div className="flex h-full min-h-[560px] flex-col gap-3 leading-[normal]">
@@ -94,7 +76,10 @@ export function JournalPage() {
             <input
               type="search"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setLimit(PAGE);
+              }}
               placeholder={t('journal.search')}
               className="min-w-0 flex-1 bg-transparent text-text outline-none placeholder:text-dim"
             />
@@ -118,7 +103,10 @@ export function JournalPage() {
                 key={g ?? 'all'}
                 type="button"
                 aria-pressed={on}
-                onClick={() => setGroup(g)}
+                onClick={() => {
+                  setGroup(g);
+                  setLimit(PAGE);
+                }}
                 className={`flex h-7 items-center gap-[6px] rounded-8 border px-[10px] text-[12px] ${
                   on
                     ? 'border-transparent bg-control-active font-semibold text-text'
@@ -129,30 +117,36 @@ export function JournalPage() {
                 <span
                   className={`text-[10.5px] font-medium ${on ? 'text-brand-gold' : 'text-dim'}`}
                 >
-                  {all.filter((e) => inGroup(e, g) && matches(e)).length}
+                  {counts ? (g ? counts[g] : allCount) : ''}
                 </span>
               </button>
             );
           })}
         </fieldset>
-        <p
-          role="status"
-          className={`flex items-center gap-2 text-[12px] ${integrity.ok ? 'text-success' : 'text-danger'}`}
-        >
-          <ShieldCheckIcon size={15} />
-          {integrity.ok
-            ? t('journal.integrityOk', { count: integrity.checked })
-            : t('journal.integrityBroken', { id: integrity.brokenAt })}
-        </p>
+        {integrity && (
+          <p
+            role="status"
+            className={`flex items-center gap-2 text-[12px] ${integrity.ok ? 'text-success' : 'text-danger'}`}
+          >
+            <ShieldCheckIcon size={15} />
+            {integrity.ok
+              ? t('journal.integrityOk', { count: integrity.checked })
+              : t('journal.integrityBroken', { id: integrity.brokenAt })}
+          </p>
+        )}
       </div>
 
       <section
         aria-label={t('journal.title')}
         className="min-h-0 flex-1 overflow-auto rounded-14 border border-line bg-panel"
       >
-        {shown.length === 0 ? (
+        {journal.isError ? (
           <p className="px-6 py-12 text-center text-[12.5px] text-dim">
-            {all.length === 0 ? t('journal.empty') : t('journal.nothingFound')}
+            {errorText(journal.error, t)}
+          </p>
+        ) : !page ? null : shown.length === 0 ? (
+          <p className="px-6 py-12 text-center text-[12.5px] text-dim">
+            {page.size === 0 ? t('journal.empty') : t('journal.nothingFound')}
           </p>
         ) : (
           <table className="w-full table-fixed text-left text-[12.5px]">
@@ -198,6 +192,18 @@ export function JournalPage() {
           </table>
         )}
       </section>
+      {page?.hasMore && (
+        <div className="flex items-center justify-center gap-3 text-[12px] text-faint">
+          {t('journal.shownOf', { shown: shown.length, total: page.total })}
+          <button
+            type="button"
+            className={secondaryButton}
+            onClick={() => setLimit((n) => n + PAGE)}
+          >
+            {t('journal.more')}
+          </button>
+        </div>
+      )}
       <p className="px-1 text-[11px] text-dim">{t('journal.note')}</p>
 
       <ExportDialog open={exporting} onClose={() => setExporting(false)} />
@@ -205,37 +211,41 @@ export function JournalPage() {
   );
 }
 
+/** Скачать текст CSV файлом */
+function download(csv: string) {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `journal-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 function ExportDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useTranslation();
   const client = useQueryClient();
-  const user = useSession().data?.user;
   const [reason, setReason] = useState('');
   const [tried, setTried] = useState(false);
   const error = reason.trim().length < 5 ? t('journal.errorReason') : null;
+  // Запись о выгрузке с основанием сервер делает сам — до выгрузки, она попадает в файл
+  const exporting = useMutation({
+    mutationFn: exportJournal,
+    meta: { successMessage: 'journal.exported' },
+    onSuccess: (csv) => {
+      download(csv);
+      setReason('');
+      setTried(false);
+      onClose();
+    },
+    onSettled: () => client.invalidateQueries({ queryKey: journalKey }),
+  });
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setTried(true);
     if (error) return;
-    // Сначала — запись о выгрузке, чтобы она сама попала в файл
-    addJournalEntry({
-      author: user ? shortName(user.name) : '—',
-      action: 'journalExported',
-      details: t('journal.exportDetails', { count: journalEntries().length + 1 }),
-      reason: reason.trim(),
-    });
-    const blob = new Blob([toCsv(journalEntries())], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `journal-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    client.invalidateQueries({ queryKey: journalKey });
-    toast.success({ title: t('journal.exported') });
-    setReason('');
-    setTried(false);
-    onClose();
+    exporting.mutate(reason.trim());
   };
 
   return (
@@ -262,7 +272,7 @@ function ExportDialog({ open, onClose }: { open: boolean; onClose: () => void })
           <button type="button" className={secondaryButton} onClick={onClose}>
             {t('documents.cancel')}
           </button>
-          <button type="submit" className={primaryButton}>
+          <button type="submit" className={primaryButton} disabled={exporting.isPending}>
             {t('journal.exportSubmit')}
           </button>
         </div>

@@ -35,5 +35,7 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // Подставной бэкенд задач перед каждым тестом
+    setupFiles: ['./src/test/setup.ts'],
   },
 });

@@ -11,7 +11,13 @@ export const authApi = {
   async getSession(): Promise<Session | null> {
     if (isMockEnabled()) return mockApi.getSession();
     try {
-      return await api.get<Session>('/auth/me');
+      const session = await api.get<
+        Omit<Session, 'user'> & {
+          user: Omit<Session['user'], 'id'> & { id: number | string };
+        }
+      >('/auth/me');
+      // ID на бэкенде — число; во фронте люди сравниваются по строке (Person.id)
+      return { ...session, user: { ...session.user, id: String(session.user.id) } };
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) return null;
       throw error;
