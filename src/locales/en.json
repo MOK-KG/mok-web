@@ -691,7 +691,8 @@
       "reply": "Reply in thread",
       "title": "Thread",
       "placeholder": "Reply in thread…"
-    }
+    },
+    "mentionList": "Mention a member"
   },
   "notifications": {
     "title": "Notifications",

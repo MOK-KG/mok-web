@@ -106,7 +106,7 @@ react-hook-form, zod, i18next, date-fns, dnd-kit, Biome, Vitest. Менедже�
   `shared/config/{tokens,i18n,links,workCalendar,permissions}.ts`, `shared/lib/{workDays,date,text,toast}.ts`,
   `shared/api/{errors,request,feedback}.ts`,
   `features/tasks/{types,directory,absences,mock,deadline,filters,list,ui,mailQueue}.ts`,
-  `features/knowledge-base/{types,search}.ts`, `features/chat/{types,mock,api}.ts`,
+  `features/knowledge-base/{types,search}.ts`, `features/chat/{types,mock,api,mentions}.ts`,
   `features/notifications/api.ts`, `features/dashboard/summary.ts`, `features/calendar/month.ts`,
   `features/documents/{types,mock,api}.ts`, `features/files/{collect,api}.ts`,
   `features/journal/store.ts`, `features/roles/{types,mock,api}.ts`, `features/absences/api.ts`,

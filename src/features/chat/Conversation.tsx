@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { Fragment, type KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useCurrentPersonId } from '@/features/auth';
@@ -29,6 +29,7 @@ import {
   useSetMuted,
 } from './api';
 import { TaskPickerDialog } from './dialogs';
+import { MentionTextarea } from './MentionTextarea';
 import {
   ChannelIcon,
   dayOf,
@@ -385,12 +386,6 @@ function Composer({ chat }: { chat: ChatSummary }) {
     send.mutate({ chatId: chat.id, message: { kind: 'text', text: clean } });
     setText('');
   };
-  const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-      e.preventDefault();
-      submit();
-    }
-  };
   const attach = (files: FileList | null) => {
     for (const f of Array.from(files ?? [])) {
       send.mutate({ chatId: chat.id, message: { kind: 'text', text: '', upload: f } });
@@ -404,14 +399,13 @@ function Composer({ chat }: { chat: ChatSummary }) {
   return (
     <div className="shrink-0 px-5 pb-[10px]">
       <div className="flex items-end gap-[6px] rounded-11 border border-line bg-column py-[10px] pl-4 pr-[10px] focus-within:border-info">
-        <textarea
+        <MentionTextarea
+          chat={chat}
           value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={onKey}
-          rows={1}
-          aria-label={placeholder}
+          onChange={setText}
+          onSubmit={submit}
           placeholder={placeholder}
-          className="max-h-32 min-h-7 flex-1 resize-none bg-transparent py-[5px] text-[13px] leading-[18px] text-text outline-none placeholder:text-dim [field-sizing:content]"
+          className="max-h-32 min-h-7 w-full resize-none bg-transparent py-[5px] text-[13px] leading-[18px] text-text outline-none placeholder:text-dim [field-sizing:content]"
         />
         <Tooltip content={t('chat.attachFile')}>
           <button
@@ -529,17 +523,12 @@ function ThreadPanel({
             ))}
           </div>
           <div className="border-t border-line p-3">
-            <textarea
-              aria-label={t('chat.thread.placeholder')}
+            <MentionTextarea
+              chat={chat}
               placeholder={t('chat.thread.placeholder')}
               value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-                  e.preventDefault();
-                  submit();
-                }
-              }}
+              onChange={setText}
+              onSubmit={submit}
               rows={2}
               className="w-full resize-none rounded-9 border border-line bg-column px-3 py-2 text-[13px] text-text outline-none placeholder:text-dim focus:border-info"
             />

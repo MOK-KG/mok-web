@@ -95,6 +95,51 @@ describe('чат и уведомления (экраны)', () => {
     vi.unstubAllEnvs();
   });
 
+  it('упоминание: «@» показывает участников, Enter подставляет короткое имя', async () => {
+    await open('/chat?c=c-at');
+    await waitFor(() => document.querySelector('textarea[role="combobox"]') !== null);
+    const area = document.querySelector('textarea[role="combobox"]') as HTMLTextAreaElement;
+    const type = (value: string) =>
+      act(() => {
+        const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+        setter?.call(area, value);
+        area.setSelectionRange(value.length, value.length);
+        area.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+
+    await type('Привет @тур');
+    await waitFor(() => document.querySelector('[role="listbox"]') !== null);
+    const options = [...document.querySelectorAll('[role="option"]')];
+    expect(options.map((o) => o.textContent)).toEqual([expect.stringContaining('Азамат Турсунов')]);
+
+    await act(() => {
+      area.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    });
+    expect(area.value).toBe('Привет @А. Турсунов ');
+    expect(document.querySelector('[role="listbox"]')).toBeNull();
+  });
+
+  it('упоминание: Escape закрывает список, Enter отправляет сообщение', async () => {
+    await open('/chat?c=c-at');
+    await waitFor(() => document.querySelector('textarea[role="combobox"]') !== null);
+    const area = document.querySelector('textarea[role="combobox"]') as HTMLTextAreaElement;
+    await act(() => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
+      setter?.call(area, '@тур');
+      area.setSelectionRange(4, 4);
+      area.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await waitFor(() => document.querySelector('[role="listbox"]') !== null);
+    await act(() => {
+      area.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
+    expect(document.querySelector('[role="listbox"]')).toBeNull();
+    await act(() => {
+      area.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    });
+    await waitFor(() => area.value === '');
+  });
+
   it('открытая переписка прочитана: счётчик в шапке уменьшается', async () => {
     await open('/chat?c=c-medical');
     await waitFor(() => text().includes('Медицинский департамент'));
