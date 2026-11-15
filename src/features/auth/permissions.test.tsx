@@ -61,8 +61,17 @@ describe('права доступа', () => {
   it('в меню только разделы роли', async () => {
     signInAs('R6');
     await render('/');
-    await waitFor(() => text().includes('Документы'));
+    await waitFor(() => text().includes('Задачи'));
     expect(text()).not.toContain('Роли и доступ');
+  });
+
+  it('«Документы» скрыты до Фазы 2 — даже у генерального секретаря', async () => {
+    signInAs('R3');
+    const router = await render('/');
+    await waitFor(() => text().includes('Задачи'));
+    expect(text()).not.toContain('Документы');
+    await act(async () => router.navigate('/documents'));
+    await waitFor(() => text().includes('Нет доступа'));
   });
 
   it('прямая ссылка без права — экран 403, адрес не меняется', async () => {
@@ -80,10 +89,9 @@ describe('права доступа', () => {
   });
 
   it('с правом раздел открывается', async () => {
-    signInAs('R6');
-    await render('/documents');
-    // Делопроизводство (R6) видит входящие и может регистрировать
-    await waitFor(() => text().includes('Зарегистрировать входящий'));
+    signInAs('R5');
+    await render('/knowledge');
+    await waitFor(() => text().includes('База знаний'));
     expect(text()).not.toContain('Нет доступа');
   });
 
