@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { workDomain } from '@/shared/config/links';
 import glowDark from '@/shared/ui/assets/glow-dark.svg';
 import glowLight from '@/shared/ui/assets/glow-light.svg';
-import { OlympicRings } from '@/shared/ui/OlympicRings';
+import { BrandLogo } from '@/shared/ui/BrandLogo';
 
 /** Центры диагональных линий из макета (x, px) */
 const lineCenters = [-60, 58, 176, 294, 412];
@@ -38,7 +38,7 @@ export function BrandPanel() {
       />
 
       <div className="relative flex h-full flex-col px-[72px] pb-16 pt-24">
-        <OlympicRings />
+        <BrandLogo height={124} />
         <p className="mt-7 text-[11px] font-semibold tracking-[1.8px] text-faint">
           {t('auth.orgName')}
         </p>
