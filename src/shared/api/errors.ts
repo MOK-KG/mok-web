@@ -82,6 +82,7 @@ export const knownErrorCodes = [
   'openai_key_missing',
   'agent_failed',
   'invalid_value',
+  'project_exists',
 ] as const;
 
 /**

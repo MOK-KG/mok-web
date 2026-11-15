@@ -234,6 +234,42 @@ export function useDirectory() {
   });
 }
 
+export type ManagedProject = Project & { archived: boolean };
+
+export function useProjects() {
+  return useQuery({
+    queryKey: [...tasksKey, 'projects'],
+    queryFn: async (): Promise<ManagedProject[]> =>
+      (await api.get<ApiProject[]>('/tasks/projects')).map((p) => ({
+        id: p.id,
+        name: p.name,
+        tone: p.tone,
+        archived: Boolean(p.archived),
+      })),
+  });
+}
+
+function useProjectMutation<V, R>(fn: (vars: V) => Promise<R>, meta?: FeedbackMeta) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    meta,
+    onSuccess: () => client.invalidateQueries({ queryKey: tasksKey }),
+  });
+}
+
+export const useCreateProject = () =>
+  useProjectMutation(
+    (project: { name: string; tone: Tone }) => api.post<ApiProject>('/tasks/projects', project),
+    { successMessage: 'projects.created', errorMessage: false },
+  );
+
+export const useUpdateProject = () =>
+  useProjectMutation(
+    ({ id, ...changes }: { id: string; name?: string; tone?: Tone; archived?: boolean }) =>
+      api.patch<ApiProject>(`/tasks/projects/${id}`, changes),
+  );
+
 /** 409 wip_limit — текст ошибки возьмётся из errors.code.* */
 export class WipLimitError extends ApiError {
   constructor(limit?: number) {

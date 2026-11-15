@@ -366,7 +366,8 @@
       "run_in_progress": "The agent is already processing mail — wait for it to finish.",
       "openai_key_missing": "The OpenAI key (OPENAI_API_KEY) is not set on the server.",
       "agent_failed": "The model did not respond. Try again.",
-      "invalid_value": "Invalid value."
+      "invalid_value": "Invalid value.",
+      "project_exists": "This project already exists"
     }
   },
   "toast": {
@@ -1318,5 +1319,28 @@
     "myAbsence": "{{kind}} {{from}} – {{to}}, covered by {{deputy}}",
     "covering": "You're covering for {{name}}: {{from}} – {{to}}",
     "save": "Save"
+  },
+  "projects": {
+    "title": "Projects",
+    "manage": "Manage projects",
+    "subtitle": "Projects used to group and filter tasks",
+    "new": "New project",
+    "namePlaceholder": "Project name",
+    "create": "Create",
+    "color": "Color",
+    "colorOf": "Color: {{name}}",
+    "rename": "Rename",
+    "save": "Save",
+    "cancel": "Cancel",
+    "archive": "Archive",
+    "restore": "Restore",
+    "active": "Active",
+    "archived": "Archived",
+    "empty": "No projects yet",
+    "created": "Project created",
+    "readOnly": "Only the Secretary General or a department director can change projects",
+    "tasks_one": "{{count}} task",
+    "tasks_other": "{{count}} tasks",
+    "errorName": "Enter a name"
   }
 }

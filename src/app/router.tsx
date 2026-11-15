@@ -52,6 +52,9 @@ const NotificationsPage = lazy(() =>
     default: m.NotificationsPage,
   })),
 );
+const ProjectsPage = lazy(() =>
+  import('@/features/tasks/projects/ProjectsPage').then((m) => ({ default: m.ProjectsPage })),
+);
 const ArticlePage = lazy(() =>
   import('@/features/knowledge-base/ArticlePage').then((m) => ({ default: m.ArticlePage })),
 );
@@ -93,6 +96,11 @@ const sectionRoutes: RouteObject[] = [
     handle: { section } satisfies RouteHandle,
     element: guarded(section, sectionPages[section]()),
   })),
+  {
+    path: 'tasks/projects',
+    handle: { section: 'tasks', titleKey: 'projects.title' } satisfies RouteHandle,
+    element: guarded('tasks', <ProjectsPage />),
+  },
   {
     path: 'knowledge/:articleId',
     handle: { section: 'knowledge' } satisfies RouteHandle,

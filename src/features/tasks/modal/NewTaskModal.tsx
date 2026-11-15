@@ -4,6 +4,7 @@ import * as Select from '@radix-ui/react-select';
 import { type DragEvent, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { z } from 'zod';
 import { useCurrentAbsences } from '@/features/absences/api';
 import { useCan, useSession } from '@/features/auth';
@@ -317,6 +318,14 @@ function NewTaskForm({ onClose, onOpenTask, letter, task: editing }: Omit<Props,
                 </Select.Root>
               )}
             />
+            {can('tasks.assign') && (
+              <Link
+                to="/tasks/projects"
+                className="mt-[6px] inline-block text-[11px] font-medium text-info hover:underline"
+              >
+                {t('projects.manage')}
+              </Link>
+            )}
             {errors.assigneeId && (
               <p className="mt-1 text-[11px] text-danger">{errorText(errors.assigneeId.message)}</p>
             )}
