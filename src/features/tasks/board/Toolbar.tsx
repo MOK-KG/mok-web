@@ -18,6 +18,7 @@ import {
 import { Tooltip } from '@/shared/ui/Tooltip';
 import {
   type DueFilter,
+  departmentsOf,
   dueFilters,
   emptyFilters,
   hasFilters,
@@ -194,6 +195,7 @@ function FilterPopover({
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<TaskFilters>(value);
   const active = hasFilters(value);
+  const departments = departmentsOf(tasks);
 
   const toggle = <K extends keyof TaskFilters>(key: K, item: TaskFilters[K][number]) =>
     setDraft((d) => {
@@ -257,6 +259,32 @@ function FilterPopover({
               );
             })}
           </fieldset>
+          {departments.length > 0 && (
+            <fieldset className="border-t border-line p-[5px]">
+              <legend className="px-[10px] pb-2 pt-3 text-[10px] font-semibold uppercase tracking-[1.4px] text-dim">
+                {t('tasks.filterDepartment')}
+              </legend>
+              {departments.map((d) => {
+                const checked = draft.departments.includes(d.name);
+                return (
+                  <label
+                    key={d.name}
+                    className={`${row} ${checked ? 'bg-popover-active font-medium text-text' : 'text-sub hover:bg-row-highlight'}`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="sr-only"
+                      checked={checked}
+                      onChange={() => toggle('departments', d.name)}
+                    />
+                    <Checkbox checked={checked} />
+                    <span className="flex-1">{d.name}</span>
+                    <span className="text-[10.5px] font-normal text-dim">{d.count}</span>
+                  </label>
+                );
+              })}
+            </fieldset>
+          )}
           <fieldset className="border-t border-line p-[5px]">
             <legend className="px-[10px] pb-2 pt-3 text-[10px] font-semibold uppercase tracking-[1.4px] text-dim">
               {t('tasks.filterDue')}
@@ -286,7 +314,7 @@ function FilterPopover({
           <div className="flex items-center justify-between border-t border-line px-[15px] py-3">
             <button
               type="button"
-              onClick={() => setDraft({ projects: [], due: [] })}
+              onClick={() => setDraft(emptyFilters)}
               className="flex items-center gap-[5px] text-[11.5px] font-medium text-sub hover:text-text"
             >
               <CloseIcon size={15} />
@@ -360,6 +388,12 @@ export function ActiveFilters({
           <span aria-hidden className={`size-[6px] rounded-full ${toneClasses[p.tone].dot}`} />
           {p.name}
           {remove(p.name, { ...filters, projects: filters.projects.filter((x) => x !== p.id) })}
+        </span>
+      ))}
+      {filters.departments.map((d) => (
+        <span key={d} className={chip}>
+          {d}
+          {remove(d, { ...filters, departments: filters.departments.filter((x) => x !== d) })}
         </span>
       ))}
       {filters.due.map((d) => (

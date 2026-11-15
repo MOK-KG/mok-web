@@ -186,7 +186,8 @@
     "deputyShort": "On leave · deputy {{name}}",
     "openMenu": "Sections",
     "closeSearch": "Close search",
-    "noResults": "Nothing found"
+    "noResults": "Nothing found",
+    "filterDepartment": "Department"
   },
   "taskCard": {
     "close": "Close",

@@ -19,7 +19,7 @@ import {
 } from './api';
 import { urgencyOf } from './deadline';
 import { people } from './directory';
-import { applyFilters, emptyFilters, matchesDue } from './filters';
+import { applyFilters, departmentOf, departmentsOf, emptyFilters, matchesDue } from './filters';
 import { createMockTasks, mockColumnId } from './mock';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -67,6 +67,41 @@ describe('срочность и фильтры (логика)', () => {
     expect(applyFilters(department, emptyFilters, 'УСТАВ', TODAY).map((t) => t.title)).toEqual([
       'Перевод устава на кыргызский язык',
     ]);
+  });
+
+  it('департамент — по исполнителю; счётчики департаментов равны числу задач с исполнителем', () => {
+    const list = departmentsOf(department);
+    expect(list.map((d) => d.name)).toEqual(
+      [...list.map((d) => d.name)].sort((a, b) => a.localeCompare(b, 'ru')),
+    );
+    expect(list.reduce((sum, d) => sum + d.count, 0)).toBe(
+      department.filter((t) => departmentOf(t) !== null).length,
+    );
+  });
+
+  it('департаменты — «или», вместе с проектом — «и»', () => {
+    const [first, second] = departmentsOf(department);
+    const one = applyFilters(department, { ...emptyFilters, departments: [first.name] }, '', TODAY);
+    expect(one).toHaveLength(first.count);
+    expect(one.every((t) => t.assignee?.unit === first.name)).toBe(true);
+    const both = applyFilters(
+      department,
+      { ...emptyFilters, departments: [first.name, second.name] },
+      '',
+      TODAY,
+    );
+    expect(both).toHaveLength(first.count + second.count);
+    const project = department.find((t) => t.project && departmentOf(t) === first.name)?.project;
+    const narrowed = applyFilters(
+      department,
+      { ...emptyFilters, departments: [first.name], projects: [project?.id ?? ''] },
+      '',
+      TODAY,
+    );
+    expect(
+      narrowed.every((t) => t.project?.id === project?.id && departmentOf(t) === first.name),
+    ).toBe(true);
+    expect(narrowed.length).toBeGreaterThan(0);
   });
 
   it('сумма задач по проектам равна числу задач', () => {

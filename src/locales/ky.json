@@ -186,7 +186,8 @@
     "deputyShort": "Өргүүдө · орун басары {{name}}",
     "openMenu": "Бөлүмдөр",
     "closeSearch": "Издөөнү жабуу",
-    "noResults": "Эч нерсе табылган жок"
+    "noResults": "Эч нерсе табылган жок",
+    "filterDepartment": "Бөлүм"
   },
   "taskCard": {
     "close": "Жабуу",

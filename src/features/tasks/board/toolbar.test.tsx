@@ -34,7 +34,9 @@ beforeEach(async () => {
   await act(async () =>
     root.render(
       <AppProviders>
-        <Harness initial={{ projects: [projects.antidoping.id], due: ['overdue'] }} />
+        <Harness
+          initial={{ projects: [projects.antidoping.id], departments: [], due: ['overdue'] }}
+        />
       </AppProviders>,
     ),
   );
@@ -49,12 +51,16 @@ afterEach(() => {
 describe('строка активных фильтров', () => {
   it('«Сбросить все» — тост с возможностью вернуть фильтры', async () => {
     await act(async () => button('Сбросить все')?.click());
-    expect(current).toEqual({ projects: [], due: [] });
+    expect(current).toEqual({ projects: [], departments: [], due: [] });
     const status = document.querySelector('[role="status"]');
     expect(status?.textContent).toContain('Фильтры сброшены');
 
     await act(async () => button('Вернуть')?.click());
-    expect(current).toEqual({ projects: [projects.antidoping.id], due: ['overdue'] });
+    expect(current).toEqual({
+      projects: [projects.antidoping.id],
+      departments: [],
+      due: ['overdue'],
+    });
     // Тост закрывается после действия
     expect(document.querySelector('[role="status"]')).toBeNull();
   });
@@ -64,5 +70,25 @@ describe('строка активных фильтров', () => {
       b.getAttribute('aria-label'),
     );
     expect(labels).toEqual(['Убрать фильтр «Антидопинг 2026»', 'Убрать фильтр «Просрочено»']);
+  });
+
+  it('департамент — отдельный чип, крестик убирает только его', async () => {
+    act(() => root.unmount());
+    root = createRoot(container);
+    await act(async () =>
+      root.render(
+        <AppProviders>
+          <Harness
+            initial={{ projects: [], departments: ['Медицинский отдел'], due: ['overdue'] }}
+          />
+        </AppProviders>,
+      ),
+    );
+    expect(container.textContent).toContain('Медицинский отдел');
+    const remove = container.querySelector(
+      'button[aria-label="Убрать фильтр «Медицинский отдел»"]',
+    ) as HTMLButtonElement;
+    await act(async () => remove.click());
+    expect(current).toEqual({ projects: [], departments: [], due: ['overdue'] });
   });
 });

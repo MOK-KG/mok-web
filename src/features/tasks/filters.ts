@@ -8,12 +8,27 @@ export const dueFilters: DueFilter[] = ['overdue', 'week', 'none'];
 
 export type TaskFilters = {
   projects: string[];
+  departments: string[];
   due: DueFilter[];
 };
 
-export const emptyFilters: TaskFilters = { projects: [], due: [] };
+export const emptyFilters: TaskFilters = { projects: [], departments: [], due: [] };
 
-export const hasFilters = (f: TaskFilters) => f.projects.length > 0 || f.due.length > 0;
+export const hasFilters = (f: TaskFilters) =>
+  f.projects.length > 0 || f.departments.length > 0 || f.due.length > 0;
+
+export const departmentOf = (task: Task): string | null => task.assignee?.unit || null;
+
+export function departmentsOf(tasks: Task[]): { name: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const t of tasks) {
+    const name = departmentOf(t);
+    if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return [...counts]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+}
 
 /** Последний день текущей календарной недели (воскресенье) */
 function endOfWeek(today: IsoDate): IsoDate {
@@ -50,6 +65,7 @@ export function applyFilters(
     (t) =>
       (filters.projects.length === 0 ||
         (t.project !== null && filters.projects.includes(t.project.id))) &&
+      (filters.departments.length === 0 || filters.departments.includes(departmentOf(t) ?? '')) &&
       (filters.due.length === 0 || filters.due.some((d) => matchesDue(t, d, today))) &&
       (query === '' || t.title.toLocaleLowerCase('ru').includes(query)),
   );

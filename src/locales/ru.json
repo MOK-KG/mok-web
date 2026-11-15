@@ -196,7 +196,8 @@
     "deputyShort": "В отпуске · зам. {{name}}",
     "openMenu": "Разделы",
     "closeSearch": "Закрыть поиск",
-    "noResults": "Ничего не найдено"
+    "noResults": "Ничего не найдено",
+    "filterDepartment": "Департамент"
   },
   "taskCard": {
     "close": "Закрыть",
