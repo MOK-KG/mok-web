@@ -361,6 +361,9 @@
     "server": "Server error. We’re aware — please try later.",
     "requestId": "Request ID: {{id}}",
     "code": {
+      "current_session": "Use “Sign out” to end the current session",
+      "session_not_found": "The session has already ended",
+      "web_push_disabled": "Browser notifications are not configured on the server",
       "wip_limit": "The “In progress” column is already at its limit.",
       "deadline_not_working_day": "The deadline falls on a non-working day.",
       "last_admin": "No one would be left who can assign roles.",
@@ -380,8 +383,6 @@
       "group_forbidden": "Only the group creator can remove members",
       "invalid_value": "Invalid value.",
       "project_exists": "This project already exists",
-      "current_session": "The current session can’t be ended this way — sign out instead.",
-      "session_not_found": "The session has already ended.",
       "permission_unknown": "No such permission."
     }
   },
@@ -812,6 +813,14 @@
     "cancel": "Cancel"
   },
   "notifications": {
+    "browser": {
+      "title": "Browser notifications",
+      "hint": "Pop up on your computer even when the platform tab is closed",
+      "unsupported": "This browser does not support notifications",
+      "unavailable": "Browser notifications are not configured on the server",
+      "denied": "Blocked in the browser — allow them in site settings (lock icon in the address bar)",
+      "error": "Could not turn on browser notifications"
+    },
     "title": "Notifications",
     "all": "All",
     "unreadTab": "Unread",
@@ -1235,6 +1244,8 @@
       "journal": "Log"
     },
     "action": {
+      "sessionEnded": "Session ended",
+      "rolePermissionsChanged": "Role permissions changed",
       "accessDenied": "Access denied",
       "mailRejected": "Email rejected",
       "mailAccepted": "Task from email",
@@ -1249,9 +1260,7 @@
       "journalExported": "Log export",
       "absenceCreated": "Absence recorded",
       "absenceCancelled": "Absence cancelled",
-      "sessionEnded": "Session ended",
-      "documentBounced": "Delivery failure",
-      "rolePermissionsChanged": "Role permissions changed"
+      "documentBounced": "Delivery failure"
     },
     "integrityOk_one": "Chain intact · {{count}} entry checked",
     "integrityOk_other": "Chain intact · {{count}} entries checked",
@@ -1434,6 +1443,25 @@
     }
   },
   "profile": {
+    "sessions": {
+      "title": "Active sessions",
+      "hint": "Where you are signed in. End an unfamiliar device — it will have to sign in again.",
+      "count_one": "{{count}} session",
+      "count_other": "{{count}} sessions",
+      "loading": "Loading…",
+      "loadError": "Could not load sessions",
+      "current": "this device",
+      "online": "online now",
+      "lastSeen": "last active {{date}}",
+      "signedIn": "Signed in {{date}}",
+      "terminate": "End",
+      "terminated": "Session ended",
+      "terminatedAll": "Other sessions ended",
+      "terminateOthers": "End all other sessions",
+      "confirmOthers_one": "End {{count}} other session? That device will have to sign in again.",
+      "confirmOthers_other": "End {{count}} other sessions? Those devices will have to sign in again.",
+      "cancel": "Cancel"
+    },
     "title": "Profile",
     "role": "Role",
     "roleNote": "Roles are assigned by the administrator; rights change immediately, without restarting.",

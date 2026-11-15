@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useMatches } from 'react-router-dom';
+import { syncWebPush } from '@/features/notifications/webPush';
 import type { Section } from '@/shared/config/permissions';
 import { storage } from '@/shared/lib/storage';
 import { NARROW, useMediaQuery } from '@/shared/lib/useMediaQuery';
@@ -36,6 +37,11 @@ export function AppLayout() {
   const handles = [...useMatches()].reverse().map((m) => m.handle as RouteHandle | undefined);
   const section = handles.map((h) => h?.section).find(Boolean);
   const titleKey = handles.map((h) => h?.titleKey).find(Boolean);
+
+  // Браузер уже подписан на уведомления — напомнить бэкенду (подписка привязана к сессии)
+  useEffect(() => {
+    syncWebPush();
+  }, []);
 
   const toggle = () =>
     setCollapsed((c) => {

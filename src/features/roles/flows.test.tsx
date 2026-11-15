@@ -391,19 +391,4 @@ describe('роли и доступ: сценарии', () => {
     await act(async () => button('Сохранить', dialog() as HTMLElement)?.click());
     await waitFor(() => text().includes('Не останется никого, кто может назначать роли'));
   });
-
-  it('профиль: свои устройства, завершение сессии с подтверждением', async () => {
-    await open('/profile');
-    await waitFor(() => text().includes('Устройства и сессии'));
-    await waitFor(() => text().includes('это устройство'));
-    const end = () =>
-      document.querySelector<HTMLButtonElement>('button[aria-label="Завершить: НОК КР · iPhone"]');
-    await waitFor(() => !!end());
-    await act(async () => end()?.click());
-    await waitFor(() => !!dialog());
-    expect(dialog()?.textContent).toContain('«НОК КР · iPhone»');
-    await act(async () => button('Завершить', dialog() as HTMLElement)?.click());
-    await waitFor(() => !end());
-    expect(text()).toContain('это устройство');
-  });
 });

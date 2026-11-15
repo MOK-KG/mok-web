@@ -1,3 +1,4 @@
+import { disableWebPush } from '@/features/notifications/webPush';
 import { ApiError, api } from '@/shared/api/client';
 import { isMockEnabled, mockApi, mockOutcome } from './mock';
 import type { Session, SignInError } from './types';
@@ -33,6 +34,8 @@ export const authApi = {
 
   async signOut(): Promise<void> {
     if (isMockEnabled()) return mockApi.signOut();
+    // Браузерные уведомления — только пока вошли: следующий вошедший их не получит
+    await disableWebPush().catch(() => null);
     await api.post<void>('/auth/logout');
   },
 };

@@ -357,3 +357,11 @@ export const DownloadIcon = icon(
   16,
   `<path d="M8 2.75V10.25M4.75 7L8 10.25L11.25 7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 13.25H13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`,
 );
+export const MonitorIcon = icon(
+  16,
+  `<rect x="1.75" y="2.5" width="12.5" height="8.5" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 13.75H10.5M8 11V13.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
+);
+export const PhoneIcon = icon(
+  16,
+  `<rect x="4" y="1.5" width="8" height="13" rx="1.75" stroke="currentColor" stroke-width="1.5"/><path d="M7 12H9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
+);

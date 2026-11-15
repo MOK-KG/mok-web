@@ -32,7 +32,9 @@ export type JournalAction =
   | 'documentDone'
   | 'documentAnnulled'
   | 'documentBounced'
-  | 'journalExported';
+  | 'journalExported'
+  | 'sessionEnded'
+  | 'rolePermissionsChanged';
 
 /** Группы действий — для фильтра на экране журнала */
 export const journalGroups = {
