@@ -76,6 +76,7 @@ export function Board({ columns, tasks, grouping, canDrag, filtered, onOpen }: P
   const [origin, setOrigin] = useState<string | null>(null);
   const [order, setOrder] = useState<Order | null>(null);
   const [moved, setMoved] = useState<string | null>(null);
+  const [settling, setSettling] = useState<Task[] | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   const sensors = useSensors(
@@ -102,6 +103,22 @@ export function Board({ columns, tasks, grouping, canDrag, filtered, onOpen }: P
   const view = order ?? baseOrder;
 
   useEffect(() => {
+    if (settling && settling !== tasks) {
+      setSettling(null);
+      setOrder(null);
+    }
+  }, [tasks, settling]);
+
+  useEffect(() => {
+    if (!settling) return;
+    const timer = setTimeout(() => {
+      setSettling(null);
+      setOrder(null);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [settling]);
+
+  useEffect(() => {
     if (!moved) return;
     const timer = setTimeout(() => setMoved(null), 1600);
     return () => clearTimeout(timer);
@@ -126,6 +143,7 @@ export function Board({ columns, tasks, grouping, canDrag, filtered, onOpen }: P
 
   const onDragStart = (e: DragStartEvent) => {
     const task = byId.get(String(e.active.id)) ?? null;
+    setSettling(null);
     setMessage(null);
     setMoved(null);
     setActive(task);
@@ -179,15 +197,23 @@ export function Board({ columns, tasks, grouping, canDrag, filtered, onOpen }: P
       return;
     }
     const target = columns.find((c) => c.id === container) as BoardColumn;
+    setOrder({ ...order, [container]: list });
+    setSettling(tasks);
+    setActive(null);
+    setOrigin(null);
+    setMoved(task.id);
     move.mutate(
       { id: task.id, columnId: container, beforeId },
       {
         onSuccess: () => setMessage(t('tasks.moved', { status: target.name })),
-        onError: () => setMessage(t('tasks.limitReached', { limit: target.wipLimit ?? 0 })),
+        onError: () => {
+          setSettling(null);
+          setOrder(null);
+          setMoved(null);
+          setMessage(t('tasks.limitReached', { limit: target.wipLimit ?? 0 }));
+        },
       },
     );
-    setMoved(task.id);
-    finish();
   };
 
   const columnName = (id: UniqueIdentifier) =>
