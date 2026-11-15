@@ -372,7 +372,7 @@
       "group_title": "Group name must be 2 to 80 characters",
       "group_description": "Group description must be at most 1000 characters",
       "group_members": "Check the group members",
-      "group_forbidden": "Only the group creator can remove members"
+      "group_forbidden": "Only the group creator can remove members",
       "invalid_value": "Invalid value.",
       "project_exists": "This project already exists"
     }
