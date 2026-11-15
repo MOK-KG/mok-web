@@ -8,9 +8,10 @@ import type { IsoDate } from '@/shared/lib/workDays';
  * - active — работает (в отпуске — тоже active, отпуск берётся из графика отпусков);
  * - external — внешний участник (ревизионная комиссия, аудит);
  * - vacancy — должность вакантна, учётной записи нет;
- * - deactivated — уволен: вход закрыт, запись остаётся (удалять сотрудников нельзя).
+ * - deactivated — уволен: вход закрыт, запись остаётся (удалять сотрудников нельзя);
+ * - pending — вошёл через Google, роль ещё не назначена.
  */
-export type StaffStatus = 'invited' | 'active' | 'external' | 'vacancy' | 'deactivated';
+export type StaffStatus = 'pending' | 'invited' | 'active' | 'external' | 'vacancy' | 'deactivated';
 
 /** Статус для показа: отпуск поверх active */
 export type StaffBadge = StaffStatus | 'vacation';
@@ -24,7 +25,7 @@ export type StaffMember = {
   short: string | null;
   email: string | null;
   tone: Tone;
-  role: RoleCode;
+  role: RoleCode | null;
   department: string;
   position: string;
   status: StaffStatus;

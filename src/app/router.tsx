@@ -52,6 +52,9 @@ const NotificationsPage = lazy(() =>
     default: m.NotificationsPage,
   })),
 );
+const RoleMatrixPage = lazy(() =>
+  import('@/features/roles/RoleMatrixPage').then((m) => ({ default: m.RoleMatrixPage })),
+);
 const ProjectsPage = lazy(() =>
   import('@/features/tasks/projects/ProjectsPage').then((m) => ({ default: m.ProjectsPage })),
 );
@@ -116,6 +119,11 @@ const sectionRoutes: RouteObject[] = [
         <JournalPage />
       </RequirePermission>,
     ),
+  },
+  {
+    path: 'access/roles',
+    handle: { section: 'access', titleKey: 'access.matrix' } satisfies RouteHandle,
+    element: guarded('access', <RoleMatrixPage />),
   },
   // Настройки ИИ и агента почты — внутри «Ролей и доступа», только с правом assistant.manage
   {

@@ -10,6 +10,7 @@ import {
   ArrowRightIcon,
   CheckboxCheckIcon,
   FilterIcon,
+  LockIcon,
   MailMediumIcon,
   MoreIcon,
   PlusIcon,
@@ -28,6 +29,7 @@ import { UserCard } from './UserCard';
 const PREVIEW = 9;
 
 const badges: StaffBadge[] = [
+  'pending',
   'active',
   'vacation',
   'invited',
@@ -70,19 +72,30 @@ export function RolesPage() {
       { replace: true },
     );
 
-  const rows = staff.data ?? [];
+  const rows = useMemo(
+    () =>
+      [...(staff.data ?? [])].sort(
+        (a, b) => Number(b.status === 'pending') - Number(a.status === 'pending'),
+      ),
+    [staff.data],
+  );
   const opened = rows.find((r) => r.id === params.get('user')) ?? null;
-  const departments = useMemo(() => [...new Set(rows.map((r) => r.department))], [rows]);
+  const departments = useMemo(
+    () => [...new Set(rows.map((r) => r.department).filter(Boolean))],
+    [rows],
+  );
 
   const working = rows.filter((r) => r.status === 'active' || r.status === 'invited').length;
   const external = rows.filter((r) => r.status === 'external').length;
   const vacancies = rows.filter((r) => r.status === 'vacancy').length;
+  const pending = rows.filter((r) => r.status === 'pending').length;
   usePageSubtitle(
     staff.data
       ? [
           t('access.staffCount', { count: working }),
           t('access.externalCount', { count: external }),
           vacancies > 0 && t('access.vacancyCount', { count: vacancies }),
+          pending > 0 && t('access.pendingCount', { count: pending }),
         ]
           .filter(Boolean)
           .join(' · ')
@@ -92,13 +105,13 @@ export function RolesPage() {
   const needle = query.trim().toLowerCase();
   const matches = (r: StaffRow) =>
     !needle ||
-    [r.name, r.email, r.position, r.role, t(`access.roles.${r.role}`)]
+    [r.name, r.email, r.position, r.role, r.role ? t(`access.roles.${r.role}`) : '']
       .filter(Boolean)
       .some((v) => (v as string).toLowerCase().includes(needle));
   const filtered = rows.filter(
     (r) =>
       matches(r) &&
-      (filters.roles.length === 0 || filters.roles.includes(r.role)) &&
+      (filters.roles.length === 0 || (r.role !== null && filters.roles.includes(r.role))) &&
       (filters.badges.length === 0 || filters.badges.includes(r.badge)) &&
       (filters.departments.length === 0 || filters.departments.includes(r.department)),
   );
@@ -144,6 +157,13 @@ export function RolesPage() {
               })
             }
           />
+          <Link
+            to="/access/roles"
+            className="flex h-8 items-center gap-[6px] rounded-9 border border-line bg-control px-3 text-[12.5px] font-medium text-sub hover:text-text"
+          >
+            <LockIcon size={15} />
+            {t('access.matrix')}
+          </Link>
           <Can permission="journal.view">
             <Link
               to="/access/journal"
@@ -314,8 +334,12 @@ function Row({
       <td>
         <div className="flex items-center gap-2">
           <RoleCodeChip role={r.role} />
-          <span className={`truncate text-[12.5px] ${dim ? 'text-sub' : 'text-text'}`}>
-            {t(`access.roles.${r.role}`)}
+          <span
+            className={`truncate text-[12.5px] ${
+              r.role === null ? 'text-warning-text' : dim ? 'text-sub' : 'text-text'
+            }`}
+          >
+            {r.role ? t(`access.roles.${r.role}`) : t('access.noRole')}
           </span>
         </div>
       </td>
@@ -345,7 +369,7 @@ function Row({
               className="z-50 w-[210px] rounded-11 border border-line bg-popover p-[5px] shadow-[0_8px_28px_rgba(0,0,0,0.35)]"
             >
               <DropdownMenu.Item onSelect={onOpen} className={item}>
-                {t('access.openCard')}
+                {r.status === 'pending' ? t('access.assignRole') : t('access.openCard')}
               </DropdownMenu.Item>
               {r.status === 'vacancy' ? (
                 <Can permission="staff.manage">

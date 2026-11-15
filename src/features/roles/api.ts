@@ -3,8 +3,8 @@ import { useCurrentPersonId } from '@/features/auth';
 import { isMockEnabled, mockApi } from '@/features/auth/mock';
 import { sessionQueryKey } from '@/features/auth/useSession';
 import { tasksKey, toPerson } from '@/features/tasks/api';
-import { api } from '@/shared/api/client';
-import type { RoleCode } from '@/shared/config/permissions';
+import { ApiError, api } from '@/shared/api/client';
+import type { Permission, RoleCode } from '@/shared/config/permissions';
 import type { DeactivationPlan, StaffBadge, StaffMember } from './types';
 
 /**
@@ -162,6 +162,67 @@ export function useDeactivate() {
     onSuccess: async () => {
       await client.invalidateQueries({ queryKey: staffKey });
       await client.invalidateQueries({ queryKey: tasksKey });
+    },
+  });
+}
+
+export type StaffSession = {
+  id: string;
+  device: string;
+  platform: 'web' | 'ios' | 'android';
+  ip: string | null;
+  createdAt: string;
+  lastSeenAt: string;
+  current: boolean;
+};
+
+export type RoleInfo = { code: RoleCode; name: string; permissions: Permission[] };
+
+const notSupported = (error: unknown) =>
+  error instanceof ApiError && (error.status === 404 || error.status === 405);
+
+export function useMemberSessions(memberId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: [...staffKey, 'sessions', memberId],
+    enabled: enabled && memberId !== null,
+    retry: false,
+    queryFn: async (): Promise<StaffSession[] | null> => {
+      try {
+        return (await api.get<{ sessions: StaffSession[] }>(`/staff/members/${memberId}/sessions`))
+          .sessions;
+      } catch (error) {
+        if (notSupported(error)) return null;
+        throw error;
+      }
+    },
+  });
+}
+
+export function useEndSession() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ memberId, sessionId }: { memberId: string; sessionId: string | null }) =>
+      api.delete(
+        sessionId
+          ? `/staff/members/${memberId}/sessions/${sessionId}`
+          : `/staff/members/${memberId}/sessions`,
+      ),
+    meta: { successMessage: 'access.sessionEnded' },
+    onSuccess: () => client.invalidateQueries({ queryKey: staffKey }),
+  });
+}
+
+export function useRoleMatrix() {
+  return useQuery({
+    queryKey: [...staffKey, 'roles'],
+    retry: false,
+    queryFn: async (): Promise<RoleInfo[] | null> => {
+      try {
+        return (await api.get<{ roles: RoleInfo[] }>('/staff/roles')).roles;
+      } catch (error) {
+        if (notSupported(error)) return null;
+        throw error;
+      }
     },
   });
 }

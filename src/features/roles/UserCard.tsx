@@ -15,7 +15,14 @@ import {
   LockIcon,
   XIcon,
 } from '@/shared/ui/icons';
-import { type StaffRow, useChangeRole, useDeactivate } from './api';
+import {
+  type StaffRow,
+  type StaffSession,
+  useChangeRole,
+  useDeactivate,
+  useEndSession,
+  useMemberSessions,
+} from './api';
 import { capsTitle, RoleCodeChip, StaffAvatar, StatusBadge } from './parts';
 
 /** Карточка сотрудника: роль (меняется сразу), сведения и увольнение */
@@ -110,8 +117,13 @@ function Card({
 
       <div className="px-7 pb-7 pt-[22px]">
         <h3 className={capsTitle}>{t('access.role')}</h3>
+        {m.status === 'pending' && m.firstLoginAt && (
+          <p className="mt-[10px] rounded-9 border border-warning-line bg-warning-soft px-3 py-[9px] text-[11.5px] text-warning-text">
+            {t('access.pendingHint', { date: date(m.firstLoginAt) })}
+          </p>
+        )}
         <Select.Root
-          value={m.role}
+          value={m.role ?? undefined}
           onValueChange={(v) => pickRole(v as RoleCode)}
           disabled={!canAssign}
         >
@@ -122,10 +134,10 @@ function Card({
             <RoleCodeChip role={m.role} size="md" />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[13px] font-medium text-text">
-                {t(`access.roles.${m.role}`)}
+                {m.role ? t(`access.roles.${m.role}`) : t('access.chooseRole')}
               </span>
               <span className="block truncate text-[10.5px] text-dim">
-                {t(`access.roleHints.${m.role}`)}
+                {m.role ? t(`access.roleHints.${m.role}`) : t('access.noRole')}
               </span>
             </span>
             {canAssign && <ChevronSmallIcon size={14} className="text-faint" />}
@@ -165,19 +177,24 @@ function Card({
         </Select.Root>
         <ConfirmDialog
           open={nextRole !== null}
-          title={t('access.changeRoleTitle')}
-          confirmLabel={t('access.changeRoleConfirm')}
+          title={m.role ? t('access.changeRoleTitle') : t('access.assignRoleTitle')}
+          confirmLabel={m.role ? t('access.changeRoleConfirm') : t('access.assignRole')}
           cancelLabel={t('access.cancel')}
           pending={changeRole.isPending}
           onConfirm={applyRole}
           onCancel={() => setNextRole(null)}
         >
           <p>
-            {t('access.changeRoleText', {
-              name: m.short ?? m.name ?? m.position,
-              from: `${m.role} ${t(`access.roles.${m.role}`)}`,
-              to: nextRole ? `${nextRole} ${t(`access.roles.${nextRole}`)}` : '',
-            })}
+            {m.role
+              ? t('access.changeRoleText', {
+                  name: m.short ?? m.name ?? m.position,
+                  from: `${m.role} ${t(`access.roles.${m.role}`)}`,
+                  to: nextRole ? `${nextRole} ${t(`access.roles.${nextRole}`)}` : '',
+                })
+              : t('access.assignRoleText', {
+                  name: m.short ?? m.name ?? m.email,
+                  to: nextRole ? `${nextRole} ${t(`access.roles.${nextRole}`)}` : '',
+                })}
           </p>
           {m.isMe && (
             <p className="mt-2 font-medium text-warning-text">{t('access.changeRoleOwn')}</p>
@@ -227,17 +244,10 @@ function Card({
                 <dt className={label}>{t('access.deputy')}</dt>
                 <dd className={value}>{m.deputy ?? '—'}</dd>
               </div>
-              <div>
-                <dt className={label}>{t('access.sessions')}</dt>
-                <dd className={value}>
-                  {m.sessions > 0
-                    ? t('access.devices', { count: m.sessions })
-                    : t('access.noSessions')}
-                </dd>
-              </div>
             </>
           )}
         </dl>
+        {!vacancy && !deactivated && <Sessions member={m} />}
 
         {vacancy ? (
           can('staff.manage') && (
@@ -261,6 +271,110 @@ function Card({
         )}
       </div>
     </div>
+  );
+}
+
+function Sessions({ member: m }: { member: StaffRow }) {
+  const { t, i18n } = useTranslation();
+  const { can } = useCan();
+  const canEnd = can('staff.deactivate');
+  const sessions = useMemberSessions(m.id);
+  const end = useEndSession();
+  const [ending, setEnding] = useState<StaffSession | 'all' | null>(null);
+  const list = sessions.data;
+  const when = (iso: string) =>
+    new Date(iso).toLocaleString(i18n.language, {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Asia/Bishkek',
+    });
+  const name = m.short ?? m.name ?? m.email ?? '';
+  const others = (list ?? []).filter((s) => !s.current);
+
+  return (
+    <section aria-labelledby="sessions-title" className="mt-[22px]">
+      <div className="flex items-center justify-between gap-3">
+        <h3 id="sessions-title" className={capsTitle}>
+          {t('access.devicesTitle')}
+        </h3>
+        {canEnd && others.length > 1 && (
+          <button
+            type="button"
+            onClick={() => setEnding('all')}
+            className="text-[11.5px] font-medium text-danger hover:underline"
+          >
+            {t('access.endAllSessions')}
+          </button>
+        )}
+      </div>
+      {list === null ? (
+        <p className="mt-2 text-[12px] text-dim">
+          {m.sessions > 0 ? t('access.devices', { count: m.sessions }) : t('access.noSessions')}
+          {' · '}
+          {t('access.devicesUnavailable')}
+        </p>
+      ) : list === undefined ? null : list.length === 0 ? (
+        <p className="mt-2 text-[12px] text-dim">{t('access.noDevices')}</p>
+      ) : (
+        <ul className="mt-2 flex flex-col gap-2">
+          {list.map((s) => (
+            <li
+              key={s.id}
+              className="flex items-center gap-3 rounded-9 border border-line bg-column px-3 py-[9px]"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[12.5px] text-text">
+                  {s.device}
+                  {s.current && (
+                    <span className="ml-2 text-[11px] text-success">
+                      {t('access.currentSession')}
+                    </span>
+                  )}
+                </p>
+                <p className="mt-[2px] text-[11px] text-dim">
+                  {t(`access.platform.${s.platform}`)} ·{' '}
+                  {t('access.lastSeen', { time: when(s.lastSeenAt) })}
+                </p>
+              </div>
+              {canEnd && !s.current && (
+                <button
+                  type="button"
+                  onClick={() => setEnding(s)}
+                  aria-label={`${t('access.endSession')}: ${s.device}`}
+                  className="h-8 shrink-0 rounded-8 border border-line px-3 text-[11.5px] font-medium text-sub hover:border-danger-line hover:text-danger"
+                >
+                  {t('access.endSession')}
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      <ConfirmDialog
+        open={ending !== null}
+        tone="danger"
+        title={ending === 'all' ? t('access.endAllTitle') : t('access.endSessionTitle')}
+        confirmLabel={ending === 'all' ? t('access.endAllSessions') : t('access.endSession')}
+        cancelLabel={t('access.cancel')}
+        pending={end.isPending}
+        onCancel={() => setEnding(null)}
+        onConfirm={() =>
+          end.mutate(
+            { memberId: m.id, sessionId: ending === 'all' || !ending ? null : ending.id },
+            { onSettled: () => setEnding(null) },
+          )
+        }
+      >
+        {ending === 'all'
+          ? t('access.endAllText', { name, count: others.length })
+          : t('access.endSessionText', {
+              name,
+              device: ending?.device ?? '',
+            })}
+      </ConfirmDialog>
+    </section>
   );
 }
 
