@@ -1,5 +1,5 @@
 import { createContext, type ReactNode, useContext, useEffect, useState } from 'react';
-import { defaultTheme, type ThemeName } from '@/shared/config/tokens';
+import type { ThemeName } from '@/shared/config/tokens';
 import { storage } from '@/shared/lib/storage';
 
 const THEME_KEY = 'nok.theme';
@@ -21,7 +21,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 const readMode = (): ThemeMode => {
   const saved = storage.get(THEME_KEY);
-  return saved === 'dark' || saved === 'light' || saved === 'system' ? saved : defaultTheme;
+  return saved === 'dark' || saved === 'light' ? saved : 'system';
 };
 
 const systemQuery = () =>

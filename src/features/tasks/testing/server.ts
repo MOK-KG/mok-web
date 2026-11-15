@@ -55,6 +55,10 @@ export function createTasksServer({ today = todayInBishkek() }: { today?: IsoDat
   ];
   const columns: Column[] = mockColumns();
   let letters: Letter[] = createMockQueue(today);
+  const projectList: (Project & { archived: boolean })[] = allProjects.map((p) => ({
+    ...p,
+    archived: false,
+  }));
   let seq = 0;
   const me = allPeople.find((p) => p.id === currentUserId) as Person;
 
@@ -144,7 +148,7 @@ export function createTasksServer({ today = todayInBishkek() }: { today?: IsoDat
       columnId: queue.id,
       position:
         Math.max(0, ...tasks.filter((t) => t.columnId === queue.id).map((t) => t.position)) + 1,
-      project: allProjects.find((p) => p.id === b.projectId) ?? null,
+      project: projectList.find((p) => p.id === b.projectId) ?? null,
       due: (b.due as IsoDate) ?? null,
       assignee,
       author: me,
@@ -210,8 +214,48 @@ export function createTasksServer({ today = todayInBishkek() }: { today?: IsoDat
     if (resource === 'directory' && method === 'GET') {
       return {
         status: 200,
-        body: { people: allPeople.map(apiPerson), projects: allProjects, columns: withCounts() },
+        body: {
+          people: allPeople.map(apiPerson),
+          projects: projectList.filter((p) => !p.archived),
+          columns: withCounts(),
+        },
       };
+    }
+    if (resource === 'projects') {
+      const clean = (v: unknown) =>
+        String(v ?? '')
+          .trim()
+          .replace(/\s+/g, ' ');
+      const taken = (name: string, except?: string) =>
+        projectList.some(
+          (p) => p.id !== except && p.name.toLocaleLowerCase('ru') === name.toLocaleLowerCase('ru'),
+        );
+      if (!id && method === 'GET') return { status: 200, body: projectList };
+      if (!id && method === 'POST') {
+        const name = clean(b.name);
+        if (!name) return error(400, 'invalid', { fields: { name: ['Укажите название.'] } });
+        if (taken(name)) return error(409, 'project_exists');
+        const project = {
+          id: `p-new-${++seq}`,
+          name,
+          tone: (b.tone as Project['tone']) ?? 'blue',
+          archived: false,
+        };
+        projectList.push(project);
+        return { status: 201, body: project };
+      }
+      const project = projectList.find((p) => p.id === id);
+      if (!project) return error(404, 'not_found');
+      if (method === 'PATCH') {
+        if (typeof b.name === 'string') {
+          const name = clean(b.name);
+          if (taken(name, project.id)) return error(409, 'project_exists');
+          project.name = name;
+        }
+        if (typeof b.tone === 'string') project.tone = b.tone as Project['tone'];
+        if (typeof b.archived === 'boolean') project.archived = b.archived;
+        return { status: 200, body: project };
+      }
     }
     if (resource === 'similar' && method === 'GET') {
       const target = stems(query.get('title') ?? '');
@@ -243,7 +287,7 @@ export function createTasksServer({ today = todayInBishkek() }: { today?: IsoDat
         if (typeof b.title === 'string') task.title = b.title;
         if (typeof b.description === 'string') task.description = b.description;
         if ('priority' in b) task.priority = b.priority as TaskDetail['priority'];
-        if ('projectId' in b) task.project = allProjects.find((p) => p.id === b.projectId) ?? null;
+        if ('projectId' in b) task.project = projectList.find((p) => p.id === b.projectId) ?? null;
         if (typeof b.due === 'string' && b.due !== task.due) {
           if (task.due) {
             log(task, 'due', `${task.due}|${b.due}`);

@@ -4,16 +4,17 @@ import * as Select from '@radix-ui/react-select';
 import { type DragEvent, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { z } from 'zod';
 import { useCurrentAbsences } from '@/features/absences/api';
 import { useCan, useSession } from '@/features/auth';
 import { formatIsoDate } from '@/shared/lib/date';
 import { initials } from '@/shared/lib/text';
 import { diffDays, todayInBishkek } from '@/shared/lib/workDays';
+import { DateField } from '@/shared/ui/DateField';
 import {
   ArrowSmallIcon,
   AttachLargeIcon,
-  CalendarMediumIcon,
   CheckIcon,
   ChevronSmallIcon,
   DuplicateIcon,
@@ -317,6 +318,14 @@ function NewTaskForm({ onClose, onOpenTask, letter, task: editing }: Omit<Props,
                 </Select.Root>
               )}
             />
+            {can('tasks.assign') && (
+              <Link
+                to="/tasks/projects"
+                className="mt-[6px] inline-block text-[11px] font-medium text-info hover:underline"
+              >
+                {t('projects.manage')}
+              </Link>
+            )}
             {errors.assigneeId && (
               <p className="mt-1 text-[11px] text-danger">{errorText(errors.assigneeId.message)}</p>
             )}
@@ -326,19 +335,24 @@ function NewTaskForm({ onClose, onOpenTask, letter, task: editing }: Omit<Props,
               {t('newTask.due')}
               <Required />
             </label>
-            <div className={`${fieldBox} mt-[6px] px-[11px]`} data-invalid={!!errors.due}>
-              <CalendarMediumIcon size={17} className="shrink-0 text-faint" />
-              <input
-                id="nt-due"
-                type="date"
-                min={
-                  editing?.due && editing.due < todayInBishkek() ? editing.due : todayInBishkek()
-                }
-                {...register('due')}
-                aria-invalid={!!errors.due}
-                className="min-w-0 flex-1 bg-transparent text-[12.5px] text-text outline-none [color-scheme:dark] [[data-theme=light]_&]:[color-scheme:light]"
-              />
-            </div>
+            <Controller
+              control={control}
+              name="due"
+              render={({ field }) => (
+                <DateField
+                  id="nt-due"
+                  value={field.value}
+                  onChange={(d) => field.onChange(d)}
+                  min={
+                    editing?.due && editing.due < todayInBishkek() ? editing.due : todayInBishkek()
+                  }
+                  workingDaysOnly
+                  invalid={!!errors.due}
+                  placeholder={t('datePicker.choose')}
+                  className={`${fieldBox} mt-[6px] px-[11px]`}
+                />
+              )}
+            />
             {errors.due ? (
               <p className="mt-1 text-[11px] text-danger">{errorText(errors.due.message)}</p>
             ) : (

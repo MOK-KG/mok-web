@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Banner } from '@/shared/ui/Banner';
 import { AuthLayout } from './AuthLayout';
@@ -9,6 +10,11 @@ export function PendingPage() {
   const session = useSession();
   const signOut = useSignOut();
   const email = session.data?.user.email ?? '';
+  const [checking, setChecking] = useState(false);
+  const refresh = () => {
+    setChecking(true);
+    session.refetch().finally(() => setChecking(false));
+  };
 
   return (
     <AuthLayout footerNote={t('auth.urgentAccess')} footerDivider>
@@ -25,11 +31,18 @@ export function PendingPage() {
           action={
             <button
               type="button"
-              onClick={() => session.refetch()}
-              disabled={session.isFetching}
-              className="text-[12.5px] font-medium text-info hover:underline disabled:opacity-50"
+              onClick={refresh}
+              disabled={checking}
+              aria-busy={checking}
+              className="inline-flex items-center gap-[6px] text-[12.5px] font-medium text-info hover:underline disabled:cursor-default disabled:no-underline"
             >
-              {t('auth.refreshStatus')}
+              {checking && (
+                <span
+                  aria-hidden
+                  className="size-3 animate-spin rounded-full border-2 border-current border-r-transparent"
+                />
+              )}
+              {checking ? t('auth.checkingStatus') : t('auth.refreshStatus')}
             </button>
           }
         >

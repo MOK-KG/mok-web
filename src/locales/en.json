@@ -35,7 +35,8 @@
     "refreshStatus": "Refresh status",
     "urgentAccess": "Need access urgently?",
     "signOut": "Sign out",
-    "genericError": "Could not sign in. Please try again."
+    "genericError": "Could not sign in. Please try again.",
+    "checkingStatus": "Checking…"
   },
   "home": {
     "greeting": "Hello, {{name}}",
@@ -368,11 +369,12 @@
       "run_in_progress": "The agent is already processing mail — wait for it to finish.",
       "openai_key_missing": "The OpenAI key (OPENAI_API_KEY) is not set on the server.",
       "agent_failed": "The model did not respond. Try again.",
-      "invalid_value": "Invalid value.",
       "group_title": "Group name must be 2 to 80 characters",
       "group_description": "Group description must be at most 1000 characters",
       "group_members": "Check the group members",
       "group_forbidden": "Only the group creator can remove members"
+      "invalid_value": "Invalid value.",
+      "project_exists": "This project already exists"
     }
   },
   "toast": {
@@ -1353,5 +1355,38 @@
     "myAbsence": "{{kind}} {{from}} – {{to}}, covered by {{deputy}}",
     "covering": "You're covering for {{name}}: {{from}} – {{to}}",
     "save": "Save"
+  },
+  "projects": {
+    "title": "Projects",
+    "manage": "Manage projects",
+    "subtitle": "Projects used to group and filter tasks",
+    "new": "New project",
+    "namePlaceholder": "Project name",
+    "create": "Create",
+    "color": "Color",
+    "colorOf": "Color: {{name}}",
+    "rename": "Rename",
+    "save": "Save",
+    "cancel": "Cancel",
+    "archive": "Archive",
+    "restore": "Restore",
+    "active": "Active",
+    "archived": "Archived",
+    "empty": "No projects yet",
+    "created": "Project created",
+    "readOnly": "Only the Secretary General or a department director can change projects",
+    "tasks_one": "{{count}} task",
+    "tasks_other": "{{count}} tasks",
+    "errorName": "Enter a name"
+  },
+  "datePicker": {
+    "choose": "Choose a date",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "inTwoWorkingDays": "In 2 working days",
+    "inAWeek": "In a week",
+    "weekend": "weekend"
   }
 }

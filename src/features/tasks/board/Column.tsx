@@ -1,4 +1,5 @@
 import { useDroppable } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowRightIcon } from '@/shared/ui/icons';
@@ -10,6 +11,8 @@ export type TaskGroup = { key: string; label: string | null; tasks: Task[] };
 
 type Props = {
   column: BoardColumn;
+  ids: string[];
+  highlighted: string | null;
   groups: TaskGroup[];
   /** Сколько задач в колонке всего (для счётчика «4 из 6») */
   total: number;
@@ -28,6 +31,8 @@ type Props = {
 /** Колонка канбана (макет Figma: col/*) */
 export function Column({
   column,
+  ids,
+  highlighted,
   groups,
   total,
   dragActive,
@@ -44,7 +49,8 @@ export function Column({
   const wipLimit = column.wipLimit;
 
   // Видимые карточки: первые N по всем группам, пока не нажали «Показать все»
-  const limit = expanded ? Number.POSITIVE_INFINITY : visibleByStatus[status];
+  const reveal = dragActive || (highlighted !== null && ids.includes(highlighted));
+  const limit = expanded || reveal ? Number.POSITIVE_INFINITY : visibleByStatus[status];
   let left = limit;
   const visibleGroups = groups
     .map((g) => {
@@ -86,19 +92,27 @@ export function Column({
         )}
       </header>
 
-      <div className="flex flex-col gap-[10px] p-[9px]">
-        {visibleGroups.map((group) => (
-          <div key={group.key} className="flex flex-col gap-[10px]">
-            {group.label && (
-              <p className="px-1 pt-1 text-[10px] font-semibold uppercase tracking-[1.2px] text-dim">
-                {group.label}
-              </p>
-            )}
-            {group.tasks.map((task) => (
-              <TaskCard key={task.id} task={task} draggable={canDrag} onOpen={onOpen} />
-            ))}
-          </div>
-        ))}
+      <div className="flex min-h-[60px] flex-col gap-[10px] p-[9px]">
+        <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+          {visibleGroups.map((group) => (
+            <div key={group.key} className="flex flex-col gap-[10px]">
+              {group.label && (
+                <p className="px-1 pt-1 text-[10px] font-semibold uppercase tracking-[1.2px] text-dim">
+                  {group.label}
+                </p>
+              )}
+              {group.tasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  draggable={canDrag}
+                  highlighted={task.id === highlighted}
+                  onOpen={onOpen}
+                />
+              ))}
+            </div>
+          ))}
+        </SortableContext>
 
         {total === 0 && !dragActive && (
           <p className="py-4 text-center text-[11.5px] text-dim">{t('tasks.empty')}</p>

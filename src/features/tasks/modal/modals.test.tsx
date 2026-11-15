@@ -6,7 +6,14 @@ import i18n from '@/app/i18n';
 import { AppProviders } from '@/app/providers';
 import { routes } from '@/app/router';
 import { mockSessionFor } from '@/features/auth/mock';
-import { addDays, dayKind, todayInBishkek } from '@/shared/lib/workDays';
+import { formatIsoDate } from '@/shared/lib/date';
+import {
+  addDays,
+  addWorkingDays,
+  dayKind,
+  nextWorkingDay,
+  todayInBishkek,
+} from '@/shared/lib/workDays';
 import { resetTasksMock } from '../api';
 import { createMockTasks } from '../mock';
 
@@ -128,19 +135,50 @@ describe('новая задача', () => {
     expect(d.textContent).toContain('Выберите исполнителя');
   });
 
-  it('срок в выходной или праздник не принимается', async () => {
+  it('календарь срока: выходные, праздники и прошлое выбрать нельзя', async () => {
     const d = await openForm();
-    const due = d.querySelector<HTMLInputElement>('#nt-due') as HTMLInputElement;
+    await act(async () => (d.querySelector('#nt-due') as HTMLButtonElement).click());
+    await waitFor(() => !!document.querySelector('[data-date]'));
+    const day = (date: string) =>
+      document.querySelector<HTMLButtonElement>(`[data-date="${date}"]`);
+    const showMonthOf = async (date: string) => {
+      for (let i = 0; i < 3 && !day(date); i++) {
+        await act(async () =>
+          document.querySelector<HTMLButtonElement>('[aria-label="Следующий месяц"]')?.click(),
+        );
+      }
+    };
+
     let weekend = todayInBishkek();
     while (dayKind(weekend).kind !== 'weekend') weekend = addDays(weekend, 1);
-    await setValue(d.querySelector('#nt-title') as HTMLInputElement, 'Тестовая задача');
-    await setValue(due, weekend);
-    await act(async () => button('Создать задачу', d)?.click());
-    await waitFor(() => d.textContent?.includes('Срок выпадает на выходной') ?? false);
-    await setValue(due, '2026-12-31' < todayInBishkek() ? '2027-01-07' : '2026-08-31');
-    await act(async () => button('Создать задачу', d)?.click());
-    await waitFor(() =>
-      /Срок выпадает на нерабочий день|Срок не может быть в прошлом/.test(d.textContent ?? ''),
+    await showMonthOf(weekend);
+    expect(day(weekend)?.disabled).toBe(true);
+
+    const yesterday = addDays(todayInBishkek(), -1);
+    await act(async () =>
+      document.querySelector<HTMLButtonElement>('[aria-label="Предыдущий месяц"]')?.click(),
+    );
+    await act(async () =>
+      document.querySelector<HTMLButtonElement>('[aria-label="Следующий месяц"]')?.click(),
+    );
+    if (day(yesterday)) expect(day(yesterday)?.disabled).toBe(true);
+
+    const working = nextWorkingDay(addDays(todayInBishkek(), 3));
+    await showMonthOf(working);
+    await act(async () => day(working)?.click());
+    await waitFor(() => !document.querySelector('[data-date]'));
+    expect((d.querySelector('#nt-due') as HTMLButtonElement).textContent).toContain(
+      formatIsoDate(working, 'd MMMM yyyy', 'ru'),
+    );
+  });
+
+  it('календарь срока: быстрый выбор «Через 2 рабочих дня»', async () => {
+    const d = await openForm();
+    await act(async () => (d.querySelector('#nt-due') as HTMLButtonElement).click());
+    await waitFor(() => !!button('Через 2 рабочих дня'));
+    await act(async () => button('Через 2 рабочих дня')?.click());
+    expect((d.querySelector('#nt-due') as HTMLButtonElement).textContent).toContain(
+      formatIsoDate(addWorkingDays(todayInBishkek(), 2), 'd MMMM yyyy', 'ru'),
     );
   });
 

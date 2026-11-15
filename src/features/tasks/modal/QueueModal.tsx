@@ -3,6 +3,8 @@ import { type ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { formatInBishkek, formatIsoDate, relativeShort } from '@/shared/lib/date';
+import { todayInBishkek } from '@/shared/lib/workDays';
+import { DateField } from '@/shared/ui/DateField';
 import {
   AlertMiniIcon,
   CheckMiniIcon,
@@ -338,12 +340,13 @@ function ParsedLetter({
         );
       case 'due':
         return (
-          <input
-            aria-label={label}
-            type="date"
-            className={`${cls} [color-scheme:dark]`}
+          <DateField
             value={draft.due ?? ''}
-            onChange={(e) => setDraft({ ...draft, due: e.target.value || null })}
+            onChange={(due) => setDraft({ ...draft, due })}
+            min={todayInBishkek()}
+            workingDaysOnly
+            placeholder={label}
+            className={`${cls} flex items-center gap-2`}
           />
         );
       case 'project':

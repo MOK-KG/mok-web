@@ -2,6 +2,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Popover from '@radix-ui/react-popover';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { Can } from '@/features/auth';
 import { toast } from '@/shared/lib/toast';
 import {
@@ -11,6 +12,7 @@ import {
   CloseIcon,
   CloseSmallIcon,
   FilterIcon,
+  FolderIcon,
   GroupIcon,
   PlusIcon,
   SearchIcon,
@@ -102,6 +104,10 @@ export function Toolbar(props: Props) {
           />
         </label>
         <FilterPopover tasks={props.tasks} value={props.filters} onChange={props.onFilters} />
+        <Link to="/tasks/projects" className={`${field} hover:text-text`}>
+          <FolderIcon size={16} className="shrink-0" />
+          {t('projects.title')}
+        </Link>
         <Can permission="tasks.create">
           <button
             type="button"

@@ -3,7 +3,7 @@ import { resetJournal } from '@/features/journal/store';
 import { ApiError, api } from '@/shared/api/client';
 import type { FeedbackMeta } from '@/shared/api/feedback';
 import { type Tone, toneNames } from '@/shared/config/tokens';
-import { addDays, type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
+import { addDays, type IsoDate, nextWorkingDay, todayInBishkek } from '@/shared/lib/workDays';
 import type { Letter, Suggestion } from './mailQueue';
 import type {
   Column,
@@ -263,6 +263,42 @@ export function useDirectory() {
   });
 }
 
+export type ManagedProject = Project & { archived: boolean };
+
+export function useProjects() {
+  return useQuery({
+    queryKey: [...tasksKey, 'projects'],
+    queryFn: async (): Promise<ManagedProject[]> =>
+      (await api.get<ApiProject[]>('/tasks/projects')).map((p) => ({
+        id: p.id,
+        name: p.name,
+        tone: p.tone,
+        archived: Boolean(p.archived),
+      })),
+  });
+}
+
+function useProjectMutation<V, R>(fn: (vars: V) => Promise<R>, meta?: FeedbackMeta) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    meta,
+    onSuccess: () => client.invalidateQueries({ queryKey: tasksKey }),
+  });
+}
+
+export const useCreateProject = () =>
+  useProjectMutation(
+    (project: { name: string; tone: Tone }) => api.post<ApiProject>('/tasks/projects', project),
+    { successMessage: 'projects.created', errorMessage: false },
+  );
+
+export const useUpdateProject = () =>
+  useProjectMutation(
+    ({ id, ...changes }: { id: string; name?: string; tone?: Tone; archived?: boolean }) =>
+      api.patch<ApiProject>(`/tasks/projects/${id}`, changes),
+  );
+
 /** 409 wip_limit — текст ошибки возьмётся из errors.code.* */
 export class WipLimitError extends ApiError {
   constructor(limit?: number) {
@@ -309,22 +345,24 @@ export function applyMove(board: Board, { id, columnId, beforeId }: MoveVars): B
 export function useMoveTask() {
   const client = useQueryClient();
   const boards = { queryKey: [...tasksKey, 'board'] };
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: ({ id, columnId, beforeId }: MoveVars) => moveTask(id, columnId, beforeId),
-    onMutate: async (vars) => {
-      await client.cancelQueries(boards);
-      const previous = client.getQueriesData<Board>(boards);
-      client.setQueriesData<Board>(boards, (board) => (board ? applyMove(board, vars) : board));
-      return { previous };
-    },
-    // Не получилось (лимит колонки) — вернуть доску как была
-    onError: (_error, _vars, context) => {
-      for (const [key, data] of context?.previous ?? []) client.setQueryData(key, data);
-    },
-    // Текст ошибки показывает доска сама (лимит колонки)
+    onMutate: () => client.cancelQueries(boards, { revert: false }),
     meta: { errorMessage: false },
     onSettled: () => client.invalidateQueries({ queryKey: tasksKey }),
   });
+  const mutate: typeof mutation.mutate = (vars, options) => {
+    const previous = client.getQueriesData<Board>(boards);
+    client.setQueriesData<Board>(boards, (board) => (board ? applyMove(board, vars) : board));
+    mutation.mutate(vars, {
+      ...options,
+      onError: (...args) => {
+        for (const [key, data] of previous) client.setQueryData(key, data);
+        options?.onError?.(...args);
+      },
+    });
+  };
+  return { ...mutation, mutate };
 }
 
 // --- Очередь из почты -------------------------------------------------------------------------
@@ -554,7 +592,7 @@ export function useSimilarTasks(title: string) {
 }
 
 /** Ближайший рабочий день не раньше завтрашнего — срок по умолчанию */
-export const defaultDue = () => addDays(todayInBishkek(), 2);
+export const defaultDue = () => nextWorkingDay(addDays(todayInBishkek(), 2));
 
 /** Сброс состояния между тестами: журнал действий */
 export function resetTasksMock() {
