@@ -316,22 +316,24 @@ export function applyMove(board: Board, { id, columnId, beforeId }: MoveVars): B
 export function useMoveTask() {
   const client = useQueryClient();
   const boards = { queryKey: [...tasksKey, 'board'] };
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: ({ id, columnId, beforeId }: MoveVars) => moveTask(id, columnId, beforeId),
-    onMutate: async (vars) => {
-      await client.cancelQueries(boards);
-      const previous = client.getQueriesData<Board>(boards);
-      client.setQueriesData<Board>(boards, (board) => (board ? applyMove(board, vars) : board));
-      return { previous };
-    },
-    // Не получилось (лимит колонки) — вернуть доску как была
-    onError: (_error, _vars, context) => {
-      for (const [key, data] of context?.previous ?? []) client.setQueryData(key, data);
-    },
-    // Текст ошибки показывает доска сама (лимит колонки)
+    onMutate: () => client.cancelQueries(boards, { revert: false }),
     meta: { errorMessage: false },
     onSettled: () => client.invalidateQueries({ queryKey: tasksKey }),
   });
+  const mutate: typeof mutation.mutate = (vars, options) => {
+    const previous = client.getQueriesData<Board>(boards);
+    client.setQueriesData<Board>(boards, (board) => (board ? applyMove(board, vars) : board));
+    mutation.mutate(vars, {
+      ...options,
+      onError: (...args) => {
+        for (const [key, data] of previous) client.setQueryData(key, data);
+        options?.onError?.(...args);
+      },
+    });
+  };
+  return { ...mutation, mutate };
 }
 
 // --- Очередь из почты -------------------------------------------------------------------------

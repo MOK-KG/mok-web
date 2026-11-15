@@ -1,5 +1,7 @@
-import { useDraggable, useDroppable } from '@dnd-kit/core';
+import type { useDraggable } from '@dnd-kit/core';
+import { useSortable } from '@dnd-kit/sortable';
 import type { ComponentType, ReactNode } from 'react';
+import { type CSSProperties, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatIsoDate } from '@/shared/lib/date';
 import { initials } from '@/shared/lib/text';
@@ -88,30 +90,37 @@ function Meta({
 
 type Props = {
   task: Task;
-  /** Открыть карточку задачи (клик или Enter) */
   onOpen?: (id: string) => void;
   draggable?: boolean;
-  /** Карточка в слое перетаскивания */
   overlay?: boolean;
+  highlighted?: boolean;
 };
 
-/** Мини-карточка задачи на доске (макет Figma: card/*) */
-export function TaskCard({ task, onOpen, draggable = false, overlay = false }: Props) {
-  const drag = useDraggable({ id: task.id, data: { task }, disabled: !draggable || overlay });
-  // Карточка — и место для броска: брошенная на неё задача встаёт перед ней
-  const drop = useDroppable({ id: `card:${task.id}`, disabled: !draggable || overlay });
+export function TaskCard({
+  task,
+  onOpen,
+  draggable = false,
+  overlay = false,
+  highlighted = false,
+}: Props) {
+  const sortable = useSortable({ id: task.id, disabled: !draggable || overlay });
+  const style: CSSProperties | undefined =
+    overlay || !sortable.transform
+      ? undefined
+      : {
+          transform: `translate3d(${sortable.transform.x}px, ${sortable.transform.y}px, 0)`,
+          transition: sortable.transition,
+        };
   return (
     <CardView
       task={task}
       overlay={overlay}
-      dragging={drag.isDragging}
-      dropBefore={drop.isOver && !drag.isDragging}
-      setRef={(el) => {
-        drag.setNodeRef(el);
-        drop.setNodeRef(el);
-      }}
-      attributes={draggable ? drag.attributes : undefined}
-      listeners={draggable ? drag.listeners : undefined}
+      dragging={sortable.isDragging}
+      highlighted={highlighted}
+      style={style}
+      setRef={sortable.setNodeRef}
+      attributes={draggable ? sortable.attributes : undefined}
+      listeners={draggable ? sortable.listeners : undefined}
       onOpen={overlay ? undefined : onOpen}
     />
   );
@@ -121,7 +130,8 @@ function CardView({
   task,
   overlay,
   dragging,
-  dropBefore,
+  highlighted,
+  style,
   setRef,
   attributes,
   listeners,
@@ -131,13 +141,17 @@ function CardView({
   onOpen?: (id: string) => void;
   overlay: boolean;
   dragging: boolean;
-  /** Над карточкой держат другую — она встанет перед этой (линия сверху) */
-  dropBefore?: boolean;
+  highlighted?: boolean;
+  style?: CSSProperties;
   setRef: (el: HTMLElement | null) => void;
   attributes?: Drag['attributes'];
   listeners?: Drag['listeners'];
 }) {
   const { t } = useTranslation();
+  const node = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (highlighted) node.current?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+  }, [highlighted]);
   const { urgency } = urgencyOf(task);
   const signal = task.escalationHours !== null || task.deputy !== null;
   const stripeClass =
@@ -145,17 +159,20 @@ function CardView({
 
   return (
     <article
-      ref={setRef}
+      ref={(el) => {
+        node.current = el;
+        setRef(el);
+      }}
+      style={style}
       aria-label={task.title}
       {...attributes}
       {...listeners}
-      className={`relative overflow-hidden rounded-[10px] border border-line bg-card px-[13px] pb-3 pt-[10px] shadow-[0_1px_3px_rgba(10,22,40,0.05)] outline-none focus-visible:ring-2 focus-visible:ring-info ${
+      className={`relative overflow-hidden rounded-[10px] border ${dragging ? 'border-dashed border-info' : 'border-line'} bg-card px-[13px] pb-3 pt-[10px] shadow-[0_1px_3px_rgba(10,22,40,0.05)] outline-none focus-visible:ring-2 focus-visible:ring-info ${
         listeners ? 'cursor-grab active:cursor-grabbing' : ''
-      } ${dragging ? 'opacity-40' : ''} ${overlay ? 'rotate-[1.5deg] shadow-[0_12px_32px_rgba(0,0,0,0.35)]' : ''}`}
+      } ${dragging ? 'opacity-40' : ''} ${
+        overlay ? 'rotate-[1.5deg] cursor-grabbing shadow-[0_12px_32px_rgba(0,0,0,0.35)]' : ''
+      } ${highlighted ? 'ring-2 ring-info transition-shadow' : ''}`}
     >
-      {dropBefore && (
-        <span aria-hidden className="absolute inset-x-0 top-0 h-[3px] rounded-full bg-info" />
-      )}
       {stripeClass && (
         <span aria-hidden className={`absolute inset-y-0 left-0 w-[2.5px] ${stripeClass}`} />
       )}
