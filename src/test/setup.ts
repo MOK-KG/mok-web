@@ -5,6 +5,7 @@ import { installChatServer } from '@/features/chat/testing/server';
 import { installDocumentsServer } from '@/features/documents/testing/server';
 import { installJournalServer } from '@/features/journal/testing/server';
 import { installNotificationsServer } from '@/features/notifications/testing/server';
+import { installSessionsServer } from '@/features/profile/testing/server';
 import { installStaffServer } from '@/features/roles/testing/server';
 import { installTasksServer } from '@/features/tasks/testing/server';
 
@@ -28,6 +29,8 @@ beforeEach(() => {
   installNotificationsServer();
   // Настройки ИИ и агент почты
   installAssistantServer();
+  // Активные сессии (профиль)
+  installSessionsServer();
 });
 
 afterEach(() => {

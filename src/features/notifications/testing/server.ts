@@ -92,6 +92,8 @@ export function createNotificationsServer({ now = Date.now() }: { now?: number }
         : target,
   }));
   let settings = allOn();
+  /** Браузерные уведомления: включены ли на «сервере» и чьи подписки есть */
+  const webPush = { enabled: false, publicKey: 'BTestKey', endpoints: [] as string[] };
 
   const visible = () => items.filter((n) => settings[n.kind]);
 
@@ -116,6 +118,20 @@ export function createNotificationsServer({ now = Date.now() }: { now?: number }
       n.read = true;
       return { status: 200, body: n };
     }
+    if (path === '/notifications/web-push' && method === 'GET') {
+      const { enabled, publicKey } = webPush;
+      return { status: 200, body: { enabled, publicKey: enabled ? publicKey : '' } };
+    }
+    if (path === '/notifications/web-push' && method === 'POST') {
+      if (!webPush.enabled) return { status: 409, body: { code: 'web_push_disabled' } };
+      const endpoint = String(body?.endpoint);
+      if (!webPush.endpoints.includes(endpoint)) webPush.endpoints.push(endpoint);
+      return { status: 204 };
+    }
+    if (path === '/notifications/web-push' && method === 'DELETE') {
+      webPush.endpoints = webPush.endpoints.filter((e) => e !== body?.endpoint);
+      return { status: 204 };
+    }
     if (path === '/notifications/settings' && method === 'GET') {
       return { status: 200, body: settings };
     }
@@ -137,6 +153,7 @@ export function createNotificationsServer({ now = Date.now() }: { now?: number }
     handle,
     items,
     push,
+    webPush,
     get settings() {
       return settings;
     },
@@ -161,7 +178,7 @@ export function installNotificationsServer(options?: { now?: number }) {
       const raw = init.body;
       const body = typeof raw === 'string' ? JSON.parse(raw) : undefined;
       const reply = notificationsServer.handle(init.method ?? 'GET', path, body);
-      return new Response(JSON.stringify(reply.body), {
+      return new Response(reply.status === 204 ? null : JSON.stringify(reply.body), {
         status: reply.status,
         headers: { 'Content-Type': 'application/json' },
       });

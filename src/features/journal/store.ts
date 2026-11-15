@@ -30,11 +30,12 @@ export type JournalAction =
   | 'documentDone'
   | 'documentAnnulled'
   | 'documentBounced'
-  | 'journalExported';
+  | 'journalExported'
+  | 'sessionTerminated';
 
 /** Группы действий — для фильтра на экране журнала */
 export const journalGroups = {
-  access: ['accessDenied'],
+  access: ['accessDenied', 'sessionTerminated'],
   staff: ['roleChanged', 'userInvited', 'userDeactivated', 'absenceCreated', 'absenceCancelled'],
   tasks: ['mailRejected', 'mailAccepted'],
   documents: [

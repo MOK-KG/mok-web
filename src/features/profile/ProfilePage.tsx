@@ -11,19 +11,22 @@ import {
   useNotificationSettings,
   useSaveNotificationSettings,
 } from '@/features/notifications/api';
+import { BrowserPushToggle } from '@/features/notifications/BrowserPush';
 import { NotificationToggles } from '@/features/notifications/Toggles';
 import { type Language, languageLabels, languages } from '@/shared/config/i18n';
 import type { RoleCode } from '@/shared/config/permissions';
 import { formatIsoDate } from '@/shared/lib/date';
 import { initials } from '@/shared/lib/text';
 import { LogoutIcon, PlaneIcon } from '@/shared/ui/icons';
+import { SessionsPanel } from './SessionsPanel';
 
 const panel = 'rounded-14 border border-line bg-panel px-5 py-4';
 const caps = 'text-[10px] font-semibold uppercase tracking-[1.4px] text-dim';
 
 /**
  * Профиль и уведомления (S-27): кто я и какая у меня роль, язык и тема интерфейса,
- * какие уведомления получать (эскалацию выключить нельзя), мои отсутствия, выход.
+ * какие уведомления получать (эскалацию выключить нельзя) и в браузере ли, мои отсутствия,
+ * активные сессии (завершить чужие), выход.
  */
 export function ProfilePage() {
   const { t, i18n } = useTranslation();
@@ -166,29 +169,35 @@ export function ProfilePage() {
         </button>
       </div>
 
-      <section className={`${panel} self-start`}>
-        <h3 className={caps}>{t('notifications.settingsTitle')}</h3>
-        <p className="mt-1 text-[11.5px] leading-4 text-faint">{t('notifications.settingsHint')}</p>
-        <NotificationToggles value={draft} onChange={setDraft} className="mt-4" />
-        <div className="mt-4 flex justify-end gap-2">
-          <button
-            type="button"
-            className={secondaryButton}
-            disabled={!dirty}
-            onClick={() => settings && setDraft(settings)}
-          >
-            {t('notifications.cancel')}
-          </button>
-          <button
-            type="button"
-            className={primaryButton}
-            disabled={!dirty || !draft || save.isPending}
-            onClick={() => draft && save.mutate(draft)}
-          >
-            {t('profile.save')}
-          </button>
-        </div>
-      </section>
+      <div className="flex flex-col gap-[14px] self-start">
+        <section className={panel}>
+          <h3 className={caps}>{t('notifications.settingsTitle')}</h3>
+          <p className="mt-1 text-[11.5px] leading-4 text-faint">
+            {t('notifications.settingsHint')}
+          </p>
+          <BrowserPushToggle className="mt-4" />
+          <NotificationToggles value={draft} onChange={setDraft} className="mt-4" />
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              type="button"
+              className={secondaryButton}
+              disabled={!dirty}
+              onClick={() => settings && setDraft(settings)}
+            >
+              {t('notifications.cancel')}
+            </button>
+            <button
+              type="button"
+              className={primaryButton}
+              disabled={!dirty || !draft || save.isPending}
+              onClick={() => draft && save.mutate(draft)}
+            >
+              {t('profile.save')}
+            </button>
+          </div>
+        </section>
+        <SessionsPanel />
+      </div>
     </div>
   );
 }
