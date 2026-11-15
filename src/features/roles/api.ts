@@ -212,6 +212,47 @@ export function useEndSession() {
   });
 }
 
+export function useOwnSessions() {
+  return useQuery({
+    queryKey: [...staffKey, 'own-sessions'],
+    retry: false,
+    queryFn: async (): Promise<StaffSession[] | null> => {
+      try {
+        return (await api.get<{ sessions: StaffSession[] }>('/auth/sessions')).sessions;
+      } catch (error) {
+        if (notSupported(error)) return null;
+        throw error;
+      }
+    },
+  });
+}
+
+export function useEndOwnSession() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (sessionId: string | null) =>
+      api.delete(sessionId ? `/auth/sessions/${sessionId}` : '/auth/sessions'),
+    meta: { successMessage: 'access.sessionEnded' },
+    onSuccess: () => client.invalidateQueries({ queryKey: staffKey }),
+  });
+}
+
+export function useSaveRolePermissions() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (changes: { code: RoleCode; permissions: Permission[] }[]) => {
+      for (const { code, permissions } of changes) {
+        await api.patch<RoleInfo>(`/staff/roles/${code}`, { permissions });
+      }
+    },
+    meta: { successMessage: 'access.matrixSaved' },
+    onSettled: () => {
+      client.invalidateQueries({ queryKey: staffKey });
+      client.invalidateQueries({ queryKey: sessionQueryKey });
+    },
+  });
+}
+
 export function useRoleMatrix() {
   return useQuery({
     queryKey: [...staffKey, 'roles'],

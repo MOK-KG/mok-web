@@ -92,16 +92,36 @@ describe('уведомления с бэкенда', () => {
     await open('/notifications?settings=1');
     await waitFor(() => text().includes('Назначенные мне задачи'));
     const switches = [...document.querySelectorAll<HTMLInputElement>('[role=switch]')];
-    // Черновик — из сохранённых настроек: все включены
-    await waitFor(() => !!switches.at(-1)?.checked);
+    const done = switches.find((x) =>
+      x.closest('label')?.textContent?.includes('Завершённые задачи'),
+    );
+    expect(switches.at(-1)?.closest('label')?.textContent).toContain('Новые сотрудники без роли');
+    await waitFor(() => !!done?.checked);
     expect(switches[0].disabled).toBe(true);
-    // Выключить «Завершённые задачи» и сохранить
-    await act(async () => switches.at(-1)?.click());
+    await act(async () => done?.click());
     await act(async () => button('Сохранить')?.click());
     await waitFor(() => notificationsServer.settings.done === false);
     expect(notificationsServer.settings.assigned).toBe(true);
     await waitFor(() => !text().includes('Квартальный отчёт для ОКС'));
     await act(async () => button('Прочитать все')?.click());
     await waitFor(() => notificationsServer.items.every((n) => n.kind === 'done' || n.read));
+  });
+
+  it('новый сотрудник без роли: кнопка ведёт в карточку сотрудника', async () => {
+    notificationsServer.push({
+      kind: 'pendingUser',
+      title: 'Бектур Сатыбалдиев ждёт роль',
+      text: '',
+      params: { name: 'Бектур Сатыбалдиев', email: 'b.satybaldiev@olympic.kg' },
+      at: new Date().toISOString(),
+      read: false,
+      target: { kind: 'staff', staffId: 's-bs' },
+    });
+    const router = await open('/notifications');
+    await waitFor(() => text().includes('Бектур Сатыбалдиев ждёт роль'));
+    expect(text()).toContain('b.satybaldiev@olympic.kg · вошёл(а) через Google');
+    await act(async () => button('Назначить роль')?.click());
+    await waitFor(() => router.state.location.pathname === '/access');
+    expect(router.state.location.search).toContain('user=s-bs');
   });
 });

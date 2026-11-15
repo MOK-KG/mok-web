@@ -7,6 +7,7 @@ import { formatIsoDate } from '@/shared/lib/date';
 import { toast } from '@/shared/lib/toast';
 import { diffDays, todayInBishkek } from '@/shared/lib/workDays';
 import {
+  AccessIcon,
   AtSignIcon,
   BellIcon,
   BoltIcon,
@@ -35,6 +36,7 @@ export const notificationKinds: Record<
   mention: { Icon: AtSignIcon, stripe: 'bg-info', color: 'text-info' },
   reminder: { Icon: BellIcon, stripe: 'bg-sub', color: 'text-faint' },
   done: { Icon: CheckSmallIcon, stripe: 'bg-success', color: 'text-success' },
+  pendingUser: { Icon: AccessIcon, stripe: 'bg-warning', color: 'text-warning' },
 };
 
 export type NotificationView = AppNotification & { shownTitle: string; shownText: string };
@@ -88,6 +90,11 @@ function translated(
       return {
         title: t('notifications.titles.done', values),
         text: p.actor ? t('notifications.texts.done', values) : '',
+      };
+    case 'pendingUser':
+      return {
+        title: t('notifications.titles.pendingUser', values),
+        text: t('notifications.texts.pendingUser', values),
       };
     default:
       return { title: n.title, text: n.text };
@@ -148,6 +155,8 @@ export function actionLabel(n: AppNotification, t: (key: string) => string): str
     case 'chat':
       // Упоминают в каналах департаментов; личная переписка — «Открыть переписку»
       return n.kind === 'mention' ? t('notifications.openChannel') : t('notifications.openChat');
+    case 'staff':
+      return t('notifications.assignRole');
     default:
       return null;
   }
@@ -166,6 +175,7 @@ export function useOpenNotification() {
     if (!target) return;
     if (target.kind === 'mailQueue') navigate('/tasks?queue=1');
     else if (target.kind === 'chat') navigate(`/chat?c=${target.chatId}`);
+    else if (target.kind === 'staff') navigate(`/access?user=${target.staffId}`);
     else {
       // Доска ещё грузится — открываем по id; загружена и задачи нет — её закрыли
       if (!tasks || tasks.some((x) => x.id === target.taskId)) {

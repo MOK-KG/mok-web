@@ -25,6 +25,7 @@ export type JournalAction =
   | 'absenceCreated'
   | 'absenceCancelled'
   | 'sessionEnded'
+  | 'rolePermissionsChanged'
   | 'documentRegistered'
   | 'documentSent'
   | 'documentResolved'
@@ -41,6 +42,7 @@ export const journalGroups = {
     'userInvited',
     'userDeactivated',
     'sessionEnded',
+    'rolePermissionsChanged',
     'absenceCreated',
     'absenceCancelled',
   ],

@@ -245,10 +245,10 @@ describe('роли и доступ: сценарии', () => {
 
   it('матрица прав: 9 ролей, у R1 и R3 есть «Назначать роли», у R5 — нет', async () => {
     await open('/access/roles');
-    await waitFor(() => !!document.querySelector('td[aria-label^="R1 · Назначать роли"]'));
+    await waitFor(() => !!document.querySelector('[aria-label^="R1 · Назначать роли"]'));
     const cell = (code: string) =>
       document
-        .querySelector(`td[aria-label^="${code} · Назначать роли"]`)
+        .querySelector(`[aria-label^="${code} · Назначать роли"]`)
         ?.getAttribute('aria-label');
     expect(cell('R1')).toMatch(/\+$/);
     expect(cell('R3')).toMatch(/\+$/);
@@ -330,5 +330,80 @@ describe('роли и доступ: сценарии', () => {
     await waitFor(() => !!dialog());
     await act(async () => button('Сменить роль', dialog() as HTMLElement)?.click());
     await waitFor(() => text().includes('Не останется никого, кто может назначать роли'));
+  });
+
+  it('матрица прав: правка с подтверждением уходит на сервер', async () => {
+    const name = i18n.t('access.permissionNames.chat.use');
+    await open('/access/roles');
+    const cell = () => document.querySelector<HTMLButtonElement>(`[aria-label^="R9 · ${name}"]`);
+    await waitFor(() => !!cell());
+    expect(cell()?.getAttribute('aria-pressed')).toBe('false');
+    await act(async () => cell()?.click());
+    expect(cell()?.getAttribute('aria-pressed')).toBe('true');
+    await waitFor(() => text().includes('1 изменение'));
+
+    await act(async () => button('Сохранить')?.click());
+    await waitFor(() => !!dialog());
+    expect(dialog()?.textContent).toContain(`R9 выдать «${name}»`);
+    await act(async () => button('Отмена', dialog() as HTMLElement)?.click());
+    await waitFor(() => !dialog());
+    const before = staffServer.handle('GET', '/staff/roles', {}).body as {
+      roles: { code: string; permissions: string[] }[];
+    };
+    expect(before.roles.find((r) => r.code === 'R9')?.permissions).not.toContain('chat.use');
+
+    await act(async () => button('Сохранить')?.click());
+    await waitFor(() => !!dialog());
+    await act(async () => button('Сохранить', dialog() as HTMLElement)?.click());
+    await waitFor(() => text().includes('Права ролей сохранены'));
+    const after = staffServer.handle('GET', '/staff/roles', {}).body as typeof before;
+    expect(after.roles.find((r) => r.code === 'R9')?.permissions).toContain('chat.use');
+    await waitFor(() => !text().includes('1 изменение'));
+  });
+
+  it('матрица прав: «Отменить» сбрасывает черновик', async () => {
+    const name = i18n.t('access.permissionNames.chat.use');
+    await open('/access/roles');
+    const cell = () => document.querySelector<HTMLButtonElement>(`[aria-label^="R9 · ${name}"]`);
+    await waitFor(() => !!cell());
+    await act(async () => cell()?.click());
+    await act(async () => button('Отменить')?.click());
+    expect(cell()?.getAttribute('aria-pressed')).toBe('false');
+    expect(text()).not.toContain('1 изменение');
+  });
+
+  it('матрица прав: без права «Назначать роли» — только просмотр', async () => {
+    await open('/access/roles', 'R4');
+    await waitFor(() => !!document.querySelector('td[aria-label^="R1 · Назначать роли"]'));
+    expect(document.querySelector('[aria-pressed]')).toBeNull();
+    expect(text()).not.toContain('Нажмите на клетку');
+  });
+
+  it('матрица прав: нельзя забрать «Назначать роли» у всех', async () => {
+    await open('/access/roles');
+    const cell = (code: string) =>
+      document.querySelector<HTMLButtonElement>(`[aria-label^="${code} · Назначать роли"]`);
+    await waitFor(() => !!cell('R1'));
+    await act(async () => cell('R1')?.click());
+    await act(async () => cell('R3')?.click());
+    await act(async () => button('Сохранить')?.click());
+    await waitFor(() => !!dialog());
+    await act(async () => button('Сохранить', dialog() as HTMLElement)?.click());
+    await waitFor(() => text().includes('Не останется никого, кто может назначать роли'));
+  });
+
+  it('профиль: свои устройства, завершение сессии с подтверждением', async () => {
+    await open('/profile');
+    await waitFor(() => text().includes('Устройства и сессии'));
+    await waitFor(() => text().includes('это устройство'));
+    const end = () =>
+      document.querySelector<HTMLButtonElement>('button[aria-label="Завершить: НОК КР · iPhone"]');
+    await waitFor(() => !!end());
+    await act(async () => end()?.click());
+    await waitFor(() => !!dialog());
+    expect(dialog()?.textContent).toContain('«НОК КР · iPhone»');
+    await act(async () => button('Завершить', dialog() as HTMLElement)?.click());
+    await waitFor(() => !end());
+    expect(text()).toContain('это устройство');
   });
 });

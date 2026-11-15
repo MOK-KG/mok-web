@@ -17,7 +17,8 @@ export type NotificationKind =
   | 'mailQueue'
   | 'mention'
   | 'reminder'
-  | 'done';
+  | 'done'
+  | 'pendingUser';
 
 export const notificationKinds: NotificationKind[] = [
   'assigned',
@@ -27,6 +28,7 @@ export const notificationKinds: NotificationKind[] = [
   'mention',
   'reminder',
   'done',
+  'pendingUser',
 ];
 
 /** Не выключаются: эскалация считается по непрочитанному назначению — правило платформы */
@@ -36,7 +38,8 @@ export const lockedNotificationKinds: NotificationKind[] = ['assigned', 'escalat
 export type NotificationTarget =
   | { kind: 'task'; taskId: string; taskTitle: string }
   | { kind: 'mailQueue' }
-  | { kind: 'chat'; chatId: string };
+  | { kind: 'chat'; chatId: string }
+  | { kind: 'staff'; staffId: string };
 
 /** Подстановки для перевода заголовка и текста (task, actor, date, hours, chat…) */
 export type NotificationParams = Record<string, string | number | boolean>;
@@ -67,6 +70,8 @@ export function canSeeNotification(n: AppNotification, can: (p: Permission) => b
       return can('tasks.view');
     case 'chat':
       return can('chat.use');
+    case 'staff':
+      return can('roles.assign');
     default:
       return n.kind !== 'done' || can('tasks.view');
   }

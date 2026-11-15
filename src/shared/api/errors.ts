@@ -87,6 +87,9 @@ export const knownErrorCodes = [
   'group_description',
   'group_members',
   'group_forbidden',
+  'current_session',
+  'session_not_found',
+  'permission_unknown',
 ] as const;
 
 /**

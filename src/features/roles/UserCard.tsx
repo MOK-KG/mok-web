@@ -17,13 +17,13 @@ import {
 } from '@/shared/ui/icons';
 import {
   type StaffRow,
-  type StaffSession,
   useChangeRole,
   useDeactivate,
   useEndSession,
   useMemberSessions,
 } from './api';
 import { capsTitle, RoleCodeChip, StaffAvatar, StatusBadge } from './parts';
+import { SessionList } from './SessionList';
 
 /** Карточка сотрудника: роль (меняется сразу), сведения и увольнение */
 export function UserCard({
@@ -275,105 +275,29 @@ function Card({
 }
 
 function Sessions({ member: m }: { member: StaffRow }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { can } = useCan();
-  const canEnd = can('staff.deactivate');
   const sessions = useMemberSessions(m.id);
   const end = useEndSession();
-  const [ending, setEnding] = useState<StaffSession | 'all' | null>(null);
-  const list = sessions.data;
-  const when = (iso: string) =>
-    new Date(iso).toLocaleString(i18n.language, {
-      day: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'Asia/Bishkek',
-    });
   const name = m.short ?? m.name ?? m.email ?? '';
-  const others = (list ?? []).filter((s) => !s.current);
 
   return (
     <section aria-labelledby="sessions-title" className="mt-[22px]">
-      <div className="flex items-center justify-between gap-3">
-        <h3 id="sessions-title" className={capsTitle}>
-          {t('access.devicesTitle')}
-        </h3>
-        {canEnd && others.length > 1 && (
-          <button
-            type="button"
-            onClick={() => setEnding('all')}
-            className="text-[11.5px] font-medium text-danger hover:underline"
-          >
-            {t('access.endAllSessions')}
-          </button>
-        )}
-      </div>
-      {list === null ? (
-        <p className="mt-2 text-[12px] text-dim">
-          {m.sessions > 0 ? t('access.devices', { count: m.sessions }) : t('access.noSessions')}
-          {' · '}
-          {t('access.devicesUnavailable')}
-        </p>
-      ) : list === undefined ? null : list.length === 0 ? (
-        <p className="mt-2 text-[12px] text-dim">{t('access.noDevices')}</p>
-      ) : (
-        <ul className="mt-2 flex flex-col gap-2">
-          {list.map((s) => (
-            <li
-              key={s.id}
-              className="flex items-center gap-3 rounded-9 border border-line bg-column px-3 py-[9px]"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[12.5px] text-text">
-                  {s.device}
-                  {s.current && (
-                    <span className="ml-2 text-[11px] text-success">
-                      {t('access.currentSession')}
-                    </span>
-                  )}
-                </p>
-                <p className="mt-[2px] text-[11px] text-dim">
-                  {t(`access.platform.${s.platform}`)} ·{' '}
-                  {t('access.lastSeen', { time: when(s.lastSeenAt) })}
-                </p>
-              </div>
-              {canEnd && !s.current && (
-                <button
-                  type="button"
-                  onClick={() => setEnding(s)}
-                  aria-label={`${t('access.endSession')}: ${s.device}`}
-                  className="h-8 shrink-0 rounded-8 border border-line px-3 text-[11.5px] font-medium text-sub hover:border-danger-line hover:text-danger"
-                >
-                  {t('access.endSession')}
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-      <ConfirmDialog
-        open={ending !== null}
-        tone="danger"
-        title={ending === 'all' ? t('access.endAllTitle') : t('access.endSessionTitle')}
-        confirmLabel={ending === 'all' ? t('access.endAllSessions') : t('access.endSession')}
-        cancelLabel={t('access.cancel')}
+      <h3 id="sessions-title" className={capsTitle}>
+        {t('access.devicesTitle')}
+      </h3>
+      <SessionList
+        list={sessions.data}
+        canEnd={can('staff.deactivate')}
+        unavailable={`${
+          m.sessions > 0 ? t('access.devices', { count: m.sessions }) : t('access.noSessions')
+        } · ${t('access.devicesUnavailable')}`}
         pending={end.isPending}
-        onCancel={() => setEnding(null)}
-        onConfirm={() =>
-          end.mutate(
-            { memberId: m.id, sessionId: ending === 'all' || !ending ? null : ending.id },
-            { onSettled: () => setEnding(null) },
-          )
-        }
-      >
-        {ending === 'all'
-          ? t('access.endAllText', { name, count: others.length })
-          : t('access.endSessionText', {
-              name,
-              device: ending?.device ?? '',
-            })}
-      </ConfirmDialog>
+        endAllLabel={t('access.endAllSessions')}
+        sessionText={(s) => t('access.endSessionText', { name, device: s.device })}
+        allText={(count) => t('access.endAllText', { name, count })}
+        onEnd={(sessionId, done) => end.mutate({ memberId: m.id, sessionId }, { onSettled: done })}
+      />
     </section>
   );
 }

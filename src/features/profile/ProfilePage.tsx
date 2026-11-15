@@ -12,6 +12,8 @@ import {
   useSaveNotificationSettings,
 } from '@/features/notifications/api';
 import { NotificationToggles } from '@/features/notifications/Toggles';
+import { useEndOwnSession, useOwnSessions } from '@/features/roles/api';
+import { SessionList } from '@/features/roles/SessionList';
 import { type Language, languageLabels, languages } from '@/shared/config/i18n';
 import type { RoleCode } from '@/shared/config/permissions';
 import { formatIsoDate } from '@/shared/lib/date';
@@ -155,6 +157,8 @@ export function ProfilePage() {
           )}
         </section>
 
+        <MySessions />
+
         <button
           type="button"
           onClick={() => signOut.mutate()}
@@ -190,5 +194,29 @@ export function ProfilePage() {
         </div>
       </section>
     </div>
+  );
+}
+
+function MySessions() {
+  const { t } = useTranslation();
+  const sessions = useOwnSessions();
+  const end = useEndOwnSession();
+  if (sessions.data === null) return null;
+  return (
+    <section className={panel} aria-labelledby="my-sessions">
+      <h3 id="my-sessions" className={caps}>
+        {t('access.devicesTitle')}
+      </h3>
+      <SessionList
+        list={sessions.data}
+        canEnd
+        unavailable={t('access.devicesUnavailable')}
+        pending={end.isPending}
+        endAllLabel={t('access.endOthers')}
+        sessionText={(s) => t('access.endOwnSessionText', { device: s.device })}
+        allText={(count) => t('access.endOwnAllText', { count })}
+        onEnd={(sessionId, done) => end.mutate(sessionId, { onSettled: done })}
+      />
+    </section>
   );
 }

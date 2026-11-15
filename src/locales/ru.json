@@ -397,7 +397,10 @@
       "group_description": "Описание группы — не больше 1000 символов",
       "group_members": "Проверьте участников группы",
       "group_forbidden": "Убрать участника может только создатель группы",
-      "project_exists": "Такой проект уже есть"
+      "project_exists": "Такой проект уже есть",
+      "current_session": "Текущую сессию так не завершить — выйдите из системы.",
+      "session_not_found": "Сессия уже завершена.",
+      "permission_unknown": "Такого права нет."
     }
   },
   "toast": {
@@ -751,7 +754,22 @@
       "journal.view": "Видеть журнал действий",
       "journal.export": "Выгружать журнал",
       "assistant.manage": "Настраивать ИИ и агента почты"
-    }
+    },
+    "matrixEditHint": "Нажмите на клетку, чтобы выдать или забрать право. Изменения действуют после сохранения.",
+    "matrixChanges_one": "{{count}} изменение",
+    "matrixChanges_few": "{{count}} изменения",
+    "matrixChanges_many": "{{count}} изменений",
+    "matrixChanges_other": "{{count}} изменения",
+    "matrixSave": "Сохранить",
+    "matrixReset": "Отменить",
+    "matrixConfirmTitle": "Изменить права ролей?",
+    "matrixConfirmText": "Права изменятся у всех сотрудников с этими ролями сразу, без повторного входа. Изменение попадёт в журнал действий.",
+    "matrixSaved": "Права ролей сохранены",
+    "matrixGrant": "выдать",
+    "matrixRevoke": "забрать",
+    "endOwnSessionText": "Сессия на устройстве «{{device}}» закроется. Войти снова можно через Google.",
+    "endOwnAllText": "Закроются все остальные сессии: {{count}}. Это устройство останется в системе.",
+    "endOthers": "Выйти на остальных"
   },
   "chat": {
     "title": "Чат",
@@ -863,7 +881,8 @@
       "mailQueue": "Письма в очереди из почты",
       "mention": "Упоминания в чате",
       "reminder": "Напоминания о сроках",
-      "done": "Завершённые задачи"
+      "done": "Завершённые задачи",
+      "pendingUser": "Новые сотрудники без роли"
     },
     "titles": {
       "assigned": "Новая задача · «{{task}}»",
@@ -871,7 +890,8 @@
       "overdue": "Срок истёк · «{{task}}»",
       "mention": "{{actor}} упомянул(а) вас в чате",
       "reminder": "Напоминание · «{{task}}»",
-      "done": "«{{task}}» завершена"
+      "done": "«{{task}}» завершена",
+      "pendingUser": "{{name}} ждёт роль"
     },
     "texts": {
       "assignedBy": "Поставил(а) {{actor}}",
@@ -883,7 +903,8 @@
       "overdue_assignee": "Срок был {{date}}. Вы — исполнитель.",
       "overdue_author": "Срок был {{date}}. Вы — постановщик.",
       "mention": "{{chat}} — {{excerpt}}",
-      "done": "{{actor}} перевёл(а) задачу в «{{column}}»."
+      "done": "{{actor}} перевёл(а) задачу в «{{column}}».",
+      "pendingUser": "{{email}} · вошёл(а) через Google, роль не назначена."
     },
     "escalationLocked": "Приходят всегда — правило платформы",
     "settingsSaved": "Настройки уведомлений сохранены",
@@ -902,7 +923,8 @@
     "emptyUnread": "Всё прочитано",
     "emptyMentions": "Упоминаний нет",
     "showAll": "Все уведомления",
-    "taskGone": "Задача не найдена — возможно, её уже закрыли"
+    "taskGone": "Задача не найдена — возможно, её уже закрыли",
+    "assignRole": "Назначить роль"
   },
   "dashboard": {
     "greeting": {
@@ -1306,7 +1328,8 @@
       "absenceCreated": "Отсутствие оформлено",
       "absenceCancelled": "Отсутствие отменено",
       "sessionEnded": "Сессия завершена",
-      "documentBounced": "Недоставка письма"
+      "documentBounced": "Недоставка письма",
+      "rolePermissionsChanged": "Права роли изменены"
     },
     "integrityOk_one": "Цепочка цела · проверена {{count}} запись",
     "integrityOk_few": "Цепочка цела · проверено {{count}} записи",
