@@ -35,7 +35,8 @@
     "refreshStatus": "Refresh status",
     "urgentAccess": "Need access urgently?",
     "signOut": "Sign out",
-    "genericError": "Could not sign in. Please try again."
+    "genericError": "Could not sign in. Please try again.",
+    "checkingStatus": "Checking…"
   },
   "home": {
     "greeting": "Hello, {{name}}",

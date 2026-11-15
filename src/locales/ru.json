@@ -35,7 +35,8 @@
     "refreshStatus": "Обновить статус",
     "urgentAccess": "Нужен доступ срочно?",
     "signOut": "Выйти",
-    "genericError": "Не удалось войти. Попробуйте ещё раз."
+    "genericError": "Не удалось войти. Попробуйте ещё раз.",
+    "checkingStatus": "Проверяем…"
   },
   "home": {
     "greeting": "Здравствуйте, {{name}}",
