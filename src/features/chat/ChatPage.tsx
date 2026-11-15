@@ -10,6 +10,7 @@ import { NewChatDialog } from './dialogs';
 import {
   ChannelIcon,
   dayOf,
+  GroupAvatar,
   MemberAvatar,
   shortDay,
   timeOf,
@@ -151,7 +152,13 @@ function ChatRow({
         {selected && (
           <span aria-hidden className="absolute inset-y-0 left-0 w-[2.5px] bg-brand-red" />
         )}
-        {peer ? <MemberAvatar member={peer} /> : <ChannelIcon />}
+        {peer ? (
+          <MemberAvatar member={peer} />
+        ) : c.kind === 'group' ? (
+          <GroupAvatar />
+        ) : (
+          <ChannelIcon />
+        )}
         <span className="min-w-0 flex-1">
           <span className="flex items-baseline gap-2">
             <span className="min-w-0 flex-1 truncate text-[13px] font-medium tracking-[-0.1px] text-text">
@@ -160,9 +167,11 @@ function ChatRow({
             <span className="shrink-0 text-[10px] text-dim">{when}</span>
           </span>
           <span className="mt-[2px] block truncate text-[10px] text-dim">
-            {c.kind === 'channel'
-              ? `${t('chat.channel')} · ${t('chat.members', { count: c.memberIds.length })}`
-              : line}
+            {c.kind === 'direct'
+              ? line
+              : `${t(c.kind === 'group' ? 'chat.group' : 'chat.channel')} · ${t('chat.members', {
+                  count: c.memberIds.length,
+                })}`}
             {c.muted && ` · ${t('chat.muted')}`}
           </span>
           <span className="mt-[3px] flex items-center gap-2">

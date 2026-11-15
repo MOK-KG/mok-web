@@ -109,7 +109,10 @@ export function createTasksServer({ today = todayInBishkek() }: { today?: IsoDat
     rescheduleLog: t.rescheduleLog.map((r) => ({ ...r, by: apiPerson(r.by) })),
     reminderDays: t.reminderDays,
     escalatedAt: t.escalatedAt,
-    source: t.source,
+    source:
+      t.source.kind === 'document'
+        ? { ...t.source, author: apiPerson(t.source.author) as ApiPerson }
+        : t.source,
     department: t.department,
   });
 

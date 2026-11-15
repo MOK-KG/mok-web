@@ -13,6 +13,7 @@ import {
   BoltMediumIcon,
   BookIcon,
   CheckTinyIcon,
+  DocumentsIcon,
   ExternalIcon,
   HistoryBoltIcon,
   HistoryClockIcon,
@@ -246,6 +247,38 @@ function TaskBody({ task }: { task: TaskDetail }) {
                 {t('taskCard.knowledge', { title: task.knowledgeLink })}
               </span>
               <ExternalIcon size={15} className="text-faint" />
+            </Link>
+          )}
+
+          {task.source.kind === 'document' && (
+            <Link
+              to={`/documents?kind=${task.source.documentKind}&doc=${task.source.documentId}`}
+              className="mt-3 block rounded-9 border border-line bg-surface px-[13px] py-[10px] hover:opacity-90"
+            >
+              <span className="flex items-center gap-[9px] text-[12px] font-medium tracking-[-0.1px] text-info">
+                <DocumentsIcon size={17} />
+                <span className="flex-1 truncate">
+                  {t('taskCard.document', {
+                    number: task.source.number ?? '',
+                    title: task.source.title,
+                  })}
+                </span>
+                <ExternalIcon size={15} className="text-faint" />
+              </span>
+              {task.source.party && (
+                <span className="mt-1 block truncate text-[11px] text-dim">
+                  {task.source.party}
+                </span>
+              )}
+              <span className="mt-2 block border-l-2 border-line pl-[9px] text-[12px] leading-[18px] text-sub">
+                <span className="block text-[10.5px] text-dim">
+                  {t('taskCard.resolutionBy', {
+                    name: task.source.author.name,
+                    date: formatInBishkek(task.source.at, 'd MMMM', lang),
+                  })}
+                </span>
+                «{task.source.resolution}»
+              </span>
             </Link>
           )}
 
@@ -618,6 +651,16 @@ function Side({ task }: { task: TaskDetail }) {
             </span>
             <span className="text-[10.5px] text-dim">
               {task.source.mailbox} · {formatInBishkek(task.source.at, 'd MMMM', lang)}
+            </span>
+          </span>
+        ) : task.source.kind === 'document' ? (
+          <span>
+            <span className="flex items-center gap-[5px] text-[11.5px] font-medium tracking-[-0.1px] text-info">
+              <DocumentsIcon size={14} />
+              {t('taskCard.sourceDocument')}
+            </span>
+            <span className="text-[10.5px] text-dim">
+              {task.source.number} · {formatInBishkek(task.source.at, 'd MMMM', lang)}
             </span>
           </span>
         ) : (

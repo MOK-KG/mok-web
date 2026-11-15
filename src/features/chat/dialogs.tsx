@@ -4,12 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { useCurrentPersonId } from '@/features/auth';
 import { useTasks } from '@/features/tasks/api';
 import type { Task } from '@/features/tasks/types';
-import { SearchIcon, TasksIcon, XIcon } from '@/shared/ui/icons';
+import { GroupIcon, SearchIcon, TasksIcon, XIcon } from '@/shared/ui/icons';
 import { useChatMembers, useStartDirect } from './api';
+import { NewGroupForm } from './groups';
 import { MemberAvatar, useMemberLine } from './parts';
 import type { ChatMember } from './types';
 
-function PickerDialog({
+export function PickerDialog({
   open,
   title,
   hint,
@@ -52,14 +53,17 @@ function PickerDialog({
   );
 }
 
-function SearchBox({
+export function SearchBox({
   value,
   onChange,
   label,
+  autoFocus = true,
 }: {
   value: string;
   onChange: (v: string) => void;
   label: string;
+  /** false — когда в окне есть поле важнее поиска */
+  autoFocus?: boolean;
 }) {
   return (
     <label className="relative mt-4 flex h-9 shrink-0 items-center">
@@ -67,7 +71,7 @@ function SearchBox({
       <input
         type="search"
         // biome-ignore lint/a11y/noAutofocus: окно открыто ради поиска
-        autoFocus
+        autoFocus={autoFocus}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={label}
@@ -78,7 +82,7 @@ function SearchBox({
   );
 }
 
-/** Новая личная переписка: выбрать сотрудника */
+/** Новая переписка: выбрать сотрудника или создать группу */
 export function NewChatDialog({
   open,
   onClose,
@@ -89,19 +93,38 @@ export function NewChatDialog({
   onOpened: (chatId: string) => void;
 }) {
   const { t } = useTranslation();
+  const [group, setGroup] = useState(false);
+  const close = () => {
+    setGroup(false);
+    onClose();
+  };
+  const opened = (id: string) => {
+    setGroup(false);
+    onOpened(id);
+  };
   return (
     <PickerDialog
       open={open}
-      title={t('chat.newChat')}
-      hint={t('chat.pickPersonHint')}
-      onClose={onClose}
+      title={group ? t('chat.newGroup') : t('chat.newChat')}
+      hint={group ? t('chat.newGroupHint') : t('chat.pickPersonHint')}
+      onClose={close}
     >
-      <PeopleList onOpened={onOpened} />
+      {group ? (
+        <NewGroupForm onCreated={opened} onCancel={() => setGroup(false)} />
+      ) : (
+        <PeopleList onOpened={opened} onGroup={() => setGroup(true)} />
+      )}
     </PickerDialog>
   );
 }
 
-function PeopleList({ onOpened }: { onOpened: (chatId: string) => void }) {
+function PeopleList({
+  onOpened,
+  onGroup,
+}: {
+  onOpened: (chatId: string) => void;
+  onGroup: () => void;
+}) {
   const { t } = useTranslation();
   const start = useStartDirect();
   const chatMembers = useChatMembers();
@@ -120,7 +143,17 @@ function PeopleList({ onOpened }: { onOpened: (chatId: string) => void }) {
   return (
     <>
       <SearchBox value={query} onChange={setQuery} label={t('chat.search')} />
-      <ul className="mt-3 min-h-0 flex-1 overflow-y-auto">
+      <button
+        type="button"
+        onClick={onGroup}
+        className="mt-3 flex w-full shrink-0 items-center gap-[10px] rounded-9 px-2 py-[7px] text-left text-[13px] font-medium text-info hover:bg-row-highlight"
+      >
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-8 bg-chip text-info">
+          <GroupIcon size={16} />
+        </span>
+        {t('chat.newGroup')}
+      </button>
+      <ul className="mt-1 min-h-0 flex-1 overflow-y-auto">
         {people.map((m) => (
           <PersonRow
             key={m.id}

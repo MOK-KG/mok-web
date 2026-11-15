@@ -82,6 +82,10 @@ export const knownErrorCodes = [
   'openai_key_missing',
   'agent_failed',
   'invalid_value',
+  'group_title',
+  'group_description',
+  'group_members',
+  'group_forbidden',
 ] as const;
 
 /**

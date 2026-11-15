@@ -41,10 +41,10 @@ export type ChatMessage = {
   file?: { name: string; ext: string; size?: number };
 };
 
-/** Канал департамента или личная переписка */
+/** Канал департамента, личная переписка или группа */
 export type Chat = {
   id: string;
-  kind: 'channel' | 'direct';
+  kind: 'channel' | 'direct' | 'group';
   /** Канал: «Административный»; личный — имя собеседника */
   title: string;
   /** Канал: «Административный департамент» */
@@ -56,6 +56,12 @@ export type Chat = {
   readAt: string;
   /** Уведомления о новых сообщениях выключены */
   muted: boolean;
+  /** Описание группы; у канала и личной переписки пусто */
+  description?: string;
+  /** Создатель группы: только он убирает других участников */
+  createdById?: string | null;
+  /** Когда создан чат (ISO) */
+  createdAt?: string;
 };
 
 /** Чат для списка: последнее сообщение и непрочитанные */

@@ -181,6 +181,30 @@ export async function startDirect(peerId: string): Promise<string> {
   return String((await api.post<ApiChatSummary>('/chat/chats/direct', { peerId })).id);
 }
 
+export type GroupInput = { title: string; description: string; memberIds: string[] };
+
+/** Новая группа: название, описание, участники (создатель — участник сам) */
+export async function createGroup(input: GroupInput): Promise<string> {
+  return String((await api.post<ApiChatSummary>('/chat/chats/groups', input)).id);
+}
+
+/** Название и описание группы меняет любой участник */
+export async function updateGroup(
+  chatId: string,
+  patch: Partial<Pick<GroupInput, 'title' | 'description'>>,
+) {
+  await api.patch(`/chat/chats/${chatId}`, patch);
+}
+
+export async function addGroupMembers(chatId: string, memberIds: string[]) {
+  await api.post(`/chat/chats/${chatId}/members`, { memberIds });
+}
+
+/** Убрать участника (создатель группы) или выйти самому (свой ID) */
+export async function removeGroupMember(chatId: string, memberId: string) {
+  await api.delete(`/chat/chats/${chatId}/members/${memberId}`);
+}
+
 export async function setMuted(chatId: string, muted: boolean) {
   await api.post(`/chat/chats/${chatId}/mute`, { muted });
 }
@@ -256,11 +280,12 @@ export function useChatUnread() {
   }).data;
 }
 
-function useChatMutation<V, R>(fn: (vars: V) => Promise<R>) {
+function useChatMutation<V, R>(fn: (vars: V) => Promise<R>, successMessage?: string) {
   const client = useQueryClient();
   return useMutation({
     mutationFn: fn,
     onSuccess: () => client.invalidateQueries({ queryKey: chatKey }),
+    ...(successMessage ? { meta: { successMessage } } : {}),
   });
 }
 
@@ -272,6 +297,30 @@ export const useSendMessage = () =>
   );
 
 export const useStartDirect = () => useChatMutation((peerId: string) => startDirect(peerId));
+
+export const useCreateGroup = () => useChatMutation(createGroup, 'chat.groupCreated');
+
+export const useUpdateGroup = () =>
+  useChatMutation(
+    ({
+      chatId,
+      ...patch
+    }: { chatId: string } & Partial<Pick<GroupInput, 'title' | 'description'>>) =>
+      updateGroup(chatId, patch),
+    'chat.groupSaved',
+  );
+
+export const useAddGroupMembers = () =>
+  useChatMutation(
+    ({ chatId, memberIds }: { chatId: string; memberIds: string[] }) =>
+      addGroupMembers(chatId, memberIds),
+    'chat.groupAdded',
+  );
+
+export const useRemoveGroupMember = () =>
+  useChatMutation(({ chatId, memberId }: { chatId: string; memberId: string }) =>
+    removeGroupMember(chatId, memberId),
+  );
 
 export const useSetMuted = () =>
   useChatMutation(({ chatId, muted }: { chatId: string; muted: boolean }) =>

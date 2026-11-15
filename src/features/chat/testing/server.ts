@@ -89,6 +89,9 @@ export function createChatServer(now?: number) {
       ...structuredClone(chat),
       title: titleOf(chat),
       fullTitle: chat.kind === 'direct' ? titleOf(chat) : chat.fullTitle,
+      description: chat.description ?? '',
+      createdById: chat.createdById ?? null,
+      createdAt: chat.createdAt ?? chat.readAt,
       peerId,
       last: last && toApi(last),
       unread: unreadOf(chat),
@@ -164,6 +167,63 @@ export function createChatServer(now?: number) {
       };
       store.chats.push(chat);
       return { status: 201, body: summary(chat) };
+    }
+    if (path === '/chat/chats/groups' && method === 'POST') {
+      const title = String(b.title ?? '')
+        .split(/\s+/)
+        .filter(Boolean)
+        .join(' ');
+      if (title.length < 2 || title.length > 80) return error(400, 'group_title');
+      const ids = ((b.memberIds as string[] | undefined) ?? []).filter((id) => id !== me());
+      if (ids.some((id) => !chatMembers[id])) return error(404, 'member_not_found');
+      if (ids.length === 0) return error(400, 'group_members');
+      const at = new Date().toISOString();
+      const chat: Chat = {
+        id: `c-new-${++seq}`,
+        kind: 'group',
+        title,
+        fullTitle: title,
+        description: String(b.description ?? '').trim(),
+        createdById: me(),
+        createdAt: at,
+        memberIds: [me(), ...new Set(ids)],
+        peerId: null,
+        readAt: at,
+        muted: false,
+      };
+      store.chats.push(chat);
+      return { status: 201, body: summary(chat) };
+    }
+    const group = path.match(/^\/chat\/chats\/([^/]+)(?:\/members(?:\/([^/]+))?)?$/);
+    if (group) {
+      const chat = mine().find((c) => c.id === group[1]);
+      if (!chat) return error(404, 'not_found');
+      if (chat.kind !== 'group') return error(409, 'not_group');
+      const [, , memberId] = group;
+      const isMembers = path.includes('/members');
+      if (!isMembers && method === 'PATCH') {
+        if (b.title !== undefined) {
+          const title = String(b.title).trim();
+          if (title.length < 2 || title.length > 80) return error(400, 'group_title');
+          chat.title = chat.fullTitle = title;
+        }
+        if (b.description !== undefined) chat.description = String(b.description).trim();
+        return { status: 200, body: summary(chat) };
+      }
+      if (isMembers && !memberId && method === 'POST') {
+        const ids = (b.memberIds as string[]) ?? [];
+        if (ids.some((id) => !chatMembers[id])) return error(404, 'member_not_found');
+        chat.memberIds = [...new Set([...chat.memberIds, ...ids])];
+        return { status: 200, body: summary(chat) };
+      }
+      if (memberId && method === 'DELETE') {
+        if (memberId !== me() && chat.createdById !== me()) return error(403, 'group_forbidden');
+        if (!chat.memberIds.includes(memberId)) return error(404, 'member_not_found');
+        const left = memberId === me();
+        chat.memberIds = chat.memberIds.filter((id) => id !== memberId);
+        return left ? { status: 204 } : { status: 200, body: summary(chat) };
+      }
+      return error(405, 'method_not_allowed');
     }
     if (path === '/chat/files' && method === 'GET') {
       const ids = new Set(mine().map((c) => c.id));
@@ -291,7 +351,7 @@ export function installChatServer(now?: number) {
       const raw = init.body;
       const body = typeof raw === 'string' ? JSON.parse(raw) : raw;
       const reply = server.handle(init.method ?? 'GET', path, url.searchParams, body);
-      return new Response(JSON.stringify(reply.body ?? null), {
+      return new Response(reply.status === 204 ? null : JSON.stringify(reply.body ?? null), {
         status: reply.status,
         headers: { 'Content-Type': 'application/json' },
       });

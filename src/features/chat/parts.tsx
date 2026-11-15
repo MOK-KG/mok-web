@@ -5,6 +5,7 @@ import { toneClasses } from '@/features/tasks/ui';
 import { formatIsoDate } from '@/shared/lib/date';
 import { initials } from '@/shared/lib/text';
 import { addDays, todayInBishkek } from '@/shared/lib/workDays';
+import { GroupIcon } from '@/shared/ui/icons';
 import { useChatMembers } from './api';
 import type { ChatMember, ChatMessage } from './types';
 
@@ -146,6 +147,18 @@ export function ChannelIcon() {
       className="flex size-8 shrink-0 items-center justify-center rounded-8 bg-chip text-[15px] font-semibold text-sub"
     >
       #
+    </span>
+  );
+}
+
+/** Значок группы в списке и шапке */
+export function GroupAvatar() {
+  return (
+    <span
+      aria-hidden
+      className="flex size-8 shrink-0 items-center justify-center rounded-8 bg-chip text-info"
+    >
+      <GroupIcon size={16} />
     </span>
   );
 }

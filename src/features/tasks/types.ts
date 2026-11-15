@@ -104,7 +104,21 @@ export type TaskDetail = Task & {
   reminderDays: number | null;
   /** Время эскалации (ISO) */
   escalatedAt: string | null;
-  source: { kind: 'email'; mailbox: string; at: string } | { kind: 'manual' };
+  source:
+    | { kind: 'email'; mailbox: string; at: string }
+    | {
+        /** Создана резолюцией на документе делопроизводства */
+        kind: 'document';
+        documentId: string;
+        documentKind: string;
+        number: string | null;
+        title: string;
+        party: string;
+        resolution: string;
+        author: Person;
+        at: string;
+      }
+    | { kind: 'manual' };
   department: string;
 };
 

@@ -2,7 +2,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCurrentPersonId } from '@/features/auth';
 import { useTasks } from '@/features/tasks/api';
 import { formatIsoDate } from '@/shared/lib/date';
@@ -29,10 +29,12 @@ import {
   useSetMuted,
 } from './api';
 import { TaskPickerDialog } from './dialogs';
+import { GroupInfoDialog } from './groups';
 import { MentionTextarea } from './MentionTextarea';
 import {
   ChannelIcon,
   dayOf,
+  GroupAvatar,
   MemberAvatar,
   MessageText,
   RoleChip,
@@ -91,7 +93,7 @@ export function Conversation({ chat }: { chat: ChatSummary }) {
                 message={m}
                 peerName={chat.peerId ? chatMembers[chat.peerId]?.name : ''}
                 replies={threads.get(m.id)}
-                onThread={chat.kind === 'channel' ? () => setThread(m.id) : undefined}
+                onThread={chat.kind !== 'direct' ? () => setThread(m.id) : undefined}
               />
             </Fragment>
           );
@@ -118,9 +120,11 @@ function Header({ chat }: { chat: ChatSummary }) {
   const chatMembers = useChatMembers();
   const me = useCurrentPersonId();
   const peer = chat.peerId ? chatMembers[chat.peerId] : null;
+  const [info, setInfo] = useState(false);
+  const navigate = useNavigate();
   const names = chat.memberIds.map((id) => chatMembers[id]?.short).filter(Boolean);
   const membersLine =
-    chat.kind === 'channel'
+    chat.kind !== 'direct'
       ? [
           t('chat.members', { count: names.length }),
           names.slice(0, 3).join(', ') +
@@ -141,13 +145,19 @@ function Header({ chat }: { chat: ChatSummary }) {
 
   return (
     <header className="flex h-[60px] shrink-0 items-center gap-[10px] border-b border-line px-5">
-      {peer ? <MemberAvatar member={peer} /> : <ChannelIcon />}
+      {peer ? (
+        <MemberAvatar member={peer} />
+      ) : chat.kind === 'group' ? (
+        <GroupAvatar />
+      ) : (
+        <ChannelIcon />
+      )}
       <div className="min-w-0 flex-1">
         <h2 className="truncate text-[14px] font-semibold tracking-[-0.2px] text-text">
           {chat.fullTitle}
         </h2>
         <p className="mt-[3px] flex items-center gap-[5px] truncate text-[11px] text-dim">
-          {chat.kind === 'channel' && <GroupIcon size={14} className="shrink-0" />}
+          {chat.kind !== 'direct' && <GroupIcon size={14} className="shrink-0" />}
           {membersLine}
           {chat.muted && ` · ${t('chat.muted')}`}
         </p>
@@ -188,6 +198,11 @@ function Header({ chat }: { chat: ChatSummary }) {
               ) : null;
             })}
             <DropdownMenu.Separator className="my-[5px] h-px bg-line" />
+            {chat.kind === 'group' && (
+              <DropdownMenu.Item onSelect={() => setInfo(true)} className={item}>
+                {t('chat.groupInfo')}
+              </DropdownMenu.Item>
+            )}
             <DropdownMenu.Item
               onSelect={() => setMuted.mutate({ chatId: chat.id, muted: !chat.muted })}
               className={item}
@@ -200,6 +215,17 @@ function Header({ chat }: { chat: ChatSummary }) {
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
+      {chat.kind === 'group' && (
+        <GroupInfoDialog
+          chat={chat}
+          open={info}
+          onClose={() => setInfo(false)}
+          onLeft={() => {
+            setInfo(false);
+            navigate('/chat', { replace: true });
+          }}
+        />
+      )}
     </header>
   );
 }
@@ -394,7 +420,11 @@ function Composer({ chat }: { chat: ChatSummary }) {
   const icon =
     'flex size-7 items-center justify-center rounded-6 text-faint hover:bg-row-highlight hover:text-text';
   const placeholder =
-    chat.kind === 'channel' ? t('chat.placeholderChannel') : t('chat.placeholderDirect');
+    chat.kind === 'channel'
+      ? t('chat.placeholderChannel')
+      : chat.kind === 'group'
+        ? t('chat.placeholderGroup')
+        : t('chat.placeholderDirect');
 
   return (
     <div className="shrink-0 px-5 pb-[10px]">

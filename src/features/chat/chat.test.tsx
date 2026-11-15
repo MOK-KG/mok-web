@@ -9,13 +9,17 @@ import { mockSessionFor } from '@/features/auth/mock';
 import { resetTasksMock } from '@/features/tasks/api';
 import { people } from '@/features/tasks/directory';
 import {
+  addGroupMembers,
+  createGroup,
   fetchChatMembers,
   fetchChats,
   fetchMessages,
   markChatRead,
+  removeGroupMember,
   sendMessage,
   startDirect,
   unreadTotal,
+  updateGroup,
 } from './api';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -49,6 +53,33 @@ describe('чат (логика)', () => {
     const id = await startDirect('u-ju');
     expect(await startDirect('u-ju')).toBe(id);
     expect((await fetchChats()).filter((c) => c.peerId === 'u-ju')).toHaveLength(1);
+  });
+
+  it('группа: название, описание, участники; выход убирает её из списка', async () => {
+    await expect(
+      createGroup({ title: 'Я', description: '', memberIds: ['u-ju'] }),
+    ).rejects.toMatchObject({ code: 'group_title' });
+    await expect(
+      createGroup({ title: 'Пусто', description: '', memberIds: [] }),
+    ).rejects.toMatchObject({ code: 'group_members' });
+    const id = await createGroup({
+      title: 'Подготовка к Играм',
+      description: 'Логистика делегации',
+      memberIds: ['u-ju', 'u-ka'],
+    });
+    const group = (await fetchChats()).find((c) => c.id === id);
+    expect(group).toMatchObject({ kind: 'group', description: 'Логистика делегации' });
+    expect(group?.memberIds).toHaveLength(3);
+    await updateGroup(id, { title: 'Игры-2028' });
+    await addGroupMembers(id, ['u-nb']);
+    await removeGroupMember(id, 'u-ka');
+    const edited = (await fetchChats()).find((c) => c.id === id);
+    expect(edited?.title).toBe('Игры-2028');
+    expect(edited?.memberIds).toEqual(expect.arrayContaining(['u-ju', 'u-nb']));
+    expect(edited?.memberIds).not.toContain('u-ka');
+    const me = edited?.createdById ?? '';
+    await removeGroupMember(id, me);
+    expect((await fetchChats()).some((c) => c.id === id)).toBe(false);
   });
 
   it('участники — с ролью и департаментом', async () => {
@@ -138,6 +169,39 @@ describe('чат и уведомления (экраны)', () => {
       area.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     });
     await waitFor(() => area.value === '');
+  });
+
+  it('новая группа: название и участник → группа открыта, в шапке её название', async () => {
+    await open('/chat?c=c-at');
+    await waitFor(() => !!document.querySelector('button[aria-label="Новая переписка"]'));
+    const click = (el: Element | null | undefined) =>
+      act(async () => (el as HTMLElement | null)?.click());
+    const byText = (s: string) =>
+      [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === s);
+    await click(document.querySelector('button[aria-label="Новая переписка"]'));
+    await waitFor(() => !!byText('Новая группа'));
+    await click(byText('Новая группа'));
+    await waitFor(() => !!document.getElementById('group-title'));
+    // Без названия и участников — подсказки, группа не создаётся
+    await click(byText('Создать группу'));
+    expect(text()).toContain('Название — от 2 до 80 символов');
+    expect(text()).toContain('Выберите хотя бы одного участника');
+    const input = document.getElementById('group-title') as HTMLInputElement;
+    await act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(
+        input,
+        'Подготовка к Играм',
+      );
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    const box = [...document.querySelectorAll('label')]
+      .find((l) => l.textContent?.includes('Нурлан Бакиров'))
+      ?.querySelector('input');
+    await click(box);
+    expect(text()).toContain('Выбрано: 1');
+    await click(byText('Создать группу'));
+    await waitFor(() => document.querySelector('header h2')?.textContent === 'Подготовка к Играм');
+    expect(text()).toContain('группа · 2 участника');
   });
 
   it('открытая переписка прочитана: счётчик в шапке уменьшается', async () => {
