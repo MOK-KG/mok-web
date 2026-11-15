@@ -1342,5 +1342,15 @@
     "tasks_one": "{{count}} тапшырма",
     "tasks_other": "{{count}} тапшырма",
     "errorName": "Аталышын жазыңыз"
+  },
+  "datePicker": {
+    "choose": "Күндү тандаңыз",
+    "prevMonth": "Мурунку ай",
+    "nextMonth": "Кийинки ай",
+    "today": "Бүгүн",
+    "tomorrow": "Эртең",
+    "inTwoWorkingDays": "2 жумуш күндөн кийин",
+    "inAWeek": "Бир жумадан кийин",
+    "weekend": "дем алыш"
   }
 }

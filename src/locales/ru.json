@@ -1428,5 +1428,15 @@
     "tasks_many": "{{count}} задач",
     "tasks_other": "{{count}} задачи",
     "errorName": "Укажите название"
+  },
+  "datePicker": {
+    "choose": "Выберите дату",
+    "prevMonth": "Предыдущий месяц",
+    "nextMonth": "Следующий месяц",
+    "today": "Сегодня",
+    "tomorrow": "Завтра",
+    "inTwoWorkingDays": "Через 2 рабочих дня",
+    "inAWeek": "Через неделю",
+    "weekend": "выходной"
   }
 }

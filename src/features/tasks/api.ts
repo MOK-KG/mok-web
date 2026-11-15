@@ -3,7 +3,7 @@ import { resetJournal } from '@/features/journal/store';
 import { ApiError, api } from '@/shared/api/client';
 import type { FeedbackMeta } from '@/shared/api/feedback';
 import { type Tone, toneNames } from '@/shared/config/tokens';
-import { addDays, type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
+import { addDays, type IsoDate, nextWorkingDay, todayInBishkek } from '@/shared/lib/workDays';
 import type { Letter, Suggestion } from './mailQueue';
 import type {
   Column,
@@ -561,7 +561,7 @@ export function useSimilarTasks(title: string) {
 }
 
 /** Ближайший рабочий день не раньше завтрашнего — срок по умолчанию */
-export const defaultDue = () => addDays(todayInBishkek(), 2);
+export const defaultDue = () => nextWorkingDay(addDays(todayInBishkek(), 2));
 
 /** Сброс состояния между тестами: журнал действий */
 export function resetTasksMock() {

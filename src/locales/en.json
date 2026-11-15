@@ -1342,5 +1342,15 @@
     "tasks_one": "{{count}} task",
     "tasks_other": "{{count}} tasks",
     "errorName": "Enter a name"
+  },
+  "datePicker": {
+    "choose": "Choose a date",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "inTwoWorkingDays": "In 2 working days",
+    "inAWeek": "In a week",
+    "weekend": "weekend"
   }
 }
