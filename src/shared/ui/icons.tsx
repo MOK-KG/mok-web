@@ -33,6 +33,10 @@ export const TasksIcon = icon(
   18,
   `<path d="M5.475 3.375H3.525C3.02794 3.375 2.625 3.77794 2.625 4.275V13.725C2.625 14.2221 3.02794 14.625 3.525 14.625H5.475C5.97206 14.625 6.375 14.2221 6.375 13.725V4.275C6.375 3.77794 5.97206 3.375 5.475 3.375Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.35 3.375H8.4C7.90294 3.375 7.5 3.77794 7.5 4.275V9.975C7.5 10.4721 7.90294 10.875 8.4 10.875H10.35C10.8471 10.875 11.25 10.4721 11.25 9.975V4.275C11.25 3.77794 10.8471 3.375 10.35 3.375Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.475 3.375H13.275C12.7779 3.375 12.375 3.77794 12.375 4.275V6.975C12.375 7.47206 12.7779 7.875 13.275 7.875H14.475C14.9721 7.875 15.375 7.47206 15.375 6.975V4.275C15.375 3.77794 14.9721 3.375 14.475 3.375Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`,
 );
+export const ListIcon = icon(
+  18,
+  `<path d="M6.75 4.5H15M6.75 9H15M6.75 13.5H15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.375 4.5H3.383M3.375 9H3.383M3.375 13.5H3.383" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`,
+);
 export const CalendarIcon = icon(
   18,
   `<path d="M13.875 3.75H4.125C3.29657 3.75 2.625 4.42157 2.625 5.25V13.5C2.625 14.3284 3.29657 15 4.125 15H13.875C14.7034 15 15.375 14.3284 15.375 13.5V5.25C15.375 4.42157 14.7034 3.75 13.875 3.75Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.625 7.5H15.375M6 2.25V5.25M12 2.25V5.25" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>`,

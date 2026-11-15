@@ -188,7 +188,12 @@
     "openMenu": "Sections",
     "closeSearch": "Close search",
     "noResults": "Nothing found",
-    "filterDepartment": "Department"
+    "filterDepartment": "Department",
+    "view": {
+      "board": "Board",
+      "list": "List",
+      "label": "View"
+    }
   },
   "taskCard": {
     "close": "Close",

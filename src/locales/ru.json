@@ -198,7 +198,12 @@
     "openMenu": "Разделы",
     "closeSearch": "Закрыть поиск",
     "noResults": "Ничего не найдено",
-    "filterDepartment": "Департамент"
+    "filterDepartment": "Департамент",
+    "view": {
+      "board": "Доска",
+      "list": "Список",
+      "label": "Вид"
+    }
   },
   "taskCard": {
     "close": "Закрыть",

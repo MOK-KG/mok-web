@@ -1,16 +1,21 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Can, useCan } from '@/features/auth';
+import { storage } from '@/shared/lib/storage';
+import { NARROW, useMediaQuery } from '@/shared/lib/useMediaQuery';
 import { useBoard } from './api';
 import { Board, type Grouping } from './board/Board';
 import { QueueBanner } from './board/QueueBanner';
-import { ActiveFilters, Toolbar } from './board/Toolbar';
+import { ActiveFilters, type TaskView, Toolbar } from './board/Toolbar';
 import { applyFilters, emptyFilters, hasFilters, type TaskFilters } from './filters';
+import { TaskList } from './list/TaskList';
 import type { Letter } from './mailQueue';
 import { NewTaskModal } from './modal/NewTaskModal';
 import { QueueModal } from './modal/QueueModal';
 import { TaskModal } from './modal/TaskModal';
 import type { TaskTab } from './types';
+
+const VIEW_KEY = 'nok.tasksView';
 
 /** Раздел «Задачи»: вкладки, панель инструментов, очередь из почты, канбан-доска */
 export function TasksPage() {
@@ -18,6 +23,16 @@ export function TasksPage() {
   const [grouping, setGrouping] = useState<Grouping>('none');
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState<TaskFilters>(emptyFilters);
+  const narrow = useMediaQuery(NARROW);
+  const [chosenView, setChosenView] = useState<TaskView | null>(() => {
+    const saved = storage.get(VIEW_KEY);
+    return saved === 'board' || saved === 'list' ? saved : null;
+  });
+  const view: TaskView = chosenView ?? (narrow ? 'list' : 'board');
+  const changeView = (next: TaskView) => {
+    storage.set(VIEW_KEY, next);
+    setChosenView(next);
+  };
   const { can } = useCan();
   const [params, setParams] = useSearchParams();
   const [creating, setCreating] = useState(false);
@@ -59,21 +74,27 @@ export function TasksPage() {
         onFilters={setFilters}
         tasks={all}
         onNewTask={() => setCreating(true)}
+        view={view}
+        onView={changeView}
       />
       <ActiveFilters filters={filters} onChange={setFilters} tasks={all} shown={visible.length} />
       <Can permission="tasks.create">
         <QueueBanner onOpen={() => setQueueOpen(true)} />
       </Can>
-      <div className="overflow-x-auto pb-2">
-        <Board
-          columns={board.data?.columns ?? []}
-          tasks={visible}
-          grouping={grouping}
-          canDrag={can('tasks.edit') && tab !== 'completed'}
-          filtered={hasFilters(filters) || search.trim() !== ''}
-          onOpen={openTask}
-        />
-      </div>
+      {view === 'list' ? (
+        <TaskList tasks={visible} columns={board.data?.columns ?? []} onOpen={openTask} />
+      ) : (
+        <div className="overflow-x-auto pb-2">
+          <Board
+            columns={board.data?.columns ?? []}
+            tasks={visible}
+            grouping={grouping}
+            canDrag={can('tasks.edit') && tab !== 'completed'}
+            filtered={hasFilters(filters) || search.trim() !== ''}
+            onOpen={openTask}
+          />
+        </div>
+      )}
       <TaskModal taskId={openTaskId} onClose={closeTask} />
       <NewTaskModal
         open={creating}

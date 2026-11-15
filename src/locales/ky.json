@@ -188,7 +188,12 @@
     "openMenu": "Бөлүмдөр",
     "closeSearch": "Издөөнү жабуу",
     "noResults": "Эч нерсе табылган жок",
-    "filterDepartment": "Бөлүм"
+    "filterDepartment": "Бөлүм",
+    "view": {
+      "board": "Такта",
+      "list": "Тизме",
+      "label": "Көрүнүш"
+    }
   },
   "taskCard": {
     "close": "Жабуу",

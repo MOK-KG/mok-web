@@ -148,7 +148,7 @@ export function Sidebar({ collapsed, onToggle }: Props) {
         onClick={onToggle}
         aria-label={collapsed ? t('shell.expand') : undefined}
         aria-expanded={!collapsed}
-        className={`flex items-center rounded-9 text-[12.5px] tracking-[-0.1px] text-faint hover:bg-row-highlight hover:text-sub ${
+        className={`items-center rounded-9 text-[12.5px] tracking-[-0.1px] text-faint hover:bg-row-highlight hover:text-sub max-md:hidden md:flex ${
           collapsed ? 'mx-auto size-10 justify-center' : 'h-10 gap-3 px-3'
         }`}
       >
