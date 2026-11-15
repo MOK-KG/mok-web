@@ -4,6 +4,7 @@ import { Outlet, useMatches } from 'react-router-dom';
 import { syncWebPush } from '@/features/notifications/webPush';
 import type { Section } from '@/shared/config/permissions';
 import { storage } from '@/shared/lib/storage';
+import { NARROW, useMediaQuery } from '@/shared/lib/useMediaQuery';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 
@@ -29,7 +30,9 @@ export function usePageSubtitle(subtitle: string | null | undefined) {
 /** Каркас приложения: боковое меню слева, шапка и содержимое раздела справа */
 export function AppLayout() {
   const { t } = useTranslation();
-  const [collapsed, setCollapsed] = useState(() => storage.get(COLLAPSED_KEY) === '1');
+  const [stored, setCollapsed] = useState(() => storage.get(COLLAPSED_KEY) === '1');
+  const narrow = useMediaQuery(NARROW);
+  const collapsed = narrow || stored;
   const [subtitle, setSubtitle] = useState<string | null>(null);
   const handles = [...useMatches()].reverse().map((m) => m.handle as RouteHandle | undefined);
   const section = handles.map((h) => h?.section).find(Boolean);
@@ -47,9 +50,9 @@ export function AppLayout() {
     });
 
   return (
-    <div className="flex h-screen gap-4 bg-canvas p-4">
+    <div className="flex h-screen gap-2 bg-canvas p-2 md:gap-4 md:p-4">
       <Sidebar collapsed={collapsed} onToggle={toggle} />
-      <div className="flex min-w-0 flex-1 flex-col gap-[14px]">
+      <div className="flex min-w-0 flex-1 flex-col gap-[10px] md:gap-[14px]">
         <TopBar
           title={titleKey ? t(titleKey) : section ? t(`sections.${section}`) : t('app.title')}
           subtitle={subtitle}

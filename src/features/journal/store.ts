@@ -24,6 +24,8 @@ export type JournalAction =
   | 'userDeactivated'
   | 'absenceCreated'
   | 'absenceCancelled'
+  | 'sessionEnded'
+  | 'rolePermissionsChanged'
   | 'documentRegistered'
   | 'documentSent'
   | 'documentResolved'

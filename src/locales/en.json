@@ -188,7 +188,12 @@
     "openMenu": "Sections",
     "closeSearch": "Close search",
     "noResults": "Nothing found",
-    "filterDepartment": "Department"
+    "filterDepartment": "Department",
+    "view": {
+      "board": "Board",
+      "list": "List",
+      "label": "View"
+    }
   },
   "taskCard": {
     "close": "Close",
@@ -377,7 +382,8 @@
       "group_members": "Check the group members",
       "group_forbidden": "Only the group creator can remove members",
       "invalid_value": "Invalid value.",
-      "project_exists": "This project already exists"
+      "project_exists": "This project already exists",
+      "permission_unknown": "No such permission."
     }
   },
   "toast": {
@@ -555,7 +561,7 @@
     "showAll": "Show all {{count}}",
     "showLess": "Collapse list",
     "noteTitle": "Accounts are created only by invitation to an @olympic.kg address",
-    "noteText": "Devices and active sessions are in the staff card. Accounts can't be deleted, only deactivated.",
+    "noteText": "The number of active devices is in the staff card. Accounts cannot be deleted, only deactivated.",
     "openCard": "Open card",
     "copyEmail": "Copy email",
     "emailCopied": "Email copied",
@@ -572,7 +578,8 @@
       "invited": "Invited",
       "external": "External",
       "vacancy": "Vacancy",
-      "deactivated": "Deactivated"
+      "deactivated": "Deactivated",
+      "pending": "Awaiting role"
     },
     "roles": {
       "R1": "Administrator",
@@ -631,7 +638,6 @@
     "cannotDelete": "Staff can't be deleted — only deactivated.",
     "deactivatedOn": "Deactivated {{date}} · {{by}}",
     "deactivatedText": "Sign-in closed, sessions ended, tasks reassigned. Authorship of past actions is kept.",
-    "ownRoleConfirm": "This is your own role. Rights change immediately and some sections may close. Change to {{role}}?",
     "roleChanged": "{{name}}: role {{role}}, applied immediately",
     "invited": "Invitation sent to {{email}}",
     "deactivated": "Staff member deactivated",
@@ -652,7 +658,77 @@
     "errorInvite": "Couldn't send the invitation. Please try again.",
     "toManager": "To the Secretary General ({{name}}), recorded in the task history",
     "noSuccessor": "No one to hand them to: there is no department director and no Secretary General",
-    "departmentOf": "{{name}} department"
+    "departmentOf": "{{name}} department",
+    "changeRoleTitle": "Change role?",
+    "changeRoleText": "{{name}}: {{from}} → {{to}}. Permissions change immediately — open sessions get the new permissions. The change is recorded in the audit log.",
+    "changeRoleOwn": "This is your role: some sections may close right after the change.",
+    "changeRoleConfirm": "Change role",
+    "noRole": "No role yet",
+    "pendingCount_one": "{{count}} awaiting a role",
+    "pendingCount_other": "{{count}} awaiting a role",
+    "assignRole": "Assign role",
+    "chooseRole": "Choose a role",
+    "assignRoleTitle": "Assign role?",
+    "assignRoleText": "{{name}} will get the role {{to}}. Access opens immediately, no need to sign in again. The assignment is recorded in the audit log.",
+    "pendingHint": "Signed in with Google on {{date}}, no role yet — only sees the waiting screen.",
+    "devicesTitle": "Devices and sessions",
+    "devicesUnavailable": "The device list will appear after the server update.",
+    "lastSeen": "active {{time}}",
+    "currentSession": "this device",
+    "endSession": "End",
+    "endAllSessions": "End all",
+    "endSessionTitle": "End session?",
+    "endSessionText": "{{name}} will be signed out on “{{device}}”. They can sign in again with Google.",
+    "endAllTitle": "End all sessions?",
+    "endAllText": "{{name}} will be signed out on all devices: {{count}}. They can sign in again with Google.",
+    "sessionEnded": "Session ended",
+    "noDevices": "No open sessions",
+    "matrix": "Role permissions",
+    "matrixSubtitle": "What each role can do. Permissions are checked on the server; the customer approves the matrix.",
+    "matrixUnavailable": "The permission matrix will appear after the server update.",
+    "permission": "Permission",
+    "platform": {
+      "web": "Browser",
+      "ios": "iPhone",
+      "android": "Android"
+    },
+    "permissionNames": {
+      "tasks.view": "View tasks",
+      "tasks.create": "Create tasks",
+      "tasks.edit": "Edit tasks",
+      "tasks.assign": "Assign people, manage projects",
+      "tasks.archive": "Archive tasks",
+      "documents.view": "View documents",
+      "documents.create": "Draft documents",
+      "documents.register": "Register, assign numbers",
+      "documents.resolve": "Add resolutions",
+      "documents.annul": "Annul documents",
+      "knowledge.view": "Read knowledge base",
+      "knowledge.edit": "Edit knowledge base",
+      "chat.use": "Use chat",
+      "calendar.view": "View calendar",
+      "files.view": "View files",
+      "staff.view": "View staff",
+      "staff.manage": "Invite staff",
+      "staff.deactivate": "Deactivate, end sessions",
+      "roles.assign": "Assign roles",
+      "journal.view": "View audit log",
+      "journal.export": "Export audit log",
+      "assistant.manage": "Configure AI and mail agent"
+    },
+    "matrixEditHint": "Click a cell to grant or revoke a permission. Changes apply after saving.",
+    "matrixChanges_one": "{{count}} change",
+    "matrixChanges_other": "{{count}} changes",
+    "matrixSave": "Save",
+    "matrixReset": "Discard",
+    "matrixConfirmTitle": "Change role permissions?",
+    "matrixConfirmText": "Permissions change for everyone with these roles right away, without signing in again. The change is recorded in the action log.",
+    "matrixSaved": "Role permissions saved",
+    "matrixGrant": "grant",
+    "matrixRevoke": "revoke",
+    "endOwnSessionText": "The session on “{{device}}” will be closed. You can sign in again with Google.",
+    "endOwnAllText": "All other sessions will be closed: {{count}}. This device stays signed in.",
+    "endOthers": "Sign out elsewhere"
   },
   "chat": {
     "title": "Chat",
@@ -766,7 +842,8 @@
       "mailQueue": "Emails in the queue",
       "mention": "Chat mentions",
       "reminder": "Deadline reminders",
-      "done": "Completed tasks"
+      "done": "Completed tasks",
+      "pendingUser": "New staff without a role"
     },
     "titles": {
       "assigned": "New task · “{{task}}”",
@@ -774,7 +851,8 @@
       "overdue": "Overdue · “{{task}}”",
       "mention": "{{actor}} mentioned you in chat",
       "reminder": "Reminder · “{{task}}”",
-      "done": "“{{task}}” completed"
+      "done": "“{{task}}” completed",
+      "pendingUser": "{{name}} is waiting for a role"
     },
     "texts": {
       "assignedBy": "Assigned by {{actor}}",
@@ -784,7 +862,8 @@
       "overdue_assignee": "The deadline was {{date}}. You are the assignee.",
       "overdue_author": "The deadline was {{date}}. You set this task.",
       "mention": "{{chat}} — {{excerpt}}",
-      "done": "{{actor}} moved the task to “{{column}}”."
+      "done": "{{actor}} moved the task to “{{column}}”.",
+      "pendingUser": "{{email}} · signed in with Google, no role assigned."
     },
     "escalationLocked": "Always on — a platform rule",
     "settingsSaved": "Notification settings saved",
@@ -801,7 +880,8 @@
     "emptyUnread": "All read",
     "emptyMentions": "No mentions",
     "showAll": "All notifications",
-    "taskGone": "Task not found — it may have been closed"
+    "taskGone": "Task not found — it may have been closed",
+    "assignRole": "Assign role"
   },
   "dashboard": {
     "greeting": {
@@ -1110,7 +1190,9 @@
       "resendHint": "The letter's number and text stay the same — only the address changes.",
       "resent": "Letter delivered to {{email}}",
       "bouncedAgain": "Not delivered to {{email}} again"
-    }
+    },
+    "infoTitle": "What “Documents” is for",
+    "infoText": "NOC records management: registering incoming letters and resolutions — a resolution creates a task for the assignee; outgoing letters on letterhead with a registration number; a correspondence log of what came in and what was answered. The section belongs to Phase 2: order and certificate templates, PDF and filing into Google Drive arrive with it."
   },
   "files": {
     "subtitle_one": "{{count}} file across sections",
@@ -1144,7 +1226,8 @@
     "downloadName": "Download {{name}}",
     "kb": "KB",
     "mb": "MB",
-    "note": "Attachments from Documents, the Knowledge base and chats you have access to. A file opens where it was attached. Task files will appear once file storage is connected."
+    "infoTitle": "What “Files” is for",
+    "infoText": "All attachments you have access to in one place: from documents, knowledge base articles and chat conversations. A file opens where it was attached. Task files and Google Drive storage arrive in Phase 2."
   },
   "journal": {
     "title": "Action log",

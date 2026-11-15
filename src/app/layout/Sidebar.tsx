@@ -7,13 +7,13 @@ import { useNavCounters } from '@/features/notifications/api';
 import { workDomain } from '@/shared/config/links';
 import type { Section } from '@/shared/config/permissions';
 import { initials } from '@/shared/lib/text';
+import flag from '@/shared/ui/assets/flag.svg';
 import {
   AccessIcon,
   CalendarIcon,
   ChatIcon,
   DashboardIcon,
   DocumentsIcon,
-  EmblemIcon,
   FilesIcon,
   KnowledgeIcon,
   LogoutIcon,
@@ -117,9 +117,14 @@ export function Sidebar({ collapsed, onToggle }: Props) {
       }`}
     >
       <div className={`flex h-12 items-center gap-2 ${collapsed ? 'justify-center' : 'px-2'}`}>
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-8 bg-brand-red text-[#FFFFFF]">
-          <EmblemIcon size={18} />
-        </span>
+        <img
+          src={flag}
+          alt=""
+          aria-hidden
+          width={30}
+          height={20}
+          className="h-5 w-[30px] shrink-0"
+        />
         {!collapsed && (
           <span className="leading-none">
             <span className="block text-[13px] font-semibold tracking-[-0.1px] text-text">
@@ -148,7 +153,7 @@ export function Sidebar({ collapsed, onToggle }: Props) {
         onClick={onToggle}
         aria-label={collapsed ? t('shell.expand') : undefined}
         aria-expanded={!collapsed}
-        className={`flex items-center rounded-9 text-[12.5px] tracking-[-0.1px] text-faint hover:bg-row-highlight hover:text-sub ${
+        className={`items-center rounded-9 text-[12.5px] tracking-[-0.1px] text-faint hover:bg-row-highlight hover:text-sub max-md:hidden md:flex ${
           collapsed ? 'mx-auto size-10 justify-center' : 'h-10 gap-3 px-3'
         }`}
       >

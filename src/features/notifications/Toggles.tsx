@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { useCan } from '@/features/auth';
 import {
   notificationKinds as kindList,
   lockedNotificationKinds,
@@ -20,9 +21,11 @@ export function NotificationToggles({
   className?: string;
 }) {
   const { t } = useTranslation();
+  const { can } = useCan();
+  const kinds = kindList.filter((k) => k !== 'pendingUser' || can('roles.assign'));
   return (
     <ul className={`flex flex-col gap-[6px] ${className}`}>
-      {kindList.map((k) => {
+      {kinds.map((k) => {
         const locked = lockedNotificationKinds.includes(k);
         const on = locked || !!value?.[k];
         const { Icon, color } = notificationKinds[k];

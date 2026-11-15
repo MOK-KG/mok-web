@@ -17,20 +17,21 @@ const roleTone: Partial<Record<RoleCode, Tone>> = {
 };
 
 /** Код роли в рамке: «R3» */
-export function RoleCodeChip({ role, size = 'sm' }: { role: RoleCode; size?: 'sm' | 'md' }) {
-  const tone = roleTone[role];
+export function RoleCodeChip({ role, size = 'sm' }: { role: RoleCode | null; size?: 'sm' | 'md' }) {
+  const tone = role ? roleTone[role] : undefined;
   return (
     <span
       className={`flex shrink-0 items-center justify-center rounded-[5px] border font-semibold ${
         tone ? `border-current ${toneClasses[tone].text}` : 'border-line text-sub'
       } ${size === 'sm' ? 'h-5 w-[26px] text-[10px]' : 'h-5 w-[26px] text-[10.5px]'}`}
     >
-      {role}
+      {role ?? '—'}
     </span>
   );
 }
 
 const badgeTone: Record<StaffBadge, string> = {
+  pending: 'bg-warning-chip text-warning-text',
   active: 'bg-success-chip text-success',
   vacation: 'bg-info-chip text-info',
   invited: 'bg-warning-chip text-warning-text',

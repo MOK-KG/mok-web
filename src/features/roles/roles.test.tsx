@@ -30,10 +30,11 @@ const lastJournal = () => journalServer.entries.at(-1);
 describe('роли и доступ (логика, через API)', () => {
   beforeEach(() => sessionStorage.clear());
 
-  it('17 строк: 13 сотрудников аппарата, 3 внешних, 1 вакансия; «я» — по ID из сессии', async () => {
+  it('18 строк: 13 сотрудников аппарата, 3 внешних, 1 вакансия, 1 ждёт роль; «я» — по ID из сессии', async () => {
     const rows = await fetchStaff(ME);
-    expect(rows).toHaveLength(17);
+    expect(rows).toHaveLength(18);
     expect(rows.filter((r) => r.status === 'active' || r.status === 'invited')).toHaveLength(13);
+    expect(rows.filter((r) => r.status === 'pending')).toMatchObject([{ role: null }]);
     expect(rows.filter((r) => r.status === 'external')).toHaveLength(3);
     expect(rows.filter((r) => r.status === 'vacancy')).toHaveLength(1);
     expect(await row('s-ad')).toMatchObject({ isMe: true, role: 'R3', short: 'А. Дуйшеев' });
@@ -55,7 +56,7 @@ describe('роли и доступ (логика, через API)', () => {
     expect(moved?.assignee?.short).toBe('Б. Осмонов');
     expect(lastJournal()).toMatchObject({ action: 'userDeactivated' });
     // Запись не удалена — сотрудник остаётся в списке
-    expect(await fetchStaff(ME)).toHaveLength(17);
+    expect(await fetchStaff(ME)).toHaveLength(18);
   });
 
   it('себя и вакансию деактивировать нельзя', async () => {
@@ -88,7 +89,7 @@ describe('роли и доступ (логика, через API)', () => {
     });
     expect(lastJournal()).toMatchObject({ action: 'userInvited' });
     const rows = await fetchStaff(ME);
-    expect(rows).toHaveLength(17);
+    expect(rows).toHaveLength(18);
     expect(rows.some((r) => r.status === 'vacancy')).toBe(false);
   });
 
@@ -142,19 +143,19 @@ describe('роли и доступ (экраны)', () => {
     vi.unstubAllEnvs();
   });
 
-  it('список: «9 из 17», «Показать все 17» открывает остальных; числа в шапке совпадают', async () => {
+  it('список: «9 из 18», «Показать все 18» открывает остальных; числа в шапке совпадают', async () => {
     await open('/access');
-    await waitFor(() => text().includes('9 из 17'));
+    await waitFor(() => text().includes('9 из 18'));
     expect(container.querySelectorAll('tbody tr')).toHaveLength(9);
-    expect(text()).toContain('13 сотрудников аппарата · 3 внешних · 1 вакансия');
-    await act(async () => button('Показать все 17')?.click());
-    await waitFor(() => text().includes('17 из 17'));
-    expect(container.querySelectorAll('tbody tr')).toHaveLength(17);
+    expect(text()).toContain('13 сотрудников аппарата · 3 внешних · 1 вакансия · 1 ждёт роль');
+    await act(async () => button('Показать все 18')?.click());
+    await waitFor(() => text().includes('18 из 18'));
+    expect(container.querySelectorAll('tbody tr')).toHaveLength(18);
   });
 
   it('поиск по роли: счётчик равен числу строк', async () => {
     await open('/access?q=Директор');
-    await waitFor(() => text().includes('3 из 17'));
+    await waitFor(() => text().includes('3 из 18'));
     expect(container.querySelectorAll('tbody tr')).toHaveLength(3);
   });
 

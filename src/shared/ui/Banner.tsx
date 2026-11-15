@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 type Props = {
-  tone: 'danger' | 'warning';
+  tone: 'danger' | 'warning' | 'info';
   title: ReactNode;
   children: ReactNode;
   /** Действие под разделителем, например «Обновить статус» */
@@ -18,6 +18,11 @@ const tones = {
     box: 'bg-warning-soft border-warning-line',
     stripe: 'bg-brand-gold',
     title: 'text-warning',
+  },
+  info: {
+    box: 'bg-info-chip border-info-line',
+    stripe: 'bg-info',
+    title: 'text-info',
   },
 } as const;
 

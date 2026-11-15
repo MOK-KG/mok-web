@@ -14,8 +14,10 @@ import {
   FilterIcon,
   FolderIcon,
   GroupIcon,
+  ListIcon,
   PlusIcon,
   SearchIcon,
+  TasksIcon,
 } from '@/shared/ui/icons';
 import { Tooltip } from '@/shared/ui/Tooltip';
 import {
@@ -48,7 +50,39 @@ type Props = {
   /** Задачи вкладки до фильтров — для счётчиков в фильтре */
   tasks: Task[];
   onNewTask: () => void;
+  view: TaskView;
+  onView: (view: TaskView) => void;
 };
+
+export type TaskView = 'board' | 'list';
+
+function ViewSwitch({ value, onChange }: { value: TaskView; onChange: (v: TaskView) => void }) {
+  const { t } = useTranslation();
+  const options = [
+    { view: 'board' as const, Icon: TasksIcon },
+    { view: 'list' as const, Icon: ListIcon },
+  ];
+  return (
+    <fieldset className="flex h-8 items-center gap-[2px] rounded-9 border border-line bg-panel p-[2px]">
+      <legend className="sr-only">{t('tasks.view.label')}</legend>
+      {options.map(({ view, Icon }) => (
+        <Tooltip key={view} content={t(`tasks.view.${view}`)}>
+          <button
+            type="button"
+            aria-pressed={value === view}
+            aria-label={t(`tasks.view.${view}`)}
+            onClick={() => onChange(view)}
+            className={`flex h-full w-8 items-center justify-center rounded-[7px] ${
+              value === view ? 'bg-control-active text-text' : 'text-faint hover:text-text'
+            }`}
+          >
+            <Icon size={16} />
+          </button>
+        </Tooltip>
+      ))}
+    </fieldset>
+  );
+}
 
 /** Строка вкладок со счётчиками и панель инструментов доски */
 export function Toolbar(props: Props) {
@@ -57,7 +91,11 @@ export function Toolbar(props: Props) {
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <div role="tablist" aria-label={t('tasks.board')} className="flex items-center gap-6 pl-1">
+      <div
+        role="tablist"
+        aria-label={t('tasks.board')}
+        className="flex max-w-full items-center gap-6 overflow-x-auto pl-1"
+      >
         {taskTabs.map((key) => {
           const selected = key === tab;
           return (
@@ -90,9 +128,12 @@ export function Toolbar(props: Props) {
         })}
       </div>
 
-      <div className="flex items-center gap-2">
-        <GroupingMenu value={props.grouping} onChange={props.onGrouping} />
-        <label className={`${field} w-40 font-normal`}>
+      <div className="flex flex-wrap items-center gap-2 max-md:w-full">
+        <ViewSwitch value={props.view} onChange={props.onView} />
+        {props.view === 'board' && (
+          <GroupingMenu value={props.grouping} onChange={props.onGrouping} />
+        )}
+        <label className={`${field} w-40 font-normal max-md:min-w-0 max-md:flex-1`}>
           <SearchIcon size={16} className="shrink-0 text-faint" />
           <span className="sr-only">{t('tasks.search')}</span>
           <input

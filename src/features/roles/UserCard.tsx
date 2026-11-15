@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useCan } from '@/features/auth';
 import { type RoleCode, roleCodes } from '@/shared/config/permissions';
 import { formatIsoDate } from '@/shared/lib/date';
+import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import {
   AlertMiniIcon,
   CheckIcon,
@@ -14,8 +15,15 @@ import {
   LockIcon,
   XIcon,
 } from '@/shared/ui/icons';
-import { type StaffRow, useChangeRole, useDeactivate } from './api';
+import {
+  type StaffRow,
+  useChangeRole,
+  useDeactivate,
+  useEndSession,
+  useMemberSessions,
+} from './api';
 import { capsTitle, RoleCodeChip, StaffAvatar, StatusBadge } from './parts';
+import { SessionList } from './SessionList';
 
 /** Карточка сотрудника: роль (меняется сразу), сведения и увольнение */
 export function UserCard({
@@ -73,11 +81,13 @@ function Card({
       timeZone: 'Asia/Bishkek',
     });
 
+  const [nextRole, setNextRole] = useState<RoleCode | null>(null);
   const pickRole = (role: RoleCode) => {
-    if (role === m.role) return;
-    // Своя роль: права меняются сразу, раздел может закрыться — спросить
-    if (m.isMe && !window.confirm(t('access.ownRoleConfirm', { role }))) return;
-    changeRole.mutate({ id: m.id, role });
+    if (role !== m.role) setNextRole(role);
+  };
+  const applyRole = () => {
+    if (!nextRole) return;
+    changeRole.mutate({ id: m.id, role: nextRole }, { onSettled: () => setNextRole(null) });
   };
 
   const label = 'text-[11px] text-dim';
@@ -107,8 +117,13 @@ function Card({
 
       <div className="px-7 pb-7 pt-[22px]">
         <h3 className={capsTitle}>{t('access.role')}</h3>
+        {m.status === 'pending' && m.firstLoginAt && (
+          <p className="mt-[10px] rounded-9 border border-warning-line bg-warning-soft px-3 py-[9px] text-[11.5px] text-warning-text">
+            {t('access.pendingHint', { date: date(m.firstLoginAt) })}
+          </p>
+        )}
         <Select.Root
-          value={m.role}
+          value={m.role ?? undefined}
           onValueChange={(v) => pickRole(v as RoleCode)}
           disabled={!canAssign}
         >
@@ -119,10 +134,10 @@ function Card({
             <RoleCodeChip role={m.role} size="md" />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[13px] font-medium text-text">
-                {t(`access.roles.${m.role}`)}
+                {m.role ? t(`access.roles.${m.role}`) : t('access.chooseRole')}
               </span>
               <span className="block truncate text-[10.5px] text-dim">
-                {t(`access.roleHints.${m.role}`)}
+                {m.role ? t(`access.roleHints.${m.role}`) : t('access.noRole')}
               </span>
             </span>
             {canAssign && <ChevronSmallIcon size={14} className="text-faint" />}
@@ -160,6 +175,31 @@ function Card({
             </Select.Content>
           </Select.Portal>
         </Select.Root>
+        <ConfirmDialog
+          open={nextRole !== null}
+          title={m.role ? t('access.changeRoleTitle') : t('access.assignRoleTitle')}
+          confirmLabel={m.role ? t('access.changeRoleConfirm') : t('access.assignRole')}
+          cancelLabel={t('access.cancel')}
+          pending={changeRole.isPending}
+          onConfirm={applyRole}
+          onCancel={() => setNextRole(null)}
+        >
+          <p>
+            {m.role
+              ? t('access.changeRoleText', {
+                  name: m.short ?? m.name ?? m.position,
+                  from: `${m.role} ${t(`access.roles.${m.role}`)}`,
+                  to: nextRole ? `${nextRole} ${t(`access.roles.${nextRole}`)}` : '',
+                })
+              : t('access.assignRoleText', {
+                  name: m.short ?? m.name ?? m.email,
+                  to: nextRole ? `${nextRole} ${t(`access.roles.${nextRole}`)}` : '',
+                })}
+          </p>
+          {m.isMe && (
+            <p className="mt-2 font-medium text-warning-text">{t('access.changeRoleOwn')}</p>
+          )}
+        </ConfirmDialog>
         {!deactivated && (
           <div className="mt-[10px] flex gap-[9px] rounded-9 border border-info-line bg-info-chip px-3 py-[9px]">
             <LockIcon size={16} className="mt-px shrink-0 text-info" />
@@ -204,17 +244,10 @@ function Card({
                 <dt className={label}>{t('access.deputy')}</dt>
                 <dd className={value}>{m.deputy ?? '—'}</dd>
               </div>
-              <div>
-                <dt className={label}>{t('access.sessions')}</dt>
-                <dd className={value}>
-                  {m.sessions > 0
-                    ? t('access.devices', { count: m.sessions })
-                    : t('access.noSessions')}
-                </dd>
-              </div>
             </>
           )}
         </dl>
+        {!vacancy && !deactivated && <Sessions member={m} />}
 
         {vacancy ? (
           can('staff.manage') && (
@@ -238,6 +271,34 @@ function Card({
         )}
       </div>
     </div>
+  );
+}
+
+function Sessions({ member: m }: { member: StaffRow }) {
+  const { t } = useTranslation();
+  const { can } = useCan();
+  const sessions = useMemberSessions(m.id);
+  const end = useEndSession();
+  const name = m.short ?? m.name ?? m.email ?? '';
+
+  return (
+    <section aria-labelledby="sessions-title" className="mt-[22px]">
+      <h3 id="sessions-title" className={capsTitle}>
+        {t('access.devicesTitle')}
+      </h3>
+      <SessionList
+        list={sessions.data}
+        canEnd={can('staff.deactivate')}
+        unavailable={`${
+          m.sessions > 0 ? t('access.devices', { count: m.sessions }) : t('access.noSessions')
+        } · ${t('access.devicesUnavailable')}`}
+        pending={end.isPending}
+        endAllLabel={t('access.endAllSessions')}
+        sessionText={(s) => t('access.endSessionText', { name, device: s.device })}
+        allText={(count) => t('access.endAllText', { name, count })}
+        onEnd={(sessionId, done) => end.mutate({ memberId: m.id, sessionId }, { onSettled: done })}
+      />
+    </section>
   );
 }
 
