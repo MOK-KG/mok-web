@@ -1229,6 +1229,7 @@
       "journalExported": "Журналды түшүрүү",
       "absenceCreated": "Жоктук тариздеди",
       "absenceCancelled": "Жоктук жокко чыгарылды",
+      "sessionEnded": "Сессия аяктады",
       "documentBounced": "Кат жеткирилген жок"
     },
     "integrityOk_one": "Чынжыр бүтүн · {{count}} жазуу текшерилди",

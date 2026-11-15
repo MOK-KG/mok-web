@@ -1229,6 +1229,7 @@
       "journalExported": "Log export",
       "absenceCreated": "Absence recorded",
       "absenceCancelled": "Absence cancelled",
+      "sessionEnded": "Session ended",
       "documentBounced": "Delivery failure"
     },
     "integrityOk_one": "Chain intact · {{count}} entry checked",

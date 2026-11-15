@@ -1305,6 +1305,7 @@
       "journalExported": "Выгрузка журнала",
       "absenceCreated": "Отсутствие оформлено",
       "absenceCancelled": "Отсутствие отменено",
+      "sessionEnded": "Сессия завершена",
       "documentBounced": "Недоставка письма"
     },
     "integrityOk_one": "Цепочка цела · проверена {{count}} запись",
