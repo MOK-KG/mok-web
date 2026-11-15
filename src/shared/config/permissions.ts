@@ -69,14 +69,7 @@ export const sections = {
 
 export type Section = keyof typeof sections;
 
-export const laterPhasePermissions: readonly Permission[] = [
-  'documents.view',
-  'documents.create',
-  'documents.register',
-  'documents.resolve',
-  'documents.annul',
-  'files.view',
-];
+export const laterPhasePermissions: readonly Permission[] = [];
 
 export const roleCodes = ['R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9'] as const;
 

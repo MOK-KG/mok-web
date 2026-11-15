@@ -5,6 +5,7 @@ import { usePageSubtitle } from '@/app/layout/AppLayout';
 import { attachmentUrl as documentAttachmentUrl } from '@/features/documents/api';
 import { attachmentUrl } from '@/features/knowledge-base/api';
 import { formatInBishkek } from '@/shared/lib/date';
+import { Banner } from '@/shared/ui/Banner';
 import { DownloadIcon, SearchIcon } from '@/shared/ui/icons';
 import { useFiles } from './api';
 import {
@@ -95,6 +96,9 @@ export function FilesPage() {
 
   return (
     <div className="flex h-full min-h-[560px] flex-col gap-3 leading-[normal]">
+      <Banner tone="info" title={t('files.infoTitle')}>
+        {t('files.infoText')}
+      </Banner>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div role="tablist" aria-label={t('sections.files')} className="flex h-10 gap-6 px-1">
           {[null, ...sources].map((s) => {
@@ -240,7 +244,6 @@ export function FilesPage() {
           </table>
         )}
       </section>
-      <p className="px-1 text-[11px] text-dim">{t('files.note')}</p>
     </div>
   );
 }

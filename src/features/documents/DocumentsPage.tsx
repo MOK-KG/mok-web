@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { usePageSubtitle } from '@/app/layout/AppLayout';
 import { useCan } from '@/features/auth';
 import { formatIsoDate } from '@/shared/lib/date';
+import { Banner } from '@/shared/ui/Banner';
 import { PlusIcon, SearchIcon } from '@/shared/ui/icons';
 import { docNumber, useDocuments } from './api';
 import { CorrespondenceLog } from './CorrespondenceLog';
@@ -83,6 +84,9 @@ export function DocumentsPage() {
 
   return (
     <div className="flex h-full min-h-[560px] flex-col gap-3 leading-[normal]">
+      <Banner tone="info" title={t('documents.infoTitle')}>
+        {t('documents.infoText')}
+      </Banner>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div role="tablist" aria-label={t('sections.documents')} className="flex h-10 gap-6 px-1">
           {docKinds.map((k) => {

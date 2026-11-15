@@ -1104,7 +1104,9 @@
       "resendHint": "The letter's number and text stay the same — only the address changes.",
       "resent": "Letter delivered to {{email}}",
       "bouncedAgain": "Not delivered to {{email}} again"
-    }
+    },
+    "infoTitle": "What “Documents” is for",
+    "infoText": "NOC records management: registering incoming letters and resolutions — a resolution creates a task for the assignee; outgoing letters on letterhead with a registration number; a correspondence log of what came in and what was answered. The section belongs to Phase 2: order and certificate templates, PDF and filing into Google Drive arrive with it."
   },
   "files": {
     "subtitle_one": "{{count}} file across sections",
@@ -1138,7 +1140,8 @@
     "downloadName": "Download {{name}}",
     "kb": "KB",
     "mb": "MB",
-    "note": "Attachments from Documents, the Knowledge base and chats you have access to. A file opens where it was attached. Task files will appear once file storage is connected."
+    "infoTitle": "What “Files” is for",
+    "infoText": "All attachments you have access to in one place: from documents, knowledge base articles and chat conversations. A file opens where it was attached. Task files and Google Drive storage arrive in Phase 2."
   },
   "journal": {
     "title": "Action log",
