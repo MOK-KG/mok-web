@@ -10,7 +10,7 @@
       try {
         const saved = localStorage.getItem('nok.theme');
         const theme =
-          saved === 'system'
+          saved !== 'dark' && saved !== 'light'
             ? matchMedia('(prefers-color-scheme: light)').matches
               ? 'light'
               : 'dark'
