@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useCan } from '@/features/auth';
 import { type RoleCode, roleCodes } from '@/shared/config/permissions';
 import { formatIsoDate } from '@/shared/lib/date';
+import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import {
   AlertMiniIcon,
   CheckIcon,
@@ -73,11 +74,13 @@ function Card({
       timeZone: 'Asia/Bishkek',
     });
 
+  const [nextRole, setNextRole] = useState<RoleCode | null>(null);
   const pickRole = (role: RoleCode) => {
-    if (role === m.role) return;
-    // Своя роль: права меняются сразу, раздел может закрыться — спросить
-    if (m.isMe && !window.confirm(t('access.ownRoleConfirm', { role }))) return;
-    changeRole.mutate({ id: m.id, role });
+    if (role !== m.role) setNextRole(role);
+  };
+  const applyRole = () => {
+    if (!nextRole) return;
+    changeRole.mutate({ id: m.id, role: nextRole }, { onSettled: () => setNextRole(null) });
   };
 
   const label = 'text-[11px] text-dim';
@@ -160,6 +163,26 @@ function Card({
             </Select.Content>
           </Select.Portal>
         </Select.Root>
+        <ConfirmDialog
+          open={nextRole !== null}
+          title={t('access.changeRoleTitle')}
+          confirmLabel={t('access.changeRoleConfirm')}
+          cancelLabel={t('access.cancel')}
+          pending={changeRole.isPending}
+          onConfirm={applyRole}
+          onCancel={() => setNextRole(null)}
+        >
+          <p>
+            {t('access.changeRoleText', {
+              name: m.short ?? m.name ?? m.position,
+              from: `${m.role} ${t(`access.roles.${m.role}`)}`,
+              to: nextRole ? `${nextRole} ${t(`access.roles.${nextRole}`)}` : '',
+            })}
+          </p>
+          {m.isMe && (
+            <p className="mt-2 font-medium text-warning-text">{t('access.changeRoleOwn')}</p>
+          )}
+        </ConfirmDialog>
         {!deactivated && (
           <div className="mt-[10px] flex gap-[9px] rounded-9 border border-info-line bg-info-chip px-3 py-[9px]">
             <LockIcon size={16} className="mt-px shrink-0 text-info" />
