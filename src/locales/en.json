@@ -356,7 +356,7 @@
     "server": "Server error. We’re aware — please try later.",
     "requestId": "Request ID: {{id}}",
     "code": {
-      "session_current": "Use “Sign out” to end the current session",
+      "current_session": "Use “Sign out” to end the current session",
       "session_not_found": "The session has already ended",
       "web_push_disabled": "Browser notifications are not configured on the server",
       "wip_limit": "The “In progress” column is already at its limit.",
@@ -1161,7 +1161,8 @@
       "journal": "Log"
     },
     "action": {
-      "sessionTerminated": "Session ended",
+      "sessionEnded": "Session ended",
+      "rolePermissionsChanged": "Role permissions changed",
       "accessDenied": "Access denied",
       "mailRejected": "Email rejected",
       "mailAccepted": "Task from email",
@@ -1370,14 +1371,12 @@
       "online": "online now",
       "lastSeen": "last active {{date}}",
       "signedIn": "Signed in {{date}}",
-      "unknownDevice": "Unknown device",
       "terminate": "End",
       "terminated": "Session ended",
+      "terminatedAll": "Other sessions ended",
       "terminateOthers": "End all other sessions",
       "confirmOthers_one": "End {{count}} other session? That device will have to sign in again.",
       "confirmOthers_other": "End {{count}} other sessions? Those devices will have to sign in again.",
-      "terminatedOthers_one": "{{count}} session ended",
-      "terminatedOthers_other": "{{count}} sessions ended",
       "cancel": "Cancel"
     },
     "title": "Profile",

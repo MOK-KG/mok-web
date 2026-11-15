@@ -31,12 +31,21 @@ export type JournalAction =
   | 'documentAnnulled'
   | 'documentBounced'
   | 'journalExported'
-  | 'sessionTerminated';
+  | 'sessionEnded'
+  | 'rolePermissionsChanged';
 
 /** Группы действий — для фильтра на экране журнала */
 export const journalGroups = {
-  access: ['accessDenied', 'sessionTerminated'],
-  staff: ['roleChanged', 'userInvited', 'userDeactivated', 'absenceCreated', 'absenceCancelled'],
+  access: ['accessDenied'],
+  staff: [
+    'roleChanged',
+    'userInvited',
+    'userDeactivated',
+    'sessionEnded',
+    'rolePermissionsChanged',
+    'absenceCreated',
+    'absenceCancelled',
+  ],
   tasks: ['mailRejected', 'mailAccepted'],
   documents: [
     'documentRegistered',

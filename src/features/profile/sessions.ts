@@ -4,23 +4,24 @@ import { api } from '@/shared/api/client';
 /**
  * Активные сессии сотрудника (бэкенд: apps/accounts/sessions.py, /api/auth/sessions).
  * Браузеры и мобильное приложение; текущая — первой, завершить её нельзя (для неё «Выйти»).
+ * Завершение снимает и браузерные уведомления той сессии.
  */
 export type LoginSession = {
+  /** Не ключ сессии — его хэш */
   id: string;
-  client: 'web' | 'mobile';
-  /** «Chrome · macOS»; пусто — устройство неизвестно (сессия открыта до учёта устройств) */
+  /** «Chrome · macOS», «НОК КР · iPhone», «Неизвестное устройство» */
   device: string;
-  userAgent: string;
+  platform: 'web' | 'ios' | 'android';
   ip: string | null;
   createdAt: string;
   lastSeenAt: string;
-  expiresAt: string;
   current: boolean;
 };
 
 const key = ['auth', 'sessions'] as const;
 
-export const fetchSessions = () => api.get<LoginSession[]>('/auth/sessions');
+export const fetchSessions = async () =>
+  (await api.get<{ sessions: LoginSession[] }>('/auth/sessions')).sessions;
 
 export function useLoginSessions() {
   return useQuery({ queryKey: key, queryFn: fetchSessions, refetchInterval: 60_000 });
@@ -35,16 +36,12 @@ export function useTerminateSession() {
   });
 }
 
+/** Завершить все, кроме текущей */
 export function useTerminateOtherSessions() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: () => api.post<{ terminated: number }>('/auth/sessions/terminate-others'),
+    mutationFn: () => api.delete<void>('/auth/sessions'),
     onSuccess: () => client.invalidateQueries({ queryKey: key }),
-    meta: {
-      successMessage: (r: { terminated: number }) => ({
-        key: 'profile.sessions.terminatedOthers',
-        params: { count: r.terminated },
-      }),
-    },
+    meta: { successMessage: 'profile.sessions.terminatedAll' },
   });
 }

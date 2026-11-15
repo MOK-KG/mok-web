@@ -60,7 +60,12 @@ export function SessionsPanel({ className = '' }: { className?: string }) {
               <button
                 type="button"
                 disabled={others.isPending}
-                onClick={() => others.mutateAsync().then(() => setConfirmAll(false))}
+                onClick={() =>
+                  others
+                    .mutateAsync()
+                    .then(() => setConfirmAll(false))
+                    .catch(() => null)
+                }
                 className={`${secondaryButton} text-danger`}
               >
                 {t('profile.sessions.terminateOthers')}
@@ -90,10 +95,10 @@ export function SessionsPanel({ className = '' }: { className?: string }) {
 function SessionRow({ session: s }: { session: LoginSession }) {
   const { t, i18n } = useTranslation();
   const terminate = useTerminateSession();
-  const Icon = s.client === 'mobile' ? PhoneIcon : MonitorIcon;
+  const Icon = s.platform === 'web' ? MonitorIcon : PhoneIcon;
   const online = Date.now() - Date.parse(s.lastSeenAt) < ACTIVE_MS;
   const when = (iso: string) => formatInBishkek(iso, 'd MMM, HH:mm', i18n.language);
-  const device = s.device || t('profile.sessions.unknownDevice');
+  const device = s.device;
 
   return (
     <li className="flex items-start gap-3 rounded-9 border border-line px-3 py-[10px]">

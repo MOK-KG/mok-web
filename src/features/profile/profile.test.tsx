@@ -55,7 +55,7 @@ describe('профиль: активные сессии и уведомлени�
     await waitFor(() => text().includes('3 сессии'));
     expect(text()).toContain('Chrome · macOS');
     expect(text()).toContain('это устройство');
-    expect(text()).toContain('Мобильное приложение · iOS');
+    expect(text()).toContain('НОК КР · iPhone');
     expect(text()).toContain('Неизвестное устройство');
     // Кнопок «Завершить» — по одной на чужие сессии (2), у текущей нет
     expect(buttons('Завершить')).toHaveLength(2);
@@ -65,10 +65,9 @@ describe('профиль: активные сессии и уведомлени�
     await open();
     await waitFor(() => buttons('Завершить').length === 2);
     await click(
-      document.querySelector('button[aria-label="Завершить: Мобильное приложение · iOS"]') ??
-        undefined,
+      document.querySelector('button[aria-label="Завершить: НОК КР · iPhone"]') ?? undefined,
     );
-    await waitFor(() => !text().includes('Мобильное приложение · iOS'));
+    await waitFor(() => !text().includes('НОК КР · iPhone'));
     expect(sessionsServer.sessions.map((s) => s.id)).toEqual(['1', '3']);
     expect(text()).toContain('2 сессии');
 
@@ -76,6 +75,7 @@ describe('профиль: активные сессии и уведомлени�
     expect(text()).toContain('Завершить 1 другую сессию?');
     await click(buttons('Завершить все другие сессии')[0]);
     await waitFor(() => text().includes('1 сессия'));
+    expect(text()).toContain('Другие сессии завершены');
     expect(sessionsServer.sessions.map((s) => s.id)).toEqual(['1']);
     expect(buttons('Завершить')).toHaveLength(0);
   });

@@ -374,7 +374,7 @@
     "server": "Ошибка на сервере. Мы уже знаем — попробуйте позже.",
     "requestId": "Номер запроса: {{id}}",
     "code": {
-      "session_current": "Текущую сессию завершает кнопка «Выйти»",
+      "current_session": "Текущую сессию завершает кнопка «Выйти»",
       "session_not_found": "Сессия уже завершена",
       "web_push_disabled": "На сервере не настроены браузерные уведомления",
       "wip_limit": "В колонке «В работе» уже максимум задач.",
@@ -1235,7 +1235,8 @@
       "journal": "Журнал"
     },
     "action": {
-      "sessionTerminated": "Сессия завершена",
+      "sessionEnded": "Сессия завершена",
+      "rolePermissionsChanged": "Права роли изменены",
       "accessDenied": "Отказ в доступе",
       "mailRejected": "Письмо отклонено",
       "mailAccepted": "Задача из письма",
@@ -1456,18 +1457,14 @@
       "online": "сейчас в сети",
       "lastSeen": "был(а) активен {{date}}",
       "signedIn": "Вход {{date}}",
-      "unknownDevice": "Неизвестное устройство",
       "terminate": "Завершить",
       "terminated": "Сессия завершена",
+      "terminatedAll": "Другие сессии завершены",
       "terminateOthers": "Завершить все другие сессии",
       "confirmOthers_one": "Завершить {{count}} другую сессию? На том устройстве понадобится войти заново.",
       "confirmOthers_few": "Завершить {{count}} другие сессии? На тех устройствах понадобится войти заново.",
       "confirmOthers_many": "Завершить {{count}} других сессий? На тех устройствах понадобится войти заново.",
       "confirmOthers_other": "Завершить {{count}} другие сессии? На тех устройствах понадобится войти заново.",
-      "terminatedOthers_one": "Завершена {{count}} сессия",
-      "terminatedOthers_few": "Завершено {{count}} сессии",
-      "terminatedOthers_many": "Завершено {{count}} сессий",
-      "terminatedOthers_other": "Завершено {{count}} сессии",
       "cancel": "Отмена"
     },
     "title": "Профиль",
