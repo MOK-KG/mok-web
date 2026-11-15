@@ -65,12 +65,15 @@ describe('права доступа', () => {
     expect(text()).not.toContain('Роли и доступ');
   });
 
-  it('«Документы» скрыты до Фазы 2 — даже у генерального секретаря', async () => {
+  it('«Документы» и «Файлы» скрыты до Фазы 2 — даже у генерального секретаря', async () => {
     signInAs('R3');
     const router = await render('/');
     await waitFor(() => text().includes('Задачи'));
     expect(text()).not.toContain('Документы');
+    expect(text()).not.toContain('Файлы');
     await act(async () => router.navigate('/documents'));
+    await waitFor(() => text().includes('Нет доступа'));
+    await act(async () => router.navigate('/files'));
     await waitFor(() => text().includes('Нет доступа'));
   });
 
