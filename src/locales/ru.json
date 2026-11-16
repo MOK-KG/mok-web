@@ -289,7 +289,14 @@
     "letterAttachments_few": "{{count}} вложения",
     "letterAttachments_many": "{{count}} вложений",
     "letterAttachments_other": "{{count}} вложения",
-    "historyLetter": "Пришёл ответ: {{sender}} — «{{subject}}»"
+    "historyLetter": "Пришёл ответ: {{sender}} — «{{subject}}»",
+    "manage": "Управление",
+    "status": "Статус",
+    "cancel": "Отмена",
+    "archiveTitle": "Перенести задачу в архив?",
+    "archiveText": "Задача уйдёт с доски во вкладку «Завершённые», её можно вернуть. Действие попадёт в журнал.",
+    "unarchiveTitle": "Вернуть задачу из архива?",
+    "unarchiveText": "Задача снова появится на доске. Действие попадёт в журнал."
   },
   "newTask": {
     "title": "Новая задача",

@@ -271,7 +271,14 @@
     "letterEmpty": "Тексти жок",
     "letterAttachments_one": "{{count}} тиркеме",
     "letterAttachments_other": "{{count}} тиркеме",
-    "historyLetter": "Жооп келди: {{sender}} — «{{subject}}»"
+    "historyLetter": "Жооп келди: {{sender}} — «{{subject}}»",
+    "manage": "Башкаруу",
+    "status": "Абалы",
+    "cancel": "Жокко чыгаруу",
+    "archiveTitle": "Тапшырманы архивге жылдырасызбы?",
+    "archiveText": "Тапшырма тактадан «Аякталган» өтмөгүнө өтөт, аны кайтарса болот. Аракет журналга жазылат.",
+    "unarchiveTitle": "Тапшырманы архивден кайтарасызбы?",
+    "unarchiveText": "Тапшырма кайра тактада пайда болот. Аракет журналга жазылат."
   },
   "newTask": {
     "title": "Жаңы тапшырма",

@@ -271,7 +271,14 @@
     "letterEmpty": "No text",
     "letterAttachments_one": "{{count}} attachment",
     "letterAttachments_other": "{{count}} attachments",
-    "historyLetter": "Reply received: {{sender}} — “{{subject}}”"
+    "historyLetter": "Reply received: {{sender}} — “{{subject}}”",
+    "manage": "Manage",
+    "status": "Status",
+    "cancel": "Cancel",
+    "archiveTitle": "Move the task to the archive?",
+    "archiveText": "The task leaves the board for the “Completed” tab and can be restored. The action is recorded in the log.",
+    "unarchiveTitle": "Restore the task from the archive?",
+    "unarchiveText": "The task appears on the board again. The action is recorded in the log."
   },
   "newTask": {
     "title": "New task",

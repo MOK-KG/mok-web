@@ -524,7 +524,8 @@ export async function createTask(input: NewTaskInput): Promise<TaskDetail> {
     : task;
 }
 
-export type TaskChanges = Omit<NewTaskInput, 'letter' | 'assignee'> & {
+export type TaskChanges = Omit<NewTaskInput, 'letter' | 'assignee' | 'due'> & {
+  due: IsoDate | null;
   /** null — исполнителя не меняли (смена исполнителя требует tasks.assign) */
   assignee: Person | null;
 };
