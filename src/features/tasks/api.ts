@@ -496,6 +496,8 @@ export type NewTaskInput = {
   letter?: Letter;
   /** Пользователь видел предупреждение о похожих задачах и всё равно создаёт */
   confirmDuplicate?: boolean;
+  /** За сколько календарных дней до срока напомнить; null — не напоминать */
+  reminderDays?: number | null;
 };
 
 /** Новая задача попадает в первую колонку этапа «Очередь»; файлы загружаются следом */
@@ -509,6 +511,7 @@ export async function createTask(input: NewTaskInput): Promise<TaskDetail> {
     priority: input.priority,
     letterId: input.letter?.id ?? null,
     confirmDuplicate: input.confirmDuplicate ?? false,
+    reminderDays: input.reminderDays ?? null,
   });
   for (const file of input.files ?? []) {
     const form = new FormData();
@@ -534,6 +537,7 @@ export async function updateTask(id: string, changes: TaskChanges): Promise<Task
     due: changes.due,
     projectId: changes.project?.id ?? null,
     priority: changes.priority,
+    ...(changes.reminderDays !== undefined ? { reminderDays: changes.reminderDays } : {}),
     ...(changes.assignee ? { assigneeId: changes.assignee.id } : {}),
   });
   for (const file of changes.files ?? []) {

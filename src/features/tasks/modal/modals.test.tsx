@@ -145,6 +145,22 @@ describe('карточка задачи', () => {
     expect(d.textContent).not.toContain('Any update on the translation?');
   });
 
+  it('напоминание: выбор в форме правки уходит на сервер', async () => {
+    const id = translationId();
+    await render(`/tasks?task=${id}`);
+    await waitFor(() => dialog()?.textContent?.includes('Юридическая сверка терминов') ?? false);
+    const edit = button('Изменить', dialog() as HTMLElement);
+    expect(edit).toBeTruthy();
+    await act(async () => edit?.click());
+    await waitFor(() => page().includes('Не напоминать'));
+    const option = [...document.querySelectorAll<HTMLInputElement>('input[type=radio]')].find(
+      (x) => x.closest('label')?.textContent === 'за 3 дня',
+    );
+    await act(async () => option?.click());
+    await act(async () => button('Сохранить')?.click());
+    await waitFor(() => tasksServer.tasks.find((x) => x.id === id)?.reminderDays === 3);
+  });
+
   it('отметка подзадачи меняет счётчик и добавляет запись в журнал', async () => {
     await render(`/tasks?task=${translationId()}`);
     await waitFor(() => dialog()?.textContent?.includes('Утверждение на Исполкоме') ?? false);

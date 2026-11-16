@@ -329,7 +329,14 @@
     "editTitle": "Редактирование задачи",
     "save": "Сохранить",
     "saved": "Изменения сохранены",
-    "assigneeLocked": "Сменить исполнителя может только сотрудник с правом назначения"
+    "assigneeLocked": "Сменить исполнителя может только сотрудник с правом назначения",
+    "reminder": "Напомнить",
+    "reminderNone": "Не напоминать",
+    "reminderDays_one": "за {{count}} день",
+    "reminderDays_few": "за {{count}} дня",
+    "reminderDays_many": "за {{count}} дней",
+    "reminderDays_other": "за {{count}} дня",
+    "reminderHint": "Исполнитель и постановщик получат уведомление до срока."
   },
   "mailQueue": {
     "title": "Очередь из почты",

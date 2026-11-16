@@ -174,7 +174,7 @@ export function createTasksServer({ today = todayInBishkek() }: { today?: IsoDat
       history: [],
       rescheduleLog: [],
       letters: [],
-      reminderDays: null,
+      reminderDays: typeof b.reminderDays === 'number' ? b.reminderDays : null,
       escalatedAt: null,
       source: from
         ? { kind: 'email', mailbox: 'info@olympic.kg', at: from.receivedAt }
@@ -297,6 +297,7 @@ export function createTasksServer({ today = todayInBishkek() }: { today?: IsoDat
         if (typeof b.title === 'string') task.title = b.title;
         if (typeof b.description === 'string') task.description = b.description;
         if ('priority' in b) task.priority = b.priority as TaskDetail['priority'];
+        if ('reminderDays' in b) task.reminderDays = (b.reminderDays as number | null) ?? null;
         if ('projectId' in b) task.project = projectList.find((p) => p.id === b.projectId) ?? null;
         if (typeof b.due === 'string' && b.due !== task.due) {
           if (task.due) {

@@ -309,7 +309,12 @@
     "editTitle": "Edit task",
     "save": "Save",
     "saved": "Changes saved",
-    "assigneeLocked": "Only staff with the assign permission can change the assignee"
+    "assigneeLocked": "Only staff with the assign permission can change the assignee",
+    "reminder": "Remind",
+    "reminderNone": "No reminder",
+    "reminderDays_one": "{{count}} day before",
+    "reminderDays_other": "{{count}} days before",
+    "reminderHint": "The assignee and the author get a notification before the deadline."
   },
   "mailQueue": {
     "title": "Mail queue",

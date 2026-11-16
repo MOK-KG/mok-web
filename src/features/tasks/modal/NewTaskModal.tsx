@@ -41,6 +41,7 @@ const makeSchema = (keepDue: string | null = null) =>
       due: z.string().min(1, 'errorDue'),
       projectId: z.string(),
       priority: z.enum(priorities),
+      reminder: z.string(),
     })
     .superRefine((v, ctx) => {
       if (!v.due || v.due === keepDue) return;
@@ -56,6 +57,9 @@ export const dueMessage = (p: DueProblem) =>
     : p.code === 'weekend'
       ? 'errorDueWeekend'
       : `errorDueHoliday|${p.holiday}`;
+
+const reminderOptions = (current?: number | null) =>
+  [...new Set([0, 1, 2, 3, 5, ...(current ? [current] : [])])].sort((a, b) => a - b);
 
 type FormValues = z.infer<ReturnType<typeof makeSchema>>;
 
@@ -136,6 +140,7 @@ function NewTaskForm({ onClose, onOpenTask, letter, task: editing }: Omit<Props,
           due: editing.due ?? defaultDue(),
           projectId: editing.project?.id ?? '',
           priority: editing.priority,
+          reminder: String(editing.reminderDays ?? 0),
         }
       : {
           title: letter?.subject ?? '',
@@ -144,6 +149,7 @@ function NewTaskForm({ onClose, onOpenTask, letter, task: editing }: Omit<Props,
           due: defaultDue(),
           projectId: '',
           priority: 'normal',
+          reminder: '0',
         },
   });
   const { register, control, handleSubmit, watch, formState } = form;
@@ -180,6 +186,7 @@ function NewTaskForm({ onClose, onOpenTask, letter, task: editing }: Omit<Props,
         due: v.due,
         project: projectList.find((p) => p.id === v.projectId) ?? null,
         priority: v.priority,
+        reminderDays: Number(v.reminder) || null,
         files,
       });
       onClose();
@@ -195,6 +202,7 @@ function NewTaskForm({ onClose, onOpenTask, letter, task: editing }: Omit<Props,
       files,
       letter: letter ?? undefined,
       confirmDuplicate: similar.length > 0,
+      reminderDays: Number(v.reminder) || null,
     });
     onClose();
     onOpenTask(task.id);
@@ -453,6 +461,28 @@ function NewTaskForm({ onClose, onOpenTask, letter, task: editing }: Omit<Props,
             </div>
           </fieldset>
         </div>
+
+        <fieldset>
+          <legend className={label}>{t('newTask.reminder')}</legend>
+          <div className="mt-[6px] flex flex-wrap gap-[7px]">
+            {reminderOptions(editing?.reminderDays).map((days) => (
+              <label key={days} className="cursor-pointer">
+                <input
+                  type="radio"
+                  value={String(days)}
+                  {...register('reminder')}
+                  className="peer sr-only"
+                />
+                <span className="flex h-9 items-center rounded-8 border border-line bg-column px-[11px] text-[12px] text-faint peer-checked:border-info peer-checked:bg-popover-active peer-checked:font-medium peer-checked:text-text peer-focus-visible:ring-2 peer-focus-visible:ring-info">
+                  {days === 0
+                    ? t('newTask.reminderNone')
+                    : t('newTask.reminderDays', { count: days })}
+                </span>
+              </label>
+            ))}
+          </div>
+          <p className="mt-1 text-[11px] text-dim">{t('newTask.reminderHint')}</p>
+        </fieldset>
 
         <div>
           <span className={label}>{t('newTask.attachments')}</span>
