@@ -1260,7 +1260,13 @@
       "journalExported": "Log export",
       "absenceCreated": "Absence recorded",
       "absenceCancelled": "Absence cancelled",
-      "documentBounced": "Delivery failure"
+      "documentBounced": "Delivery failure",
+      "taskCreated": "Task created",
+      "taskAssigned": "Assignee changed",
+      "taskMoved": "Task status changed",
+      "taskDueChanged": "Deadline changed",
+      "taskArchived": "Task archived",
+      "taskRestored": "Task restored"
     },
     "integrityOk_one": "Chain intact · {{count}} entry checked",
     "integrityOk_other": "Chain intact · {{count}} entries checked",

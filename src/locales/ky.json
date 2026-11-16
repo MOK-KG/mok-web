@@ -1260,7 +1260,13 @@
       "journalExported": "Журналды түшүрүү",
       "absenceCreated": "Жоктук тариздеди",
       "absenceCancelled": "Жоктук жокко чыгарылды",
-      "documentBounced": "Кат жеткирилген жок"
+      "documentBounced": "Кат жеткирилген жок",
+      "taskCreated": "Тапшырма түзүлдү",
+      "taskAssigned": "Аткаруучу алмашты",
+      "taskMoved": "Тапшырманын абалы өзгөрдү",
+      "taskDueChanged": "Мөөнөт өзгөрдү",
+      "taskArchived": "Тапшырма архивде",
+      "taskRestored": "Тапшырма архивден кайтты"
     },
     "integrityOk_one": "Чынжыр бүтүн · {{count}} жазуу текшерилди",
     "integrityOk_other": "Чынжыр бүтүн · {{count}} жазуу текшерилди",

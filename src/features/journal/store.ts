@@ -26,6 +26,12 @@ export type JournalAction =
   | 'absenceCancelled'
   | 'sessionEnded'
   | 'rolePermissionsChanged'
+  | 'taskCreated'
+  | 'taskAssigned'
+  | 'taskMoved'
+  | 'taskDueChanged'
+  | 'taskArchived'
+  | 'taskRestored'
   | 'documentRegistered'
   | 'documentSent'
   | 'documentResolved'
@@ -48,7 +54,16 @@ export const journalGroups = {
     'absenceCreated',
     'absenceCancelled',
   ],
-  tasks: ['mailRejected', 'mailAccepted'],
+  tasks: [
+    'mailRejected',
+    'mailAccepted',
+    'taskCreated',
+    'taskAssigned',
+    'taskMoved',
+    'taskDueChanged',
+    'taskArchived',
+    'taskRestored',
+  ],
   documents: [
     'documentRegistered',
     'documentSent',

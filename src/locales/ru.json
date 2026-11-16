@@ -1338,7 +1338,13 @@
       "journalExported": "Выгрузка журнала",
       "absenceCreated": "Отсутствие оформлено",
       "absenceCancelled": "Отсутствие отменено",
-      "documentBounced": "Недоставка письма"
+      "documentBounced": "Недоставка письма",
+      "taskCreated": "Задача создана",
+      "taskAssigned": "Смена исполнителя",
+      "taskMoved": "Смена статуса задачи",
+      "taskDueChanged": "Смена срока",
+      "taskArchived": "Задача в архиве",
+      "taskRestored": "Задача из архива"
     },
     "integrityOk_one": "Цепочка цела · проверена {{count}} запись",
     "integrityOk_few": "Цепочка цела · проверено {{count}} записи",
