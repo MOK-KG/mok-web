@@ -14,9 +14,10 @@ import {
   nextWorkingDay,
   todayInBishkek,
 } from '@/shared/lib/workDays';
-import { resetTasksMock } from '../api';
+import { createTask, resetTasksMock } from '../api';
 import { createMockTasks } from '../mock';
 import { tasksServer } from '../testing/server';
+import type { Person } from '../types';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -232,5 +233,20 @@ describe('новая задача', () => {
     );
     await waitFor(() => d.textContent?.includes('Похожие задачи уже есть') ?? false);
     expect(d.textContent).toContain('«Антидопинговый план на 2027 год» · на проверке');
+  });
+
+  it('похожая задача: без подтверждения сервер не создаёт, с подтверждением — создаёт', async () => {
+    await render('/tasks');
+    const input = {
+      title: 'Антидопинговый план на 2028 год',
+      description: '',
+      assignee: createMockTasks().department[0].assignee as Person,
+      due: nextWorkingDay(addDays(todayInBishkek(), 3)),
+      project: null,
+      priority: 'normal' as const,
+    };
+    await expect(createTask(input)).rejects.toMatchObject({ code: 'possible_duplicate' });
+    const created = await createTask({ ...input, confirmDuplicate: true });
+    expect(created.title).toBe('Антидопинговый план на 2028 год');
   });
 });

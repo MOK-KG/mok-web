@@ -394,7 +394,8 @@
       "group_forbidden": "Only the group creator can remove members",
       "invalid_value": "Invalid value.",
       "project_exists": "This project already exists",
-      "permission_unknown": "No such permission."
+      "permission_unknown": "No such permission.",
+      "possible_duplicate": "A similar task already exists — check the warning under the title and press “Create” again."
     }
   },
   "toast": {

@@ -259,21 +259,29 @@ export function createTasksServer({ today = todayInBishkek() }: { today?: IsoDat
         return { status: 200, body: project };
       }
     }
-    if (resource === 'similar' && method === 'GET') {
-      const target = stems(query.get('title') ?? '');
-      if (target.size < 2) return { status: 200, body: [] };
-      const found = tasks
+    const similarTo = (title: string) => {
+      const target = stems(title);
+      if (target.size < 2) return [];
+      return tasks
         .filter((t) => !t.archived && t.status !== 'done')
         .map((t) => ({ t, n: [...stems(t.title)].filter((w) => target.has(w)).length }))
         .filter(({ n }) => n >= 2)
         .sort((x, y) => y.n - x.n)
         .slice(0, 2)
-        .map(({ t }) => summary(t));
-      return { status: 200, body: found };
+        .map(({ t }) => t);
+    };
+    if (resource === 'similar' && method === 'GET') {
+      return { status: 200, body: similarTo(query.get('title') ?? '').map(summary) };
     }
 
     if (resource === 'items') {
       if (!id && method === 'POST') {
+        const similar = b.confirmDuplicate ? [] : similarTo(String(b.title ?? ''));
+        if (similar.length > 0) {
+          return error(409, 'possible_duplicate', {
+            similar: similar.map((t) => ({ id: t.id, code: t.code, title: t.title })),
+          });
+        }
         const from = letters.find((l) => l.id === b.letterId);
         return createTask(b, from);
       }

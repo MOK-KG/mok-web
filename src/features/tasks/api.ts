@@ -494,6 +494,8 @@ export type NewTaskInput = {
   files?: File[];
   /** Письмо из очереди, которое оформляют задачей вручную */
   letter?: Letter;
+  /** Пользователь видел предупреждение о похожих задачах и всё равно создаёт */
+  confirmDuplicate?: boolean;
 };
 
 /** Новая задача попадает в первую колонку этапа «Очередь»; файлы загружаются следом */
@@ -506,6 +508,7 @@ export async function createTask(input: NewTaskInput): Promise<TaskDetail> {
     projectId: input.project?.id ?? null,
     priority: input.priority,
     letterId: input.letter?.id ?? null,
+    confirmDuplicate: input.confirmDuplicate ?? false,
   });
   for (const file of input.files ?? []) {
     const form = new FormData();

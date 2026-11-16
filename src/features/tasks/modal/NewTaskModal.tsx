@@ -194,6 +194,7 @@ function NewTaskForm({ onClose, onOpenTask, letter, task: editing }: Omit<Props,
       priority: v.priority,
       files,
       letter: letter ?? undefined,
+      confirmDuplicate: similar.length > 0,
     });
     onClose();
     onOpenTask(task.id);

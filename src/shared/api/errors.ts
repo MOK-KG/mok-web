@@ -91,6 +91,7 @@ export const knownErrorCodes = [
   'session_not_found',
   'permission_unknown',
   'web_push_disabled',
+  'possible_duplicate',
 ] as const;
 
 /**
