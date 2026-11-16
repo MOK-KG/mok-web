@@ -95,7 +95,9 @@ describe('уведомления с бэкенда', () => {
     const done = switches.find((x) =>
       x.closest('label')?.textContent?.includes('Завершённые задачи'),
     );
-    expect(switches.at(-1)?.closest('label')?.textContent).toContain('Новые сотрудники без роли');
+    const labels = switches.map((x) => x.closest('label')?.textContent ?? '');
+    expect(labels.some((l) => l.includes('Новые сотрудники без роли'))).toBe(true);
+    expect(labels.some((l) => l.includes('Ответы на письма по задачам'))).toBe(true);
     await waitFor(() => !!done?.checked);
     expect(switches[0].disabled).toBe(true);
     await act(async () => done?.click());

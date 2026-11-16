@@ -18,7 +18,8 @@ export type NotificationKind =
   | 'mention'
   | 'reminder'
   | 'done'
-  | 'pendingUser';
+  | 'pendingUser'
+  | 'followUp';
 
 export const notificationKinds: NotificationKind[] = [
   'assigned',
@@ -29,6 +30,7 @@ export const notificationKinds: NotificationKind[] = [
   'reminder',
   'done',
   'pendingUser',
+  'followUp',
 ];
 
 /** Не выключаются: эскалация считается по непрочитанному назначению — правило платформы */

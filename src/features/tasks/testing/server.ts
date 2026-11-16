@@ -111,6 +111,7 @@ export function createTasksServer({ today = todayInBishkek() }: { today?: IsoDat
     attachmentItems: t.attachmentItems,
     history: t.history,
     rescheduleLog: t.rescheduleLog.map((r) => ({ ...r, by: apiPerson(r.by) })),
+    letters: t.letters,
     reminderDays: t.reminderDays,
     escalatedAt: t.escalatedAt,
     source:
@@ -172,6 +173,7 @@ export function createTasksServer({ today = todayInBishkek() }: { today?: IsoDat
       commentItems: [],
       history: [],
       rescheduleLog: [],
+      letters: [],
       reminderDays: null,
       escalatedAt: null,
       source: from

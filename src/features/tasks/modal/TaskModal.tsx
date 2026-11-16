@@ -298,6 +298,7 @@ function TaskBody({ task }: { task: TaskDetail }) {
             </ul>
           )}
 
+          {task.letters.length > 0 && <Letters task={task} />}
           <Subtasks task={task} />
           <hr className="my-4 border-line" />
           <Discussion task={task} />
@@ -305,6 +306,58 @@ function TaskBody({ task }: { task: TaskDetail }) {
         <Side task={task} />
       </div>
     </>
+  );
+}
+
+function Letters({ task }: { task: TaskDetail }) {
+  const { t, i18n } = useTranslation();
+  const [open, setOpen] = useState<string | null>(task.letters.at(-1)?.id ?? null);
+  return (
+    <section aria-labelledby="task-letters" className="mt-[18px]">
+      <h3 id="task-letters" className={sectionTitle}>
+        {t('taskCard.letters', { count: task.letters.length })}
+      </h3>
+      <ol className="mt-2 flex flex-col gap-2">
+        {task.letters.map((letter) => {
+          const expanded = open === letter.id;
+          return (
+            <li key={letter.id} className="rounded-9 border border-line bg-surface">
+              <button
+                type="button"
+                aria-expanded={expanded}
+                onClick={() => setOpen(expanded ? null : letter.id)}
+                className="flex w-full items-center gap-[9px] px-[13px] py-[9px] text-left"
+              >
+                <MailMediumIcon size={15} className="shrink-0 text-warning-text" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[12px] font-medium text-text">
+                    {letter.subject}
+                  </span>
+                  <span className="block truncate text-[10.5px] text-dim">
+                    {letter.sender} ·{' '}
+                    {formatInBishkek(letter.receivedAt, 'd MMMM, HH:mm', i18n.language)}
+                    {letter.attachments > 0 &&
+                      ` · ${t('taskCard.letterAttachments', { count: letter.attachments })}`}
+                  </span>
+                </span>
+                <span
+                  className={`shrink-0 rounded-6 px-[7px] py-[3px] text-[10px] font-medium ${
+                    letter.followUp ? 'bg-info-chip text-info' : 'bg-chip text-chip-text'
+                  }`}
+                >
+                  {letter.followUp ? t('taskCard.letterFollowUp') : t('taskCard.letterOriginal')}
+                </span>
+              </button>
+              {expanded && (
+                <p className="whitespace-pre-line border-t border-line px-[13px] py-[10px] text-[12px] leading-5 text-sub">
+                  {letter.body || t('taskCard.letterEmpty')}
+                </p>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </section>
   );
 }
 
@@ -488,6 +541,7 @@ const historyIcons: Record<HistoryKind, ComponentType<{ size?: number; className
   status: HistorySwapIcon,
   subtask: CheckTinyIcon,
   comment: HistoryMailIcon,
+  letter: HistoryMailIcon,
 };
 
 const historyColor: Partial<Record<HistoryKind, string>> = {
@@ -496,6 +550,7 @@ const historyColor: Partial<Record<HistoryKind, string>> = {
   due: 'text-faint',
   created: 'text-tone-gold',
   subtask: 'text-success',
+  letter: 'text-warning-text',
 };
 
 function historyText(
@@ -514,6 +569,10 @@ function historyText(
       const [from, to, reason] = entry.text.split('|');
       const text = t('taskCard.historyAssignee', { from, to });
       return reason === 'deactivated' ? `${text} · ${t('taskCard.historyDeactivated')}` : text;
+    }
+    case 'letter': {
+      const [sender, subject] = entry.text.split('|');
+      return t('taskCard.historyLetter', { sender, subject });
     }
     case 'created':
       return entry.text === 'email'

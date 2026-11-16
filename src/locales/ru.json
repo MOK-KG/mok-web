@@ -277,7 +277,19 @@
     "unarchive": "Вернуть из архива",
     "archivedToast": "Задача перенесена в архив",
     "restoredToast": "Задача возвращена из архива",
-    "archivedBadge": "В архиве"
+    "archivedBadge": "В архиве",
+    "letters_one": "Переписка · {{count}} письмо",
+    "letters_few": "Переписка · {{count}} письма",
+    "letters_many": "Переписка · {{count}} писем",
+    "letters_other": "Переписка · {{count}} письма",
+    "letterOriginal": "Исходное",
+    "letterFollowUp": "Ответ",
+    "letterEmpty": "Без текста",
+    "letterAttachments_one": "{{count}} вложение",
+    "letterAttachments_few": "{{count}} вложения",
+    "letterAttachments_many": "{{count}} вложений",
+    "letterAttachments_other": "{{count}} вложения",
+    "historyLetter": "Пришёл ответ: {{sender}} — «{{subject}}»"
   },
   "newTask": {
     "title": "Новая задача",
@@ -891,7 +903,8 @@
       "mention": "Упоминания в чате",
       "reminder": "Напоминания о сроках",
       "done": "Завершённые задачи",
-      "pendingUser": "Новые сотрудники без роли"
+      "pendingUser": "Новые сотрудники без роли",
+      "followUp": "Ответы на письма по задачам"
     },
     "titles": {
       "assigned": "Новая задача · «{{task}}»",
@@ -900,7 +913,8 @@
       "mention": "{{actor}} упомянул(а) вас в чате",
       "reminder": "Напоминание · «{{task}}»",
       "done": "«{{task}}» завершена",
-      "pendingUser": "{{name}} ждёт роль"
+      "pendingUser": "{{name}} ждёт роль",
+      "followUp": "Ответ по задаче · «{{task}}»"
     },
     "texts": {
       "assignedBy": "Поставил(а) {{actor}}",
@@ -913,7 +927,8 @@
       "overdue_author": "Срок был {{date}}. Вы — постановщик.",
       "mention": "{{chat}} — {{excerpt}}",
       "done": "{{actor}} перевёл(а) задачу в «{{column}}».",
-      "pendingUser": "{{email}} · вошёл(а) через Google, роль не назначена."
+      "pendingUser": "{{email}} · вошёл(а) через Google, роль не назначена.",
+      "followUp": "{{sender}}: {{subject}}"
     },
     "escalationLocked": "Приходят всегда — правило платформы",
     "settingsSaved": "Настройки уведомлений сохранены",
@@ -1344,7 +1359,8 @@
       "taskMoved": "Смена статуса задачи",
       "taskDueChanged": "Смена срока",
       "taskArchived": "Задача в архиве",
-      "taskRestored": "Задача из архива"
+      "taskRestored": "Задача из архива",
+      "mailLinked": "Ответ к задаче"
     },
     "integrityOk_one": "Цепочка цела · проверена {{count}} запись",
     "integrityOk_few": "Цепочка цела · проверено {{count}} записи",

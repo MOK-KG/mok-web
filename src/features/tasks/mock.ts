@@ -173,6 +173,7 @@ function make(seed: Seed, today: IsoDate): TaskDetail {
     commentItems,
     history,
     rescheduleLog,
+    letters: [],
     reminderDays: seed.reminderDays ?? null,
     escalatedAt,
     source: seed.fromEmail

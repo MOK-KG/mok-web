@@ -19,6 +19,7 @@ export type JournalAction =
   | 'accessDenied'
   | 'mailRejected'
   | 'mailAccepted'
+  | 'mailLinked'
   | 'roleChanged'
   | 'userInvited'
   | 'userDeactivated'
@@ -57,6 +58,7 @@ export const journalGroups = {
   tasks: [
     'mailRejected',
     'mailAccepted',
+    'mailLinked',
     'taskCreated',
     'taskAssigned',
     'taskMoved',

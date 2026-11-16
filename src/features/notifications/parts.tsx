@@ -37,6 +37,7 @@ export const notificationKinds: Record<
   reminder: { Icon: BellIcon, stripe: 'bg-sub', color: 'text-faint' },
   done: { Icon: CheckSmallIcon, stripe: 'bg-success', color: 'text-success' },
   pendingUser: { Icon: AccessIcon, stripe: 'bg-warning', color: 'text-warning' },
+  followUp: { Icon: MailIcon, stripe: 'bg-info', color: 'text-info' },
 };
 
 export type NotificationView = AppNotification & { shownTitle: string; shownText: string };
@@ -90,6 +91,11 @@ function translated(
       return {
         title: t('notifications.titles.done', values),
         text: p.actor ? t('notifications.texts.done', values) : '',
+      };
+    case 'followUp':
+      return {
+        title: t('notifications.titles.followUp', values),
+        text: t('notifications.texts.followUp', values),
       };
     case 'pendingUser':
       return {

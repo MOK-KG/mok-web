@@ -16,6 +16,7 @@ import {
 } from '@/shared/lib/workDays';
 import { resetTasksMock } from '../api';
 import { createMockTasks } from '../mock';
+import { tasksServer } from '../testing/server';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -100,6 +101,47 @@ describe('карточка задачи', () => {
     expect(d.textContent).not.toContain('Показать ещё');
     expect(d.textContent).toContain('Срок переносили 2 раза');
     expect(d.textContent).toContain('Журнал действий неизменяем');
+  });
+
+  it('переписка: исходное письмо и ответ, раскрывается по клику', async () => {
+    const id = translationId();
+    const task = tasksServer.tasks.find((x) => x.id === id);
+    if (!task) throw new Error('нет задачи');
+    task.letters = [
+      {
+        id: 'l-1',
+        sender: 'МОК · Лозанна',
+        address: 'compliance@olympic.org',
+        subject: 'Charter translation',
+        body: 'Please translate the charter.',
+        receivedAt: '2026-11-10T09:00:00+06:00',
+        followUp: false,
+        attachments: 0,
+      },
+      {
+        id: 'l-2',
+        sender: 'МОК · Лозанна',
+        address: 'compliance@olympic.org',
+        subject: 'Re: Charter translation',
+        body: 'Any update on the translation?',
+        receivedAt: '2026-11-14T11:30:00+06:00',
+        followUp: true,
+        attachments: 2,
+      },
+    ];
+    await render(`/tasks?task=${id}`);
+    await waitFor(() => dialog()?.textContent?.includes('Переписка · 2 письма') ?? false);
+    const d = dialog() as HTMLElement;
+    expect(d.textContent).toContain('Исходное');
+    expect(d.textContent).toContain('2 вложения');
+    expect(d.textContent).toContain('Any update on the translation?');
+    expect(d.textContent).not.toContain('Please translate the charter.');
+    const first = [...d.querySelectorAll<HTMLButtonElement>('button[aria-expanded]')].find((b) =>
+      b.textContent?.startsWith('Charter translation'),
+    );
+    await act(async () => first?.click());
+    expect(d.textContent).toContain('Please translate the charter.');
+    expect(d.textContent).not.toContain('Any update on the translation?');
   });
 
   it('отметка подзадачи меняет счётчик и добавляет запись в журнал', async () => {

@@ -263,7 +263,15 @@
     "unarchive": "Архивден кайтаруу",
     "archivedToast": "Тапшырма архивге жылдырылды",
     "restoredToast": "Тапшырма архивден кайтарылды",
-    "archivedBadge": "Архивде"
+    "archivedBadge": "Архивде",
+    "letters_one": "Кат алышуу · {{count}} кат",
+    "letters_other": "Кат алышуу · {{count}} кат",
+    "letterOriginal": "Баштапкы",
+    "letterFollowUp": "Жооп",
+    "letterEmpty": "Тексти жок",
+    "letterAttachments_one": "{{count}} тиркеме",
+    "letterAttachments_other": "{{count}} тиркеме",
+    "historyLetter": "Жооп келди: {{sender}} — «{{subject}}»"
   },
   "newTask": {
     "title": "Жаңы тапшырма",
@@ -843,7 +851,8 @@
       "mention": "Чаттагы эскерүүлөр",
       "reminder": "Мөөнөт эскертмелери",
       "done": "Аяктаган тапшырмалар",
-      "pendingUser": "Ролу жок жаңы кызматкерлер"
+      "pendingUser": "Ролу жок жаңы кызматкерлер",
+      "followUp": "Тапшырмалар боюнча каттарга жооптор"
     },
     "titles": {
       "assigned": "Жаңы тапшырма · «{{task}}»",
@@ -852,7 +861,8 @@
       "mention": "{{actor}} сизди чатта белгиледи",
       "reminder": "Эскертме · «{{task}}»",
       "done": "«{{task}}» аткарылды",
-      "pendingUser": "{{name}} ролду күтүүдө"
+      "pendingUser": "{{name}} ролду күтүүдө",
+      "followUp": "Тапшырма боюнча жооп · «{{task}}»"
     },
     "texts": {
       "assignedBy": "Койгон: {{actor}}",
@@ -863,7 +873,8 @@
       "overdue_author": "Мөөнөтү {{date}} болчу. Сиз — тапшырма берүүчү.",
       "mention": "{{chat}} — {{excerpt}}",
       "done": "{{actor}} тапшырманы «{{column}}» тилкесине которду.",
-      "pendingUser": "{{email}} · Google аркылуу кирди, ролу дайындала элек."
+      "pendingUser": "{{email}} · Google аркылуу кирди, ролу дайындала элек.",
+      "followUp": "{{sender}}: {{subject}}"
     },
     "escalationLocked": "Ар дайым келет — платформанын эрежеси",
     "settingsSaved": "Билдирме жөндөөлөрү сакталды",
@@ -1266,7 +1277,8 @@
       "taskMoved": "Тапшырманын абалы өзгөрдү",
       "taskDueChanged": "Мөөнөт өзгөрдү",
       "taskArchived": "Тапшырма архивде",
-      "taskRestored": "Тапшырма архивден кайтты"
+      "taskRestored": "Тапшырма архивден кайтты",
+      "mailLinked": "Тапшырмага жооп"
     },
     "integrityOk_one": "Чынжыр бүтүн · {{count}} жазуу текшерилди",
     "integrityOk_other": "Чынжыр бүтүн · {{count}} жазуу текшерилди",

@@ -263,7 +263,15 @@
     "unarchive": "Restore from archive",
     "archivedToast": "Task archived",
     "restoredToast": "Task restored from archive",
-    "archivedBadge": "Archived"
+    "archivedBadge": "Archived",
+    "letters_one": "Correspondence · {{count}} letter",
+    "letters_other": "Correspondence · {{count}} letters",
+    "letterOriginal": "Original",
+    "letterFollowUp": "Reply",
+    "letterEmpty": "No text",
+    "letterAttachments_one": "{{count}} attachment",
+    "letterAttachments_other": "{{count}} attachments",
+    "historyLetter": "Reply received: {{sender}} — “{{subject}}”"
   },
   "newTask": {
     "title": "New task",
@@ -843,7 +851,8 @@
       "mention": "Chat mentions",
       "reminder": "Deadline reminders",
       "done": "Completed tasks",
-      "pendingUser": "New staff without a role"
+      "pendingUser": "New staff without a role",
+      "followUp": "Replies to task letters"
     },
     "titles": {
       "assigned": "New task · “{{task}}”",
@@ -852,7 +861,8 @@
       "mention": "{{actor}} mentioned you in chat",
       "reminder": "Reminder · “{{task}}”",
       "done": "“{{task}}” completed",
-      "pendingUser": "{{name}} is waiting for a role"
+      "pendingUser": "{{name}} is waiting for a role",
+      "followUp": "Reply on task · “{{task}}”"
     },
     "texts": {
       "assignedBy": "Assigned by {{actor}}",
@@ -863,7 +873,8 @@
       "overdue_author": "The deadline was {{date}}. You set this task.",
       "mention": "{{chat}} — {{excerpt}}",
       "done": "{{actor}} moved the task to “{{column}}”.",
-      "pendingUser": "{{email}} · signed in with Google, no role assigned."
+      "pendingUser": "{{email}} · signed in with Google, no role assigned.",
+      "followUp": "{{sender}}: {{subject}}"
     },
     "escalationLocked": "Always on — a platform rule",
     "settingsSaved": "Notification settings saved",
@@ -1266,7 +1277,8 @@
       "taskMoved": "Task status changed",
       "taskDueChanged": "Deadline changed",
       "taskArchived": "Task archived",
-      "taskRestored": "Task restored"
+      "taskRestored": "Task restored",
+      "mailLinked": "Reply linked to task"
     },
     "integrityOk_one": "Chain intact · {{count}} entry checked",
     "integrityOk_other": "Chain intact · {{count}} entries checked",

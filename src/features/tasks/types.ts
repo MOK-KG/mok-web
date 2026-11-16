@@ -79,10 +79,22 @@ export type HistoryKind =
   | 'created'
   | 'status'
   | 'subtask'
-  | 'comment';
+  | 'comment'
+  | 'letter';
 
 /** Запись журнала изменений задачи — только добавляется, не меняется и не удаляется */
 export type HistoryEntry = { id: string; kind: HistoryKind; text: string; at: string };
+
+export type TaskLetter = {
+  id: string;
+  sender: string;
+  address: string;
+  subject: string;
+  body: string;
+  receivedAt: string;
+  followUp: boolean;
+  attachments: number;
+};
 
 export type Reschedule = { from: IsoDate; to: IsoDate; by: Person };
 
@@ -100,6 +112,7 @@ export type TaskDetail = Task & {
   commentItems: Comment[];
   history: HistoryEntry[];
   rescheduleLog: Reschedule[];
+  letters: TaskLetter[];
   /** За сколько дней напомнить исполнителю и постановщику; null — без напоминания */
   reminderDays: number | null;
   /** Время эскалации (ISO) */

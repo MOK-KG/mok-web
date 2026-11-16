@@ -60,6 +60,7 @@ export type ApiTaskDetail = ApiTask & {
   attachmentItems: ApiAttachment[];
   history: { id: string; kind: HistoryEntry['kind']; text: string; at: string }[];
   rescheduleLog: { from: IsoDate; to: IsoDate; by: ApiPerson | null }[];
+  letters?: TaskDetail['letters'];
   reminderDays: number | null;
   escalatedAt: string | null;
   source:
@@ -169,6 +170,7 @@ export function toTaskDetail(t: ApiTaskDetail): TaskDetail {
     commentItems: t.commentItems.map((c) => ({ ...c, author: toPerson(c.author) })),
     history: t.history.map(({ id, kind, text, at }) => ({ id, kind, text, at })),
     rescheduleLog: t.rescheduleLog.map((r) => ({ from: r.from, to: r.to, by: toPerson(r.by) })),
+    letters: t.letters ?? [],
     reminderDays: t.reminderDays,
     escalatedAt: t.escalatedAt,
     archived: t.archived ?? false,
