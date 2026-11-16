@@ -2,9 +2,12 @@ import { addDays, diffDays, type IsoDate, todayInBishkek } from '@/shared/lib/wo
 import { urgencyOf } from './deadline';
 import type { Task } from './types';
 
-export type DueFilter = 'overdue' | 'week' | 'none';
+export type DueFilter = 'overdue' | 'soon' | 'week' | 'none';
 
-export const dueFilters: DueFilter[] = ['overdue', 'week', 'none'];
+export const dueFilters: DueFilter[] = ['overdue', 'soon', 'week', 'none'];
+
+export const isDueFilter = (value: string): value is DueFilter =>
+  (dueFilters as string[]).includes(value);
 
 export type TaskFilters = {
   projects: string[];
@@ -41,6 +44,8 @@ export function matchesDue(task: Task, due: DueFilter, today: IsoDate = todayInB
   switch (due) {
     case 'overdue':
       return urgency === 'overdue';
+    case 'soon':
+      return urgency === 'soon';
     case 'none':
       return task.due === null;
     case 'week':

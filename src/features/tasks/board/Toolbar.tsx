@@ -224,6 +224,7 @@ function Checkbox({ checked }: { checked: boolean }) {
 
 const dueLabel: Record<DueFilter, string> = {
   overdue: 'tasks.dueOverdue',
+  soon: 'tasks.dueSoon',
   week: 'tasks.dueWeek',
   none: 'tasks.dueNone',
 };

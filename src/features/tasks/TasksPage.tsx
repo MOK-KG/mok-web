@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Can, useCan } from '@/features/auth';
 import { storage } from '@/shared/lib/storage';
@@ -7,22 +7,40 @@ import { useBoard } from './api';
 import { Board, type Grouping } from './board/Board';
 import { QueueBanner } from './board/QueueBanner';
 import { ActiveFilters, type TaskView, Toolbar } from './board/Toolbar';
-import { applyFilters, emptyFilters, hasFilters, type TaskFilters } from './filters';
+import { applyFilters, emptyFilters, hasFilters, isDueFilter, type TaskFilters } from './filters';
 import { TaskList } from './list/TaskList';
 import type { Letter } from './mailQueue';
 import { NewTaskModal } from './modal/NewTaskModal';
 import { QueueModal } from './modal/QueueModal';
 import { TaskModal } from './modal/TaskModal';
-import type { TaskTab } from './types';
+import { type TaskTab, taskTabs } from './types';
 
 const VIEW_KEY = 'nok.tasksView';
 
 /** Раздел «Задачи»: вкладки, панель инструментов, очередь из почты, канбан-доска */
 export function TasksPage() {
-  const [tab, setTab] = useState<TaskTab>('department');
+  const [params, setParams] = useSearchParams();
+  const [tab, setTab] = useState<TaskTab>(() => {
+    const value = params.get('tab');
+    return taskTabs.find((x) => x === value) ?? 'department';
+  });
   const [grouping, setGrouping] = useState<Grouping>('none');
   const [search, setSearch] = useState('');
-  const [filters, setFilters] = useState<TaskFilters>(emptyFilters);
+  const [filters, setFilters] = useState<TaskFilters>(() => ({
+    ...emptyFilters,
+    due: (params.get('due') ?? '').split(',').filter(isDueFilter),
+  }));
+  useEffect(() => {
+    if (!params.has('tab') && !params.has('due')) return;
+    setParams(
+      (p) => {
+        p.delete('tab');
+        p.delete('due');
+        return p;
+      },
+      { replace: true },
+    );
+  }, [params, setParams]);
   const narrow = useMediaQuery(NARROW);
   const [chosenView, setChosenView] = useState<TaskView | null>(() => {
     const saved = storage.get(VIEW_KEY);
@@ -34,7 +52,6 @@ export function TasksPage() {
     setChosenView(next);
   };
   const { can } = useCan();
-  const [params, setParams] = useSearchParams();
   const [creating, setCreating] = useState(false);
   // Очередь из почты открывается и по ссылке ?queue=1 — из уведомления «Разобрать»
   const queueOpen = params.get('queue') === '1';

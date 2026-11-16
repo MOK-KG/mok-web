@@ -193,7 +193,8 @@
       "board": "Board",
       "list": "List",
       "label": "View"
-    }
+    },
+    "dueSoon": "Within 2 days"
   },
   "taskCard": {
     "close": "Close",
