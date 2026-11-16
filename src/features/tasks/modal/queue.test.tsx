@@ -10,6 +10,7 @@ import { fetchJournal } from '@/features/journal/store';
 import { api } from '@/shared/api/client';
 import { type Board, createFromLetter, rejectLetter, resetTasksMock } from '../api';
 import { canCreate, createMockQueue } from '../mailQueue';
+import { tasksServer } from '../testing/server';
 
 const queueSummary = () => api.get<{ ready: number; manual: number }>('/tasks/mail/summary');
 
@@ -124,5 +125,45 @@ describe('очередь из почты (интерфейс)', () => {
     await act(async () => confirm?.click());
     expect(page()).toContain('Укажите причину — хотя бы 5 символов');
     expect((await queueSummary()).ready).toBe(3);
+  });
+});
+
+describe('очередь из почты: низкая уверенность агента', () => {
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+    vi.unstubAllEnvs();
+  });
+
+  it('письмо с низкой уверенностью — в «Разобрать вручную», счётчики совпадают', async () => {
+    vi.stubEnv('VITE_AUTH_MOCK', 'active');
+    sessionStorage.clear();
+    sessionStorage.setItem('nok.mockSession', JSON.stringify(mockSessionFor('active', 'R3')));
+    resetTasksMock();
+    await i18n.changeLanguage('ru');
+    const doubtful = tasksServer.letters.find((l) => l.suggestion);
+    if (!doubtful?.suggestion) throw new Error('нет разобранного письма');
+    doubtful.suggestion = { ...doubtful.suggestion, confidence: 40, lowConfidence: true };
+    router = createMemoryRouter(routes, { initialEntries: ['/tasks'] });
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+    await act(async () =>
+      root.render(
+        <AppProviders>
+          <RouterProvider router={router} />
+        </AppProviders>,
+      ),
+    );
+    await waitFor(() => !!button('Разобрать'));
+    await act(async () => button('Разобрать')?.click());
+    await waitFor(() => page().includes('Предложение модели'));
+    expect(page()).toContain('2 разобраны, 2 нужно оформить вручную');
+    expect(page()).toContain('низкая уверенность · 40%');
+    const row = [...document.querySelectorAll<HTMLButtonElement>('nav button')].find((b) =>
+      b.textContent?.includes(doubtful.subject),
+    );
+    await act(async () => row?.click());
+    await waitFor(() => page().includes('Агент не уверен в разборе'));
   });
 });

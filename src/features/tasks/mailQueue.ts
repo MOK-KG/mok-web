@@ -26,6 +26,10 @@ export type Suggestion = {
   reasoning?: string;
   /** Статьи базы знаний, на которые опирался агент */
   sources?: { id: string; title: string }[];
+  /** Уверенность агента, 0–100; null — письмо разобрано до появления оценки */
+  confidence?: number | null;
+  /** Ниже порога — письмо разбирает человек вручную */
+  lowConfidence?: boolean;
 };
 
 export type Letter = {
@@ -41,6 +45,8 @@ export type Letter = {
   /** null — модель не смогла разобрать письмо, задачу оформляют вручную */
   suggestion: Suggestion | null;
 };
+
+export const isReady = (l: Letter) => l.suggestion !== null && !l.suggestion.lowConfidence;
 
 export const canCreate = (s: Suggestion) =>
   !Object.values(s.flags).includes('missing') &&

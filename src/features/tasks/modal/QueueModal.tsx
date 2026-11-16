@@ -27,7 +27,13 @@ import {
   useSimilarTasks,
 } from '../api';
 import { dueProblem } from '../deadline';
-import { canCreate, type Letter, type Suggestion, type SuggestionField } from '../mailQueue';
+import {
+  canCreate,
+  isReady,
+  type Letter,
+  type Suggestion,
+  type SuggestionField,
+} from '../mailQueue';
 import { dueMessage } from './NewTaskModal';
 
 const sectionTitle = 'text-[10px] font-semibold uppercase tracking-[1.4px] text-dim';
@@ -47,8 +53,8 @@ export function QueueModal({ open, onClose, onOpenTask, onManual }: Props) {
   const queue = useMailQueue();
   const letters = queue.data ?? [];
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const ready = letters.filter((l) => l.suggestion);
-  const manual = letters.filter((l) => !l.suggestion);
+  const ready = letters.filter(isReady);
+  const manual = letters.filter((l) => !isReady(l));
   const selected = letters.find((l) => l.id === selectedId) ?? ready[0] ?? null;
   const summary = { ready: ready.length, manual: manual.length };
 
@@ -111,7 +117,8 @@ export function QueueModal({ open, onClose, onOpenTask, onManual }: Props) {
                         <LetterRow
                           key={l.id}
                           letter={l}
-                          selected={false}
+                          selected={l.id === selected?.id}
+                          onSelect={l.suggestion ? () => setSelectedId(l.id) : undefined}
                           onManual={() => onManual(l)}
                         />
                       ))}
@@ -170,6 +177,22 @@ function GroupTitle({
   );
 }
 
+function ConfidenceChip({ suggestion }: { suggestion: Suggestion }) {
+  const { t } = useTranslation();
+  if (suggestion.confidence == null) return null;
+  return (
+    <span
+      className={`inline-flex h-[18px] items-center rounded-[5px] px-[6px] text-[10px] font-medium ${
+        suggestion.lowConfidence ? 'bg-danger-chip text-danger' : 'bg-chip text-chip-text'
+      }`}
+    >
+      {suggestion.lowConfidence
+        ? t('mailQueue.lowConfidence', { value: suggestion.confidence })
+        : t('mailQueue.confidence', { value: suggestion.confidence })}
+    </span>
+  );
+}
+
 function StateChip({ ready }: { ready: boolean }) {
   const { t } = useTranslation();
   return (
@@ -223,7 +246,9 @@ function LetterRow({
           {letter.subject}
         </span>
         <span className="mt-[6px] flex items-center gap-2">
-          {letter.suggestion ? (
+          {letter.suggestion?.lowConfidence ? (
+            <ConfidenceChip suggestion={letter.suggestion} />
+          ) : letter.suggestion ? (
             <StateChip ready={ready} />
           ) : (
             <button
@@ -427,10 +452,19 @@ function ParsedLetter({
         <h3 className="text-[10px] font-semibold uppercase tracking-[1.4px] text-tone-violet">
           {t('mailQueue.suggestion')}
         </h3>
-        <span className="ml-auto">
+        <span className="ml-auto flex items-center gap-[6px]">
+          {letter.suggestion && <ConfidenceChip suggestion={letter.suggestion} />}
           <StateChip ready={ready} />
         </span>
       </div>
+      {letter.suggestion?.lowConfidence && (
+        <p
+          role="status"
+          className="mt-3 rounded-9 border border-danger-line bg-danger-chip px-[13px] py-2 text-[11.5px] leading-4 text-danger"
+        >
+          {t('mailQueue.lowConfidenceNote')}
+        </p>
+      )}
 
       {similar.length > 0 && (
         <div

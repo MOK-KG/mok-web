@@ -352,7 +352,10 @@
     "mailQueueNote_one": "{{count}} email in the mail queue",
     "mailQueueNote_other": "{{count}} emails in the mail queue",
     "why": "Why this suggestion",
-    "sources": "Based on knowledge base articles:"
+    "sources": "Based on knowledge base articles:",
+    "confidence": "confidence {{value}}%",
+    "lowConfidence": "low confidence · {{value}}%",
+    "lowConfidenceNote": "The agent is not sure about this letter. Check every field — assignee, deadline and project — before creating the task."
   },
   "errors": {
     "unknown": "Something went wrong. Please try again.",

@@ -5,7 +5,7 @@ import type { IsoDate } from '@/shared/lib/workDays';
 import { todayInBishkek } from '@/shared/lib/workDays';
 import type { ApiLetter, ApiPerson, ApiTask, ApiTaskDetail } from '../api';
 import { currentUserId, people, projects } from '../directory';
-import { createMockQueue, type Letter } from '../mailQueue';
+import { createMockQueue, isReady, type Letter } from '../mailQueue';
 import { createMockTasks, mockColumns } from '../mock';
 import type { Column, Person, Project, TaskDetail, TaskTab } from '../types';
 
@@ -362,8 +362,8 @@ export function createTasksServer({ today = todayInBishkek() }: { today?: IsoDat
         return {
           status: 200,
           body: {
-            ready: letters.filter((l) => l.suggestion).length,
-            manual: letters.filter((l) => !l.suggestion).length,
+            ready: letters.filter(isReady).length,
+            manual: letters.filter((l) => !isReady(l)).length,
           },
         };
       }
