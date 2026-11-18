@@ -7,16 +7,46 @@ import { AppProviders } from '@/app/providers';
 import { routes } from '@/app/router';
 import { mockSessionFor } from '@/features/auth/mock';
 import { mockRoleMatrix, type RoleCode } from '@/shared/config/permissions';
-import { fetchAssistantSettings, saveAssistantSettings } from './api';
+import {
+  disconnectMailbox,
+  fetchAssistantSettings,
+  fetchMailboxes,
+  mailboxConnectResult,
+  saveAssistantSettings,
+  updateMailbox,
+} from './api';
 import { assistantServer } from './testing/server';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 describe('настройки ИИ (запросы)', () => {
-  it('пароля нет в ответе — только признак, что он задан', async () => {
+  it('ключа нет в ответе — только признак, что он задан; настроек IMAP нет', async () => {
     const s = await fetchAssistantSettings();
-    expect(s.environment).toMatchObject({ mailPassword: true, openaiKey: true });
-    expect(JSON.stringify(s).toLowerCase()).not.toMatch(/"password"/);
+    expect(s.environment).toMatchObject({ openaiKey: true });
+    expect(JSON.stringify(s).toLowerCase()).not.toMatch(/password|imap/);
+  });
+
+  it('ящики: список, метка, выключение, отключение', async () => {
+    const [box] = await fetchMailboxes();
+    expect(box).toMatchObject({ email: 'info@olympic.kg', label: 'INBOX', enabled: true });
+    expect(JSON.stringify(box).toLowerCase()).not.toMatch(/token/);
+    expect(await updateMailbox({ id: box.id, label: ' Задачи ' })).toMatchObject({
+      label: 'Задачи',
+    });
+    expect(await updateMailbox({ id: box.id, enabled: false })).toMatchObject({ enabled: false });
+    await disconnectMailbox(box.id);
+    expect(await fetchMailboxes()).toEqual([]);
+  });
+
+  it('возврат из Google: ?mailbox=…', () => {
+    const parse = (q: string) => mailboxConnectResult(new URLSearchParams(q));
+    expect(parse('mailbox=connected&email=info%40olympic.kg')).toEqual({
+      status: 'connected',
+      email: 'info@olympic.kg',
+    });
+    expect(parse('mailbox=error&reason=scope')).toMatchObject({ status: 'error', reason: 'scope' });
+    expect(parse('mailbox=error')).toMatchObject({ reason: 'google_error' });
+    expect(parse('tab=1')).toBeNull();
   });
 
   it('неизвестная роль и интервал вне диапазона — ошибка поля', async () => {
@@ -88,22 +118,45 @@ describe('настройки ИИ (экран)', () => {
     vi.unstubAllEnvs();
   });
 
-  it('настройки, индикатор пароля и журнал запусков', async () => {
+  it('настройки, ящики и журнал запусков', async () => {
     await render('R1');
     await waitFor(() => page().includes('Последние запуски') && page().includes('RateLimitError'));
-    expect(page()).toContain('Пароль ящика задан в окружении сервера');
+    await waitFor(() => page().includes('info@olympic.kg'));
     expect(page()).toContain('Ключ OpenAI задан в окружении сервера');
-    expect(document.querySelector<HTMLInputElement>('#assistant-host')?.value).toBe(
-      'imap.olympic.kg',
-    );
-    // Поля пароля на экране нет
+    expect(page()).toContain('подключил(а) Дамира Токтосунова');
+    expect(button('Подключить ящик Gmail')).toBeTruthy();
+    // Полей IMAP и пароля на экране нет
+    expect(document.querySelector('#assistant-host')).toBeNull();
     expect(document.querySelector('input[type="password"]')).toBeNull();
   });
 
-  it('без пароля в окружении — предупреждение', async () => {
-    assistantServer.settings.environment.mailPassword = false;
+  it('ящик: метка, отзыв доступа, отключение с подтверждением', async () => {
+    assistantServer.mailboxes[0].needsReconnect = true;
     await render('R3');
-    await waitFor(() => page().includes('Пароль ящика не задан'));
+    await waitFor(() => page().includes('Google отозвал доступ'));
+    await type('#mailbox-label-1', 'Задачи');
+    await act(async () => {
+      document.querySelector<HTMLFormElement>('#mailbox-label-1')?.form?.requestSubmit();
+    });
+    await waitFor(() => assistantServer.mailboxes[0]?.label === 'Задачи');
+    await act(async () => button('Отключить')?.click());
+    expect(page()).toContain('Отозвать доступ и отключить ящик?');
+    expect(assistantServer.mailboxes).toHaveLength(1);
+    const confirm = [...document.querySelectorAll<HTMLButtonElement>('button')].filter(
+      (b) => b.textContent === 'Отключить',
+    );
+    await act(async () => confirm.at(-1)?.click());
+    await waitFor(() => page().includes('Ни одного ящика не подключено'));
+    expect(assistantServer.mailboxes).toHaveLength(0);
+  });
+
+  it('возврат из Google — тост и адрес без ?mailbox', async () => {
+    await render('R1', '/access/assistant?mailbox=connected&email=docs%40olympic.kg');
+    await waitFor(() => page().includes('Ящик docs@olympic.kg подключён'));
+    act(() => root.unmount());
+    container.remove();
+    await render('R1', '/access/assistant?mailbox=error&reason=scope');
+    await waitFor(() => page().includes('Нужен доступ к просмотру писем'));
   });
 
   it('сохранение: инструкции и роли для базы знаний', async () => {

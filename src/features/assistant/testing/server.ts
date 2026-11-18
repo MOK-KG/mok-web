@@ -8,11 +8,12 @@ import type {
   ApiDryRunSuggestion,
   AssistantSettings,
   AssistantSettingsInput,
+  Mailbox,
 } from '../api';
 
 /**
  * Подставной бэкенд ассистента для тестов: те же адреса и формат, что у mok-backend
- * (apps/assistant/views.py: /api/assistant/settings|runs|run|dry-run). Модели нет —
+ * (apps/assistant/views.py: /api/assistant/settings|runs|run|dry-run|mailboxes). Модели нет —
  * «проверка на письме» отвечает готовым предложением. Остальные запросы уходят дальше.
  * Ставится перед каждым тестом в src/test/setup.ts.
  */
@@ -30,17 +31,12 @@ export function createAssistantServer() {
     enabled: true,
     model: '',
     instructions: 'Письма МОК — приоритет высокий.',
-    imapHost: 'imap.olympic.kg',
-    imapPort: 993,
-    imapSsl: true,
-    imapUser: 'info@olympic.kg',
-    imapFolder: 'INBOX',
     pollMinutes: 5,
     knowledgeRoles: [],
     maxLetters: 20,
     updatedAt: '2026-11-10T09:00:00Z',
     updatedBy: null,
-    environment: { openaiKey: true, mailPassword: true, defaultModel: 'gpt-4.1-mini' },
+    environment: { openaiKey: true, defaultModel: 'gpt-4.1-mini' },
   };
   const runs: AgentRun[] = [
     {
@@ -55,13 +51,26 @@ export function createAssistantServer() {
       startedBy: null,
     },
   ];
+  let mailboxes: Mailbox[] = [
+    {
+      id: 1,
+      email: 'info@olympic.kg',
+      label: 'INBOX',
+      enabled: true,
+      syncedUntil: '2026-11-10T08:00:00Z',
+      connectedAt: '2026-11-01T09:00:00Z',
+      connectedBy: apiPerson(people.dt),
+      checkedAt: '2026-11-10T08:00:00Z',
+      lastError: '',
+      needsReconnect: false,
+    },
+  ];
   /** Писем в очереди без предложения */
   let queue = 2;
 
   const fields: Record<string, (v: unknown) => boolean> = {
     pollMinutes: (v) => Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 1440,
     maxLetters: (v) => Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 100,
-    imapPort: (v) => Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 65535,
     knowledgeRoles: (v) =>
       Array.isArray(v) && v.every((r) => (roleCodes as readonly string[]).includes(r)),
   };
@@ -124,10 +133,34 @@ export function createAssistantServer() {
     }
     if (path === '/assistant/run' && method === 'POST') return run();
     if (path === '/assistant/dry-run' && method === 'POST') return dryRun(body ?? {});
+    if (path === '/assistant/mailboxes' && method === 'GET')
+      return { status: 200, body: mailboxes };
+    const mailbox = path.match(/^\/assistant\/mailboxes\/(\d+)$/);
+    if (mailbox) {
+      const found = mailboxes.find((m) => m.id === Number(mailbox[1]));
+      if (!found) return error(404, 'not_found');
+      if (method === 'PATCH') {
+        const input = body ?? {};
+        if ('label' in input) found.label = String(input.label).trim() || 'INBOX';
+        if ('enabled' in input) found.enabled = Boolean(input.enabled);
+        return { status: 200, body: found };
+      }
+      if (method === 'DELETE') {
+        mailboxes = mailboxes.filter((m) => m !== found);
+        return { status: 204 };
+      }
+    }
     return error(404, 'not_found');
   }
 
-  return { handle, settings, runs };
+  return {
+    handle,
+    settings,
+    runs,
+    get mailboxes() {
+      return mailboxes;
+    },
+  };
 }
 
 export type AssistantServer = ReturnType<typeof createAssistantServer>;
@@ -148,6 +181,7 @@ export function installAssistantServer() {
       const raw = init.body;
       const body = typeof raw === 'string' ? JSON.parse(raw) : undefined;
       const reply = assistantServer.handle(init.method ?? 'GET', path, url.searchParams, body);
+      if (reply.status === 204) return new Response(null, { status: 204 });
       return new Response(JSON.stringify(reply.body), {
         status: reply.status,
         headers: { 'Content-Type': 'application/json' },

@@ -41,6 +41,8 @@ export type JournalAction =
   | 'documentBounced'
   | 'journalExported'
   | 'sessionEnded'
+  | 'mailboxConnected'
+  | 'mailboxDisconnected'
   | 'rolePermissionsChanged';
 
 /** Группы действий — для фильтра на экране журнала */
@@ -58,6 +60,8 @@ export const journalGroups = {
   tasks: [
     'mailRejected',
     'mailAccepted',
+    'mailboxConnected',
+    'mailboxDisconnected',
     'mailLinked',
     'taskCreated',
     'taskAssigned',

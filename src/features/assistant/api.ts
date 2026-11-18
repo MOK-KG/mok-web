@@ -7,15 +7,14 @@ import type { IsoDate } from '@/shared/lib/workDays';
 
 /**
  * Настройки ИИ и агента почты — API бэкенда (mok-backend, apps/assistant, /api/assistant/*),
- * право assistant.manage. Пароль ящика и ключ OpenAI не приходят никогда — только флаги,
- * заданы ли они в окружении сервера. В тестах — подставной сервер testing/server.ts.
+ * право assistant.manage. Ключ OpenAI не приходит никогда — только флаг, задан ли он в окружении
+ * сервера. Ящики Gmail подключаются через Google OAuth (доступ только на чтение): токены хранит
+ * бэкенд, сюда приходит только адрес и состояние. В тестах — подставной сервер testing/server.ts.
  */
 
 export type AssistantEnvironment = {
   /** Задан ли OPENAI_API_KEY */
   openaiKey: boolean;
-  /** Задан ли MAIL_AGENT_PASSWORD */
-  mailPassword: boolean;
   /** Модель, если в настройках пусто */
   defaultModel: string;
 };
@@ -24,11 +23,6 @@ export type AssistantSettings = {
   enabled: boolean;
   model: string;
   instructions: string;
-  imapHost: string;
-  imapPort: number;
-  imapSsl: boolean;
-  imapUser: string;
-  imapFolder: string;
   pollMinutes: number;
   knowledgeRoles: RoleCode[];
   maxLetters: number;
@@ -40,6 +34,30 @@ export type AssistantSettings = {
 export type AssistantSettingsInput = Partial<
   Omit<AssistantSettings, 'updatedAt' | 'updatedBy' | 'environment'>
 >;
+
+/** Ящик Gmail, подключённый через Google OAuth (gmail.readonly) */
+export type Mailbox = {
+  id: number;
+  email: string;
+  /** Метка Gmail, из которой читаются письма (название или ID) */
+  label: string;
+  enabled: boolean;
+  /** Письма до этого момента уже загружены */
+  syncedUntil: string;
+  connectedAt: string;
+  connectedBy: ApiPerson | null;
+  checkedAt: string | null;
+  lastError: string;
+  /** Google отозвал доступ — подключить заново */
+  needsReconnect: boolean;
+};
+
+export type MailboxInput = Partial<Pick<Mailbox, 'label' | 'enabled'>>;
+
+/** Чем закончилось подключение ящика: бэкенд возвращает на страницу с ?mailbox=… */
+export type MailboxConnectResult =
+  | { status: 'connected'; email: string }
+  | { status: 'error'; reason: string; email?: string };
 
 export type AgentRunTrigger = 'schedule' | 'manual' | 'command';
 
@@ -78,6 +96,7 @@ export type DryRunInput = { subject: string; body: string };
 export const assistantKey = ['assistant'] as const;
 const settingsKey = [...assistantKey, 'settings'] as const;
 const runsKey = [...assistantKey, 'runs'] as const;
+const mailboxesKey = [...assistantKey, 'mailboxes'] as const;
 
 export const fetchAssistantSettings = () => api.get<AssistantSettings>('/assistant/settings');
 
@@ -87,6 +106,31 @@ export const saveAssistantSettings = (input: AssistantSettingsInput) =>
 export const fetchAgentRuns = (limit = 20) => api.get<AgentRun[]>(`/assistant/runs?limit=${limit}`);
 
 export const runAgentNow = () => api.post<AgentRun>('/assistant/run', {});
+
+export const fetchMailboxes = () => api.get<Mailbox[]>('/assistant/mailboxes');
+
+export const updateMailbox = ({ id, ...input }: MailboxInput & { id: number }) =>
+  api.patch<Mailbox>(`/assistant/mailboxes/${id}`, input);
+
+export const disconnectMailbox = (id: number) => api.delete<void>(`/assistant/mailboxes/${id}`);
+
+/**
+ * Подключить (или переподключить) ящик: переход на бэкенд → согласие Google → обратно на
+ * returnTo с ?mailbox=connected&email=… или ?mailbox=error&reason=…
+ */
+export const connectMailbox = (returnTo: string, email?: string) =>
+  window.location.assign(
+    api.url('/assistant/mailboxes/connect', { returnTo, ...(email ? { email } : {}) }),
+  );
+
+/** Разобрать ?mailbox=… после возврата из Google */
+export function mailboxConnectResult(params: URLSearchParams): MailboxConnectResult | null {
+  const status = params.get('mailbox');
+  const email = params.get('email') ?? undefined;
+  if (status === 'connected' && email) return { status, email };
+  if (status === 'error') return { status, reason: params.get('reason') ?? 'google_error', email };
+  return null;
+}
 
 export const toDryRunSuggestion = (s: ApiDryRunSuggestion): DryRunSuggestion => ({
   ...s,
@@ -100,6 +144,30 @@ export const useAssistantSettings = () =>
   useQuery({ queryKey: settingsKey, queryFn: fetchAssistantSettings });
 
 export const useAgentRuns = () => useQuery({ queryKey: runsKey, queryFn: () => fetchAgentRuns() });
+
+export const useMailboxes = () => useQuery({ queryKey: mailboxesKey, queryFn: fetchMailboxes });
+
+export function useUpdateMailbox() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: updateMailbox,
+    meta: { successMessage: 'assistant.mailboxSaved' },
+    onSuccess: (data) =>
+      client.setQueryData<Mailbox[]>(mailboxesKey, (list) =>
+        list?.map((m) => (m.id === data.id ? data : m)),
+      ),
+  });
+}
+
+export function useDisconnectMailbox() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: disconnectMailbox,
+    meta: { successMessage: 'assistant.mailboxDisconnected' },
+    onSuccess: (_data, id) =>
+      client.setQueryData<Mailbox[]>(mailboxesKey, (list) => list?.filter((m) => m.id !== id)),
+  });
+}
 
 export function useSaveAssistantSettings() {
   const client = useQueryClient();

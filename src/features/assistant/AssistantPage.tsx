@@ -1,6 +1,6 @@
-import { type FormEvent, type ReactNode, useState } from 'react';
+import { type FormEvent, type ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { usePageSubtitle } from '@/app/layout/AppLayout';
 import {
   capsTitle,
@@ -14,24 +14,32 @@ import { ApiError } from '@/shared/api/client';
 import { errorText } from '@/shared/api/feedback';
 import { roleCodes } from '@/shared/config/permissions';
 import { formatInBishkek, formatIsoDate } from '@/shared/lib/date';
+import { toast } from '@/shared/lib/toast';
 import {
   BoltIcon,
   BookIcon,
   ChevronLeftIcon,
   LockIcon,
   MailIcon,
+  PlusIcon,
   SparkleIcon,
 } from '@/shared/ui/icons';
 import {
   type AgentRun,
   type AssistantSettings,
   type AssistantSettingsInput,
+  connectMailbox,
   type DryRunSuggestion,
+  type Mailbox,
+  mailboxConnectResult,
   useAgentRuns,
   useAssistantSettings,
+  useDisconnectMailbox,
   useDryRunAgent,
+  useMailboxes,
   useRunAgentNow,
   useSaveAssistantSettings,
+  useUpdateMailbox,
 } from './api';
 
 type Form = Required<AssistantSettingsInput>;
@@ -40,11 +48,6 @@ const toForm = (s: AssistantSettings): Form => ({
   enabled: s.enabled,
   model: s.model,
   instructions: s.instructions,
-  imapHost: s.imapHost,
-  imapPort: s.imapPort,
-  imapSsl: s.imapSsl,
-  imapUser: s.imapUser,
-  imapFolder: s.imapFolder,
   pollMinutes: s.pollMinutes,
   knowledgeRoles: s.knowledgeRoles,
   maxLetters: s.maxLetters,
@@ -53,12 +56,13 @@ const toForm = (s: AssistantSettings): Form => ({
 /**
  * «Настройки ИИ» (право assistant.manage) — внутри «Ролей и доступа»: агент почты, который
  * разбирает входящие письма и предлагает задачи по базе знаний. Задачу создаёт только человек
- * в очереди писем. Пароль ящика и ключ OpenAI задаются в окружении сервера — здесь только
- * признак, что они заданы.
+ * в очереди писем. Ключ OpenAI задаётся в окружении сервера — здесь только признак, что он
+ * задан. Ящики Gmail подключаются через Google (только чтение), список — `MailboxesCard`.
  */
 export function AssistantPage() {
   const { t } = useTranslation();
   const settings = useAssistantSettings();
+  useMailboxConnectToast();
   usePageSubtitle(
     settings.data
       ? t(settings.data.enabled ? 'assistant.statusOn' : 'assistant.statusOff')
@@ -83,6 +87,7 @@ export function AssistantPage() {
           <div className="flex flex-wrap items-start gap-3">
             <SettingsForm key={settings.data.updatedAt} settings={settings.data} />
             <div className="flex min-w-[320px] flex-1 flex-col gap-3">
+              <MailboxesCard />
               <RunCard enabled={settings.data.enabled} />
               <DryRunCard openaiKey={settings.data.environment.openaiKey} />
             </div>
@@ -306,58 +311,6 @@ function SettingsForm({ settings }: { settings: AssistantSettings }) {
         </div>
       </Card>
 
-      <Card title={t('assistant.mailboxTitle')} icon={<MailIcon size={14} />}>
-        <div className="grid grid-cols-2 gap-3">
-          <Field id="assistant-host" text={t('assistant.imapHost')}>
-            <input
-              id="assistant-host"
-              value={form.imapHost}
-              onChange={(e) => set('imapHost', e.target.value)}
-              placeholder="imap.example.kg"
-              className={fieldBox}
-            />
-          </Field>
-          <Field id="assistant-port" text={t('assistant.imapPort')} error={fieldError('imapPort')}>
-            <input
-              id="assistant-port"
-              type="number"
-              value={form.imapPort}
-              onChange={(e) => set('imapPort', Number(e.target.value))}
-              className={fieldBox}
-            />
-          </Field>
-          <Field id="assistant-user" text={t('assistant.imapUser')}>
-            <input
-              id="assistant-user"
-              value={form.imapUser}
-              onChange={(e) => set('imapUser', e.target.value)}
-              className={fieldBox}
-            />
-          </Field>
-          <Field id="assistant-folder" text={t('assistant.imapFolder')}>
-            <input
-              id="assistant-folder"
-              value={form.imapFolder}
-              onChange={(e) => set('imapFolder', e.target.value)}
-              placeholder="INBOX"
-              className={fieldBox}
-            />
-          </Field>
-          <div className="col-span-2 flex flex-col gap-2">
-            <Switch
-              checked={form.imapSsl}
-              onChange={(v) => set('imapSsl', v)}
-              text={t('assistant.imapSsl')}
-            />
-            <EnvBadge
-              ok={env.mailPassword}
-              okText={t('assistant.passwordSet')}
-              missingText={t('assistant.passwordMissing')}
-            />
-          </div>
-        </div>
-      </Card>
-
       <Card title={t('assistant.knowledgeTitle')} icon={<BookIcon size={14} />}>
         <fieldset>
           <legend className="mb-2 text-[11.5px] text-dim">{t('assistant.knowledgeHint')}</legend>
@@ -397,6 +350,159 @@ function SettingsForm({ settings }: { settings: AssistantSettings }) {
         </button>
       </div>
     </form>
+  );
+}
+
+/** Возврат из Google после подключения ящика: тост и убрать ?mailbox=… из адреса */
+function useMailboxConnectToast() {
+  const { t } = useTranslation();
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    const result = mailboxConnectResult(params);
+    if (!result) return;
+    if (result.status === 'connected') {
+      toast.success(t('assistant.mailboxConnected', { email: result.email }));
+    } else {
+      const reason = `assistant.connectError.${result.reason}`;
+      toast.error(t(reason, { defaultValue: t('assistant.connectError.google_error') }));
+    }
+    const next = new URLSearchParams(params);
+    for (const key of ['mailbox', 'email', 'reason']) next.delete(key);
+    setParams(next, { replace: true });
+  }, [params, setParams, t]);
+}
+
+function MailboxesCard() {
+  const { t } = useTranslation();
+  const mailboxes = useMailboxes();
+  const returnTo = `${window.location.origin}/access/assistant`;
+  return (
+    <Card title={t('assistant.mailboxesTitle')} icon={<MailIcon size={14} />}>
+      <p className="mb-3 text-[12px] text-sub">{t('assistant.mailboxesHint')}</p>
+      {mailboxes.isError ? (
+        <p className="mb-3 text-[12px] text-dim">{errorText(mailboxes.error, t)}</p>
+      ) : !mailboxes.data ? null : mailboxes.data.length === 0 ? (
+        <p className="mb-3 text-[12px] text-dim">{t('assistant.noMailboxes')}</p>
+      ) : (
+        <ul aria-label={t('assistant.mailboxesTitle')} className="mb-3 flex flex-col gap-2">
+          {mailboxes.data.map((m) => (
+            <MailboxRow key={`${m.id}-${m.label}-${m.enabled}`} mailbox={m} returnTo={returnTo} />
+          ))}
+        </ul>
+      )}
+      <button type="button" onClick={() => connectMailbox(returnTo)} className={secondaryButton}>
+        <PlusIcon size={15} />
+        {t('assistant.connectMailbox')}
+      </button>
+    </Card>
+  );
+}
+
+function MailboxRow({ mailbox: m, returnTo }: { mailbox: Mailbox; returnTo: string }) {
+  const { t, i18n } = useTranslation();
+  const update = useUpdateMailbox();
+  const disconnect = useDisconnectMailbox();
+  const [labelText, setLabelText] = useState(m.label);
+  const [confirming, setConfirming] = useState(false);
+  const at = (iso: string) => formatInBishkek(iso, 'd MMM, HH:mm', i18n.language);
+  const labelId = `mailbox-label-${m.id}`;
+
+  return (
+    <li aria-label={m.email} className="rounded-12 border border-line px-3 py-[10px]">
+      <div className="flex items-center gap-2">
+        <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-text">
+          {m.email}
+        </span>
+        <label className="flex items-center gap-[6px] text-[11.5px] text-sub">
+          <input
+            type="checkbox"
+            checked={m.enabled}
+            disabled={update.isPending}
+            onChange={(e) => update.mutate({ id: m.id, enabled: e.target.checked })}
+          />
+          {t('assistant.mailboxEnabled')}
+        </label>
+      </div>
+      <p className="mt-1 text-[11px] text-dim">
+        {m.checkedAt
+          ? t('assistant.mailboxChecked', { at: at(m.checkedAt) })
+          : t('assistant.mailboxNotChecked')}
+        {m.connectedBy && ` · ${t('assistant.mailboxConnectedBy', { name: m.connectedBy.name })}`}
+      </p>
+      {m.needsReconnect ? (
+        <p role="alert" className="mt-2 text-[11.5px] text-warning-text">
+          {t('assistant.mailboxNeedsReconnect')}
+        </p>
+      ) : (
+        m.lastError && (
+          <p className="mt-2 text-[11.5px] text-danger" title={m.lastError}>
+            {m.lastError}
+          </p>
+        )
+      )}
+      <form
+        className="mt-2 flex items-end gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          update.mutate({ id: m.id, label: labelText.trim() });
+        }}
+      >
+        <div className="min-w-0 flex-1">
+          <label htmlFor={labelId} className={`mb-[4px] block ${label}`}>
+            {t('assistant.mailboxLabel')}
+          </label>
+          <input
+            id={labelId}
+            value={labelText}
+            onChange={(e) => setLabelText(e.target.value)}
+            placeholder="INBOX"
+            className={fieldBox}
+          />
+        </div>
+        {labelText.trim() !== m.label && (
+          <button type="submit" disabled={update.isPending} className={secondaryButton}>
+            {t('assistant.save')}
+          </button>
+        )}
+      </form>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => connectMailbox(returnTo, m.email)}
+          className="text-[11.5px] text-info hover:underline"
+        >
+          {t('assistant.reconnectMailbox')}
+        </button>
+        {confirming ? (
+          <>
+            <span className="text-[11.5px] text-sub">{t('assistant.disconnectConfirm')}</span>
+            <button
+              type="button"
+              disabled={disconnect.isPending}
+              onClick={() => disconnect.mutate(m.id)}
+              className="text-[11.5px] font-semibold text-danger hover:underline"
+            >
+              {t('assistant.disconnectYes')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              className="text-[11.5px] text-sub hover:underline"
+            >
+              {t('assistant.cancel')}
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirming(true)}
+            className="text-[11.5px] text-sub hover:text-danger hover:underline"
+          >
+            {t('assistant.disconnectMailbox')}
+          </button>
+        )}
+      </div>
+    </li>
   );
 }
 
