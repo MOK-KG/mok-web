@@ -34,6 +34,7 @@ export function createAssistantServer() {
     pollMinutes: 5,
     knowledgeRoles: [],
     maxLetters: 20,
+    confidenceMin: 60,
     updatedAt: '2026-11-10T09:00:00Z',
     updatedBy: null,
     environment: {
@@ -75,6 +76,7 @@ export function createAssistantServer() {
   const fields: Record<string, (v: unknown) => boolean> = {
     pollMinutes: (v) => Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 1440,
     maxLetters: (v) => Number.isInteger(v) && (v as number) >= 1 && (v as number) <= 100,
+    confidenceMin: (v) => Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 100,
     knowledgeRoles: (v) =>
       Array.isArray(v) && v.every((r) => (roleCodes as readonly string[]).includes(r)),
   };

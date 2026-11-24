@@ -33,6 +33,8 @@ export type AssistantSettings = {
   pollMinutes: number;
   knowledgeRoles: RoleCode[];
   maxLetters: number;
+  /** Ниже этого процента уверенности письмо разбирает человек */
+  confidenceMin: number;
   updatedAt: string;
   updatedBy: ApiPerson | null;
   environment: AssistantEnvironment;

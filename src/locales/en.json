@@ -1443,6 +1443,8 @@
     "modelDefault": "Default: {{model}}",
     "pollMinutes": "Polling interval, min",
     "maxLetters": "Letters per run",
+    "confidenceMin": "Confidence threshold, %",
+    "confidenceMinHint": "Below {{count}}% a letter goes to “Review manually”",
     "instructions": "Organization instructions",
     "instructionsHint": "Added to the system prompt: rules missing from the knowledge base. E.g. “Letters from the IOC are high priority”.",
     "mailboxesTitle": "Mailboxes",

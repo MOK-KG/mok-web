@@ -166,9 +166,13 @@ describe('настройки ИИ (экран)', () => {
     await type('#assistant-instructions', 'Срок ответа МОК — 3 рабочих дня.');
     await act(async () => button('R8')?.click());
     expect(button('R8')?.getAttribute('aria-pressed')).toBe('true');
+    expect(page()).toContain('Ниже 60% письмо попадает в «Разобрать вручную»');
+    await type('#assistant-confidence', '75');
+    expect(page()).toContain('Ниже 75% письмо попадает в «Разобрать вручную»');
     await act(async () => button('Сохранить')?.click());
     await waitFor(() => assistantServer.settings.instructions.startsWith('Срок ответа'));
     expect(assistantServer.settings.knowledgeRoles).toEqual(['R8']);
+    expect(assistantServer.settings.confidenceMin).toBe(75);
     expect(assistantServer.settings.updatedBy?.name).toBe('Айбек Дуйшеев');
   });
 

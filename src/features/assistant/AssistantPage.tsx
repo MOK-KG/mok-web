@@ -53,6 +53,7 @@ const toForm = (s: AssistantSettings): Form => ({
   pollMinutes: s.pollMinutes,
   knowledgeRoles: s.knowledgeRoles,
   maxLetters: s.maxLetters,
+  confidenceMin: s.confidenceMin,
 });
 
 /**
@@ -319,6 +320,25 @@ function SettingsForm({ settings }: { settings: AssistantSettings }) {
                 className={fieldBox}
               />
             </Field>
+            <Field
+              id="assistant-confidence"
+              text={t('assistant.confidenceMin')}
+              error={fieldError('confidenceMin')}
+            >
+              <input
+                id="assistant-confidence"
+                type="number"
+                min={0}
+                max={100}
+                value={form.confidenceMin}
+                onChange={(e) => set('confidenceMin', Number(e.target.value))}
+                aria-describedby="assistant-confidence-hint"
+                className={fieldBox}
+              />
+            </Field>
+            <p id="assistant-confidence-hint" className="self-end pb-2 text-[11px] text-dim">
+              {t('assistant.confidenceMinHint', { count: form.confidenceMin })}
+            </p>
           </div>
           <Field
             id="assistant-instructions"
