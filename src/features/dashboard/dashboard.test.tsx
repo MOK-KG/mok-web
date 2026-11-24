@@ -93,3 +93,34 @@ describe('рабочий стол: число на плитке совпадае
     );
   });
 });
+
+describe('рабочий стол не запрашивает запрещённое: в журнал не попадают ложные отказы', () => {
+  it.each([
+    ['R1', /\/api\/tasks\//],
+    ['R9', /\/api\/(chat\/|tasks\/mail\/)/],
+  ] as const)('%s', async (role, forbidden) => {
+    act(() => root.unmount());
+    container.remove();
+    const urls: string[] = [];
+    const previous = globalThis.fetch;
+    vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+      urls.push(String(input));
+      return previous(input, init);
+    });
+    sessionStorage.setItem('nok.mockSession', JSON.stringify(mockSessionFor('active', role)));
+    router = createMemoryRouter(routes, { initialEntries: ['/'] });
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+    await act(async () =>
+      root.render(
+        <AppProviders>
+          <RouterProvider router={router} />
+        </AppProviders>,
+      ),
+    );
+    await waitFor(() => page().includes('Уведомления'));
+    await act(() => new Promise((r) => setTimeout(r, 50)));
+    expect(urls.filter((u) => forbidden.test(u))).toEqual([]);
+  });
+});

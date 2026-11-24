@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCan } from '@/features/auth/permissions';
 import { type ApiPerson, toPerson } from '@/features/tasks/api';
 import { api } from '@/shared/api/client';
 import type { RoleCode } from '@/shared/config/permissions';
@@ -228,7 +229,9 @@ export function useChatMembers(enabled = true): Record<string, ChatMember> {
 }
 
 export function useChats() {
+  const { can } = useCan();
   return useQuery({
+    enabled: can('chat.use'),
     queryKey: [...chatKey, 'list'],
     queryFn: fetchChats,
     refetchInterval: 15_000,
@@ -273,7 +276,9 @@ export function useMemberMessages(query: string, enabled = true) {
 
 /** Сколько непрочитанных во всех чатах */
 export function useChatUnread() {
+  const { can } = useCan();
   return useQuery({
+    enabled: can('chat.use'),
     queryKey: [...chatKey, 'unread'],
     queryFn: unreadTotal,
     refetchInterval: 30_000,

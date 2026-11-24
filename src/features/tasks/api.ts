@@ -1,4 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCan } from '@/features/auth/permissions';
 import { resetJournal } from '@/features/journal/store';
 import { ApiError, api } from '@/shared/api/client';
 import type { FeedbackMeta } from '@/shared/api/feedback';
@@ -229,7 +230,9 @@ export async function fetchBoard(tab: TaskTab = 'department'): Promise<Board> {
 }
 
 export function useBoard(tab: TaskTab) {
+  const { can } = useCan();
   return useQuery({
+    enabled: can('tasks.view'),
     queryKey: [...tasksKey, 'board', tab],
     queryFn: () => fetchBoard(tab),
     placeholderData: keepPreviousData,
@@ -249,7 +252,9 @@ export function useTabCounts() {
 }
 
 export function useDirectory() {
+  const { can } = useCan();
   return useQuery({
+    enabled: can('tasks.view'),
     queryKey: [...tasksKey, 'directory'],
     queryFn: async (): Promise<Directory> => {
       const d = await api.get<{ people: ApiPerson[]; projects: ApiProject[]; columns: Column[] }>(
@@ -372,14 +377,18 @@ export function useMoveTask() {
 export const mailQueueKey = ['mailQueue'] as const;
 
 export function useMailQueueSummary() {
+  const { can } = useCan();
   return useQuery({
+    enabled: can('tasks.create'),
     queryKey: [...mailQueueKey, 'summary'],
     queryFn: () => api.get<{ ready: number; manual: number }>('/tasks/mail/summary'),
   });
 }
 
 export function useMailQueue() {
+  const { can } = useCan();
   return useQuery({
+    enabled: can('tasks.create'),
     queryKey: [...mailQueueKey, 'list'],
     queryFn: async () => (await api.get<ApiLetter[]>('/tasks/mail/letters')).map(toLetter),
   });

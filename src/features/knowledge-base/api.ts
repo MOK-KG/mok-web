@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSession } from '@/features/auth';
+import { useCan, useSession } from '@/features/auth';
 import { docRef, useDocuments } from '@/features/documents/api';
 import type { Person } from '@/features/tasks/types';
 import { ApiError, api } from '@/shared/api/client';
@@ -145,7 +145,12 @@ export async function fetchKnowledge(): Promise<KnowledgeList> {
 
 export function useKnowledge() {
   const roles = useRoles();
-  return useQuery({ queryKey: [...knowledgeKey, 'list', roles], queryFn: fetchKnowledge });
+  const { can } = useCan();
+  return useQuery({
+    enabled: can('knowledge.view'),
+    queryKey: [...knowledgeKey, 'list', roles],
+    queryFn: fetchKnowledge,
+  });
 }
 
 export type KnowledgeSearch = { ids: string[] };
