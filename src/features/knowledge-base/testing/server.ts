@@ -62,7 +62,7 @@ export function createKnowledgeServer({
   const section = (s: Section, roles: RoleCode[]) => ({
     id: s.id,
     name: s.name,
-    count: articles.filter((a) => a.sectionId === s.id).length,
+    count: isOpen(s.id, roles) ? articles.filter((a) => a.sectionId === s.id).length : null,
     accessible: isOpen(s.id, roles),
     roles: s.openTo ? [...s.openTo] : null,
   });

@@ -9,8 +9,8 @@ import type { IsoDate } from '@/shared/lib/workDays';
 export type KbSection = {
   id: string;
   name: string;
-  /** Статей в разделе всего — для закрытого раздела тоже */
-  count: number;
+  /** Статей в разделе; null — раздел закрыт читающему */
+  count: number | null;
   accessible: boolean;
   /** Каким ролям раздел открыт; null — всем */
   roles: RoleCode[] | null;

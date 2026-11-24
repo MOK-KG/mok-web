@@ -125,10 +125,13 @@ describe('база знаний через API', () => {
 
   it('закрытый раздел: статьи не приходят, не ищутся и не считаются, по ссылке — 403', async () => {
     const { sections, articles } = await fetchKnowledge();
-    expect(sections.find((s) => s.id === 'legal')).toMatchObject({ accessible: false, count: 9 });
+    expect(sections.find((s) => s.id === 'legal')).toMatchObject({
+      accessible: false,
+      count: null,
+    });
     expect(articles.some((a) => a.sectionId === 'legal')).toBe(false);
     // «Все статьи» = сумма открытых разделов
-    const open = sections.filter((s) => s.accessible).reduce((n, s) => n + s.count, 0);
+    const open = sections.filter((s) => s.accessible).reduce((n, s) => n + (s.count ?? 0), 0);
     expect(articles.length).toBe(open);
     expect((await searchKnowledge(QUERY)).ids).toHaveLength(3);
 

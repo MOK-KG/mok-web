@@ -98,7 +98,7 @@ export function KnowledgePage() {
   ];
   const foundTotal = filtered.filter((a) => foundIds.has(a.id)).length;
   const foundHere = shown.filter((a) => foundIds.has(a.id)).length;
-  const sectionTotal = current ? current.count : articles.length;
+  const sectionTotal = current ? (current.count ?? 0) : articles.length;
 
   return (
     <div className="flex h-full min-h-[560px] flex-col leading-[normal]">
@@ -336,7 +336,7 @@ function SectionsNav({
                         </span>
                       </Tooltip>
                     )}
-                    {count(s.count, editable)}
+                    {count(s.count ?? 0, editable)}
                   </button>
                   {editable && (
                     <SectionMenu
@@ -356,7 +356,6 @@ function SectionsNav({
                     <LockIcon size={17} className="shrink-0" />
                     <span className="truncate">{s.name}</span>
                     <span className="sr-only">. {t('knowledge.closedSection')}</span>
-                    {count(s.count)}
                   </span>
                 </Tooltip>
               )}
