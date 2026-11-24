@@ -94,6 +94,26 @@ describe('рабочий стол: число на плитке совпадае
   });
 });
 
+describe('задача с рабочего стола', () => {
+  it('открывается карточкой на месте, без перехода в «Задачи»', async () => {
+    const link = await (async () => {
+      await waitFor(() => !!document.querySelector('main a[href*="task="]'));
+      return document.querySelector<HTMLAnchorElement>('main a[href*="task="]');
+    })();
+    expect(link?.getAttribute('href')?.startsWith('/?task=')).toBe(true);
+    await act(async () => link?.click());
+    await waitFor(() => !!document.querySelector('[role="dialog"]'));
+    expect(router.state.location.pathname).toBe('/');
+    expect(router.state.location.search).toContain('task=');
+    const close = document.querySelector<HTMLButtonElement>(
+      '[role="dialog"] button[aria-label="Закрыть"]',
+    );
+    await act(async () => close?.click());
+    await waitFor(() => !document.querySelector('[role="dialog"]'));
+    expect(router.state.location.search).toBe('');
+  });
+});
+
 describe('рабочий стол не запрашивает запрещённое: в журнал не попадают ложные отказы', () => {
   it.each([
     ['R1', /\/api\/tasks\//],

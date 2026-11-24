@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useCan } from '@/features/auth';
 import { useMailQueueSummary, useTasks } from '@/features/tasks/api';
+import { useTaskLink } from '@/features/tasks/TaskOverlay';
 import { formatIsoDate } from '@/shared/lib/date';
 import { toast } from '@/shared/lib/toast';
 import { diffDays, todayInBishkek } from '@/shared/lib/workDays';
@@ -172,6 +173,7 @@ export function actionLabel(n: AppNotification, t: (key: string) => string): str
 export function useOpenNotification() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const taskLink = useTaskLink();
   const markRead = useMarkRead();
   const tasks = useTasks('department').data;
 
@@ -185,7 +187,7 @@ export function useOpenNotification() {
     else {
       // Доска ещё грузится — открываем по id; загружена и задачи нет — её закрыли
       if (!tasks || tasks.some((x) => x.id === target.taskId)) {
-        navigate(`/tasks?task=${target.taskId}`);
+        navigate(taskLink(target.taskId));
       } else toast.info({ title: t('notifications.taskGone') });
     }
   };

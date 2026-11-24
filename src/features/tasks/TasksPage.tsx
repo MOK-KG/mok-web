@@ -12,7 +12,6 @@ import { TaskList } from './list/TaskList';
 import type { Letter } from './mailQueue';
 import { NewTaskModal } from './modal/NewTaskModal';
 import { QueueModal } from './modal/QueueModal';
-import { TaskModal } from './modal/TaskModal';
 import { type TaskTab, taskTabs } from './types';
 
 const VIEW_KEY = 'nok.tasksView';
@@ -64,13 +63,7 @@ export function TasksPage() {
   // Письмо, которое оформляют задачей вручную
   const [manualLetter, setManualLetter] = useState<Letter | null>(null);
   // Открытая задача — в адресе (?task=ID): ссылкой можно поделиться
-  const openTaskId = params.get('task');
   const openTask = (id: string) => setParams((p) => ({ ...Object.fromEntries(p), task: id }));
-  const closeTask = () =>
-    setParams((p) => {
-      p.delete('task');
-      return p;
-    });
   const board = useBoard(tab);
   const counts = useBoard('department').data?.counts;
 
@@ -112,7 +105,6 @@ export function TasksPage() {
           />
         </div>
       )}
-      <TaskModal taskId={openTaskId} onClose={closeTask} />
       <NewTaskModal
         open={creating}
         letter={manualLetter}

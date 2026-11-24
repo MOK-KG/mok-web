@@ -13,6 +13,7 @@ import {
 } from '@/features/notifications/parts';
 import { useMailQueueSummary, useTasks } from '@/features/tasks/api';
 import { DueChips } from '@/features/tasks/board/TaskCard';
+import { useTaskLink } from '@/features/tasks/TaskOverlay';
 import type { Task } from '@/features/tasks/types';
 import { formatIsoDate, relativeShort } from '@/shared/lib/date';
 import { todayInBishkek } from '@/shared/lib/workDays';
@@ -229,10 +230,11 @@ function PanelHeader({
 }
 
 function TaskRow({ task, children }: { task: Task; children?: ReactNode }) {
+  const taskLink = useTaskLink();
   return (
     <li className="border-t border-line first:border-t-0">
       <Link
-        to={`/tasks?task=${task.id}`}
+        to={taskLink(task.id)}
         className="flex items-center gap-3 px-[18px] py-[11px] hover:bg-row-highlight focus-visible:bg-row-highlight focus-visible:outline-none"
       >
         <div className="min-w-0 flex-1">

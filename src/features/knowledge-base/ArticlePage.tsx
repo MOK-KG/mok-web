@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { usePageSubtitle } from '@/app/layout/AppLayout';
 import { Can, ForbiddenPage, useCan } from '@/features/auth';
+import { useTaskLink } from '@/features/tasks/TaskOverlay';
 import type { TaskStatus } from '@/features/tasks/types';
 import { ApiError } from '@/shared/api/errors';
 import { formatIsoDate } from '@/shared/lib/date';
@@ -409,6 +410,7 @@ function SidePanel({
   /** Номер открытой версии */
   viewing: number;
 }) {
+  const taskLink = useTaskLink();
   const { t } = useTranslation();
   const location = useLocation();
   const [openDoc, setOpenDoc] = useState<KbRelatedDocument | null>(null);
@@ -489,10 +491,7 @@ function SidePanel({
                 // biome-ignore lint/suspicious/noArrayIndexKey: у задачи без доступа нет ID
                 <li key={`${task.id}-${i}`}>
                   {task.id && can('tasks.view') ? (
-                    <Link
-                      to={`/tasks?task=${task.id}`}
-                      className={`${className} hover:border-info-line`}
-                    >
+                    <Link to={taskLink(task.id)} className={`${className} hover:border-info-line`}>
                       {content}
                     </Link>
                   ) : (

@@ -9,6 +9,7 @@ import { absenceOf } from '@/features/tasks/absences';
 import { useTasks } from '@/features/tasks/api';
 import { DueChips } from '@/features/tasks/board/TaskCard';
 import { urgencyOf } from '@/features/tasks/deadline';
+import { useTaskLink } from '@/features/tasks/TaskOverlay';
 import type { Task } from '@/features/tasks/types';
 import { years } from '@/shared/config/workCalendar';
 import { formatIsoDate } from '@/shared/lib/date';
@@ -357,6 +358,7 @@ function DayPanel({
   load: MonthLoad;
   onPick: (day: IsoDate) => void;
 }) {
+  const taskLink = useTaskLink();
   const { t, i18n } = useTranslation();
   const type = dayType(day);
   const deadlines = events?.deadlines ?? [];
@@ -390,10 +392,7 @@ function DayPanel({
           <ul>
             {deadlines.map((task) => (
               <li key={task.id}>
-                <Link
-                  to={`/tasks?task=${task.id}`}
-                  className="block px-5 py-[9px] hover:bg-row-highlight"
-                >
+                <Link to={taskLink(task.id)} className="block px-5 py-[9px] hover:bg-row-highlight">
                   <p className="text-[12.5px] leading-[17px] text-text">{task.title}</p>
                   <p className="mt-[5px] flex flex-wrap items-center gap-[5px] text-[11px] text-dim">
                     <DueChips task={task} />

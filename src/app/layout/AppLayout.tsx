@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useMatches } from 'react-router-dom';
 import { syncWebPush } from '@/features/notifications/webPush';
+import { TaskOverlay } from '@/features/tasks/TaskOverlay';
 import type { Section } from '@/shared/config/permissions';
 import { storage } from '@/shared/lib/storage';
 import { NARROW, useMediaQuery } from '@/shared/lib/useMediaQuery';
@@ -62,6 +63,7 @@ export function AppLayout() {
             <Outlet />
           </SubtitleContext.Provider>
         </main>
+        <TaskOverlay />
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import { Avatar } from '@/features/knowledge-base/parts';
 import { toPerson, useDirectory } from '@/features/tasks/api';
 import { dueProblem } from '@/features/tasks/deadline';
 import { dueMessage } from '@/features/tasks/modal/NewTaskModal';
+import { useTaskLink } from '@/features/tasks/TaskOverlay';
 import { formatInBishkek, formatIsoDate } from '@/shared/lib/date';
 import { addWorkingDays, todayInBishkek } from '@/shared/lib/workDays';
 import { BookIcon, FileIcon, XIcon } from '@/shared/ui/icons';
@@ -301,6 +302,7 @@ function Body({ doc }: { doc: DocumentRecord }) {
 }
 
 function ResolutionBlock({ doc }: { doc: DocumentRecord }) {
+  const taskLink = useTaskLink();
   const { t, i18n } = useTranslation();
   const r = doc.resolution;
   if (!r) return null;
@@ -321,7 +323,7 @@ function ResolutionBlock({ doc }: { doc: DocumentRecord }) {
       </p>
       {r.taskId && r.taskCode && (
         <Link
-          to={`/tasks?task=${r.taskId}`}
+          to={taskLink(r.taskId)}
           className="mt-3 inline-flex items-center gap-2 text-[12px] font-medium text-info hover:underline"
         >
           {t('documents.openTask', { code: r.taskCode })}

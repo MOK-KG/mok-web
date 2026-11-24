@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCan, useCurrentPersonId } from '@/features/auth';
 import { useTasks } from '@/features/tasks/api';
+import { useTaskLink } from '@/features/tasks/TaskOverlay';
 import { formatIsoDate } from '@/shared/lib/date';
 import { toast } from '@/shared/lib/toast';
 import {
@@ -319,6 +320,7 @@ function TextMessage({
 
 /** Карточка задачи из доски; статус — живой, из задач, если задача найдена */
 function TaskCard({ message: m }: { message: ChatMessage }) {
+  const taskLink = useTaskLink();
   const { t, i18n } = useTranslation();
   const tasks = useTasks('department').data;
   if (!m.task) return null;
@@ -359,7 +361,7 @@ function TaskCard({ message: m }: { message: ChatMessage }) {
     'relative ml-[42px] mt-[6px] block overflow-hidden rounded-9 border border-info-line bg-info-chip px-4 pb-3 pt-[13px]';
   return live ? (
     <Link
-      to={`/tasks?task=${live.id}`}
+      to={taskLink(live.id)}
       aria-label={`${t('chat.openTask')}: ${m.task.title}`}
       className={`${box} hover:opacity-90`}
     >

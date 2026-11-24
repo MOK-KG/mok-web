@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import { usePageSubtitle } from '@/app/layout/AppLayout';
+import { useTaskLink } from '@/features/tasks/TaskOverlay';
 import {
   ArrowRightIcon,
   ChatIcon,
@@ -32,10 +33,10 @@ const kindIcon: Record<SearchKind, ComponentType<{ size?: number; className?: st
   chat: ChatIcon,
 };
 
-export function hrefOf(target: SearchTarget): string {
+export function hrefOf(target: SearchTarget, taskLink?: (id: string) => string): string {
   switch (target.kind) {
     case 'task':
-      return `/tasks?task=${target.id}`;
+      return taskLink ? taskLink(target.id) : `/tasks?task=${target.id}`;
     case 'document':
       return `/documents?kind=${target.docKind}&doc=${target.id}`;
     case 'article':
@@ -204,10 +205,11 @@ function Marked({ text, stems }: { text: string; stems: string[] }) {
 }
 
 function Hit({ hit, stems }: { hit: SearchHit; stems: string[] }) {
+  const taskLink = useTaskLink();
   return (
     <li className="border-t border-line first:border-t-0">
       <Link
-        to={hrefOf(hit.target)}
+        to={hrefOf(hit.target, taskLink)}
         className="block px-[18px] py-[10px] hover:bg-row-highlight focus-visible:bg-row-highlight focus-visible:outline-none"
       >
         <p className="truncate text-[13px] text-text">
