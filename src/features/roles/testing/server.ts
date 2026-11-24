@@ -243,7 +243,7 @@ export function createStaffServer() {
       return { status: 201, body: row(member) };
     }
 
-    const match = path.match(/^\/staff\/members\/([^/]+)\/(role|deactivate)$/);
+    const match = path.match(/^\/staff\/members\/([^/]+)\/(role|deactivate|reactivate)$/);
     const member = match && staff.find((s) => s.id === match[1]);
     if (!match || method !== 'POST') return error(404, 'not_found');
     if (!member || member.status === 'vacancy') return error(404, 'not_found');
@@ -264,6 +264,15 @@ export function createStaffServer() {
         'roleChanged',
         `${member.name ?? member.position}: ${before} → ${role}`,
       );
+      return { status: 200, body: row(member) };
+    }
+
+    if (match[2] === 'reactivate') {
+      if (member.status !== 'deactivated') return error(409, 'user_active');
+      member.status = 'active';
+      member.deactivatedAt = null;
+      member.deactivatedBy = null;
+      journalServer?.record('userReactivated', member.name ?? '');
       return { status: 200, body: row(member) };
     }
 

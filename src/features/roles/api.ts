@@ -105,6 +105,9 @@ export async function inviteStaff(data: Invitation) {
 export const deactivateStaff = (id: string) =>
   api.post<{ reassigned: number }>(`/staff/members/${id}/deactivate`);
 
+export const reactivateStaff = (id: string) =>
+  api.post<ApiStaffMember>(`/staff/members/${id}/reactivate`);
+
 export const staffKey = ['staff'] as const;
 
 export function useStaff() {
@@ -163,6 +166,15 @@ export function useDeactivate() {
       await client.invalidateQueries({ queryKey: staffKey });
       await client.invalidateQueries({ queryKey: tasksKey });
     },
+  });
+}
+
+export function useReactivate() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: reactivateStaff,
+    meta: { successMessage: 'access.reactivated' },
+    onSuccess: () => client.invalidateQueries({ queryKey: staffKey }),
   });
 }
 

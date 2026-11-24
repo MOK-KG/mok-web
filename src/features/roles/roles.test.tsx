@@ -10,7 +10,7 @@ import { journalServer } from '@/features/journal/testing/server';
 import { tasksServer } from '@/features/tasks/testing/server';
 import { ApiError } from '@/shared/api/errors';
 import type { RoleCode } from '@/shared/config/permissions';
-import { changeRole, deactivateStaff, fetchStaff, inviteStaff } from './api';
+import { changeRole, deactivateStaff, fetchStaff, inviteStaff, reactivateStaff } from './api';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -57,6 +57,15 @@ describe('роли и доступ (логика, через API)', () => {
     expect(lastJournal()).toMatchObject({ action: 'userDeactivated' });
     // Запись не удалена — сотрудник остаётся в списке
     expect(await fetchStaff(ME)).toHaveLength(18);
+  });
+
+  it('возврат уволенного: вход открыт с прежней ролью, задачи у преемника, журнал', async () => {
+    expect(await codeOf(() => reactivateStaff('s-dt'))).toBe('user_active');
+    await deactivateStaff('s-dt');
+    const back = await reactivateStaff('s-dt');
+    expect(back).toMatchObject({ status: 'active', deactivatedAt: null, deactivatedBy: null });
+    expect((await row('s-dt'))?.role).toBe(back.role);
+    expect(lastJournal()).toMatchObject({ action: 'userReactivated' });
   });
 
   it('себя и вакансию деактивировать нельзя', async () => {
@@ -168,6 +177,18 @@ describe('роли и доступ (экраны)', () => {
     await waitFor(() => text().includes('Сотрудник деактивирован'));
     await waitFor(() => !!container.querySelector('tbody') && text().includes('Деактивирован'));
     expect((await row('s-nb'))?.plan.tasks).toBe(0);
+  });
+
+  it('возврат из карточки уволенного: подтверждение, статус снова активный', async () => {
+    await codeOf(() => deactivateStaff('s-nb'));
+    await open('/access?user=s-nb');
+    await waitFor(() => !!button('Вернуть сотрудника'));
+    expect(text()).toContain('Вход откроется с ролью R5');
+    await act(async () => button('Вернуть сотрудника')?.click());
+    await act(async () => button('Да, вернуть Н. Бакиров')?.click());
+    await waitFor(() => text().includes('Сотрудник возвращён'));
+    await waitFor(() => !!button('Деактивировать'));
+    expect((await row('s-nb'))?.status).toBe('active');
   });
 
   it('без права staff.view — 403 по прямой ссылке', async () => {

@@ -21,6 +21,7 @@ import {
   useDeactivate,
   useEndSession,
   useMemberSessions,
+  useReactivate,
 } from './api';
 import { capsTitle, RoleCodeChip, StaffAvatar, StatusBadge } from './parts';
 import { SessionList } from './SessionList';
@@ -401,6 +402,10 @@ function Deactivation({ member: m, onDone }: { member: StaffRow; onDone: () => v
 
 function Deactivated({ member: m }: { member: StaffRow }) {
   const { t, i18n } = useTranslation();
+  const { can } = useCan();
+  const reactivate = useReactivate();
+  const [confirming, setConfirming] = useState(false);
+  const role = m.role ? `${m.role} ${t(`access.roles.${m.role}`)}` : t('access.chooseRole');
   return (
     <section className="rounded-9 border border-danger-line bg-danger-soft px-[14px] py-3">
       <p className="text-[12.5px] font-semibold text-danger">
@@ -410,6 +415,45 @@ function Deactivated({ member: m }: { member: StaffRow }) {
         })}
       </p>
       <p className="mt-1 text-[11.5px] leading-4 text-sub">{t('access.deactivatedText')}</p>
+      {can('staff.deactivate') && (
+        <div className="mt-3 flex flex-col gap-2">
+          <p className="text-[11px] text-dim">{t('access.reactivateHint', { role })}</p>
+          <div className="flex flex-wrap items-center gap-3">
+            {confirming ? (
+              <>
+                <button
+                  type="button"
+                  disabled={reactivate.isPending}
+                  onClick={() =>
+                    reactivate
+                      .mutateAsync(m.id)
+                      .catch(() => undefined)
+                      .finally(() => setConfirming(false))
+                  }
+                  className="flex h-[38px] items-center rounded-9 bg-brand-red px-4 text-[13px] font-semibold text-[#FFFFFF] hover:opacity-90 disabled:opacity-60"
+                >
+                  {t('access.confirmReactivate', { name: m.short })}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirming(false)}
+                  className="flex h-[38px] items-center rounded-9 border border-line px-4 text-[13px] font-medium text-sub hover:text-text"
+                >
+                  {t('access.cancel')}
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirming(true)}
+                className="flex h-[38px] items-center rounded-9 border border-line bg-panel px-4 text-[13px] font-semibold text-text hover:opacity-90"
+              >
+                {t('access.reactivate')}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

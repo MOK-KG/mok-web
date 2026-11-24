@@ -74,6 +74,7 @@ export const knownErrorCodes = [
   'deactivate_self',
   'user_deactivated',
   'user_not_active',
+  'user_active',
   'absence_invalid',
   'document_status',
   'document_immutable',
