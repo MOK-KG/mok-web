@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useBlocker, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
 import { usePageSubtitle } from '@/app/layout/AppLayout';
-import { ForbiddenPage } from '@/features/auth';
+import { ForbiddenPage, useCan } from '@/features/auth';
 import { useTasks } from '@/features/tasks/api';
 import { ApiError } from '@/shared/api/errors';
 import {
@@ -211,6 +211,7 @@ function EditorForm({ article, sections }: { article: KbArticle | null; sections
   });
   const blocks = useFieldArray({ control, name: 'blocks' });
   const values = useWatch({ control });
+  const canLinkTasks = useCan().can('tasks.edit');
   const section = open.find((s) => s.id === values.sectionId);
 
   usePageSubtitle(editing ? t('knowledge.editTitle') : t('knowledge.newArticle'));
@@ -451,10 +452,12 @@ function EditorForm({ article, sections }: { article: KbArticle | null; sections
             onChange={(list) => setValue('attachments', list, { shouldDirty: true })}
           />
           <div className="mt-6 grid grid-cols-2 gap-[14px]">
-            <RelatedTasksField
-              value={(values.relatedTasks ?? []) as KbRelatedTask[]}
-              onChange={(list) => setValue('relatedTasks', list, { shouldDirty: true })}
-            />
+            {canLinkTasks && (
+              <RelatedTasksField
+                value={(values.relatedTasks ?? []) as KbRelatedTask[]}
+                onChange={(list) => setValue('relatedTasks', list, { shouldDirty: true })}
+              />
+            )}
             <RelatedDocumentsField
               value={(values.relatedDocuments ?? []) as KbRelatedDocument[]}
               onChange={(list) => setValue('relatedDocuments', list, { shouldDirty: true })}

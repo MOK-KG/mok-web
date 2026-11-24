@@ -92,6 +92,7 @@ export const knownErrorCodes = [
   'permission_unknown',
   'web_push_disabled',
   'possible_duplicate',
+  'task_linked_elsewhere',
 ] as const;
 
 /**

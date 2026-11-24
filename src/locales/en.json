@@ -408,7 +408,8 @@
       "invalid_value": "Invalid value.",
       "project_exists": "This project already exists",
       "permission_unknown": "No such permission.",
-      "possible_duplicate": "A similar task already exists — check the warning under the title and press “Create” again."
+      "possible_duplicate": "A similar task already exists — check the warning under the title and press “Create” again.",
+      "task_linked_elsewhere": "The task is already linked to another article — remove that link first."
     }
   },
   "toast": {
