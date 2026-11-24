@@ -172,6 +172,25 @@ describe('карточка задачи', () => {
     expect(dialog()?.textContent).toContain('Подзадача выполнена: «Юридическая сверка терминов»');
   });
 
+  it('комментарий с файлом: файл виден до отправки и под комментарием после', async () => {
+    await render(`/tasks?task=${translationId()}`);
+    await waitFor(() => dialog()?.textContent?.includes('Утверждение на Исполкоме') ?? false);
+    const d = dialog() as HTMLElement;
+    const input = d.querySelector<HTMLInputElement>('[data-testid="comment-files"]');
+    const file = new File(['xlsx'], 'smeta.xlsx');
+    Object.defineProperty(input, 'files', { value: [file], configurable: true });
+    await act(async () => input?.dispatchEvent(new Event('change', { bubbles: true })));
+    expect(d.querySelector('[aria-label="Выбранные файлы"]')?.textContent).toContain('smeta.xlsx');
+    const send = d.querySelector<HTMLButtonElement>('button[aria-label="Отправить"]');
+    expect(send?.disabled).toBe(false);
+    await act(async () => send?.click());
+    await waitFor(() => !!d.querySelector('[aria-label="Файлы комментария"]'));
+    expect(d.querySelector('[aria-label="Файлы комментария"]')?.textContent).toContain(
+      'smeta.xlsx',
+    );
+    expect(d.querySelector('[aria-label="Выбранные файлы"]')).toBeNull();
+  });
+
   it('несуществующая задача — «Задача не найдена»', async () => {
     await render('/tasks?task=no-such-task');
     await waitFor(() => dialog()?.textContent?.includes('Задача не найдена') ?? false);

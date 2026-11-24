@@ -57,7 +57,13 @@ export type ApiTaskDetail = ApiTask & {
   description: string;
   knowledgeLink: { id: string; title: string } | null;
   subtaskItems: { id: string; title: string; done: boolean; assignee: ApiPerson | null }[];
-  commentItems: { id: string; author: ApiPerson | null; at: string; text: string }[];
+  commentItems: {
+    id: string;
+    author: ApiPerson | null;
+    at: string;
+    text: string;
+    attachments?: ApiAttachment[];
+  }[];
   attachmentItems: ApiAttachment[];
   history: { id: string; kind: HistoryEntry['kind']; text: string; at: string }[];
   rescheduleLog: { from: IsoDate; to: IsoDate; by: ApiPerson | null }[];
@@ -168,7 +174,11 @@ export function toTaskDetail(t: ApiTaskDetail): TaskDetail {
     knowledgeArticleId: t.knowledgeLink?.id ?? null,
     attachmentItems: t.attachmentItems.map(({ id, filename, size }) => ({ id, filename, size })),
     subtaskItems: t.subtaskItems.map((s) => ({ ...s, assignee: maybePerson(s.assignee) })),
-    commentItems: t.commentItems.map((c) => ({ ...c, author: toPerson(c.author) })),
+    commentItems: t.commentItems.map((c) => ({
+      ...c,
+      author: toPerson(c.author),
+      attachments: (c.attachments ?? []).map(({ id, filename, size }) => ({ id, filename, size })),
+    })),
     history: t.history.map(({ id, kind, text, at }) => ({ id, kind, text, at })),
     rescheduleLog: t.rescheduleLog.map((r) => ({ from: r.from, to: r.to, by: toPerson(r.by) })),
     letters: t.letters ?? [],
@@ -482,9 +492,19 @@ export const useAddSubtask = () =>
     api.post(`/tasks/items/${taskId}/subtasks`, { title }),
   );
 
+export const commentFilesMax = 10;
+
+export function addComment(taskId: string, text: string, files: File[] = []) {
+  if (files.length === 0) return api.post(`/tasks/items/${taskId}/comments`, { text });
+  const form = new FormData();
+  form.append('text', text);
+  for (const file of files) form.append('files', file);
+  return api.post(`/tasks/items/${taskId}/comments`, form);
+}
+
 export const useAddComment = () =>
-  useTaskMutation<{ text: string }>((taskId, { text }) =>
-    api.post(`/tasks/items/${taskId}/comments`, { text }),
+  useTaskMutation<{ text: string; files?: File[] }>((taskId, { text, files }) =>
+    addComment(taskId, text, files),
   );
 
 /** Скачать вложение задачи */

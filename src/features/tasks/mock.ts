@@ -97,12 +97,14 @@ function make(seed: Seed, today: IsoDate): TaskDetail {
         author,
         at: new Date(Date.parse(atBishkek(today, '09:00')) - hoursAgo * 3_600_000).toISOString(),
         text,
+        attachments: [],
       }))
     : Array.from({ length: commentCount }, (_, i) => ({
         id: nextId('c'),
         author: i % 2 === 0 ? (assignee ?? seed.author) : seed.author,
         at: atBishkek(addDays(today, -commentCount + i), '10:30'),
         text: genericComments[i % genericComments.length],
+        attachments: [],
       }));
 
   const rescheduleLog =

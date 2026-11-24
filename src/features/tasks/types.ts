@@ -70,7 +70,13 @@ export type TaskAttachment = { id: string; filename: string; size: number };
 
 export type Subtask = { id: string; title: string; done: boolean; assignee: Person | null };
 
-export type Comment = { id: string; author: Person; at: string; text: string };
+export type Comment = {
+  id: string;
+  author: Person;
+  at: string;
+  text: string;
+  attachments: TaskAttachment[];
+};
 
 export type HistoryKind =
   | 'escalation'

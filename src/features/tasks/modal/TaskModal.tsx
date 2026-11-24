@@ -1,5 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog';
-import { type ComponentType, type FormEvent, type ReactNode, useState } from 'react';
+import { type ComponentType, type FormEvent, type ReactNode, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useCurrentAbsences } from '@/features/absences/api';
@@ -29,6 +29,7 @@ import {
 import { absenceOf, isAbsentOn } from '../absences';
 import {
   attachmentUrl,
+  commentFilesMax,
   useAddComment,
   useAddSubtask,
   useArchiveTask,
@@ -455,14 +456,24 @@ function Discussion({ task }: { task: TaskDetail }) {
   const add = useAddComment();
   const [all, setAll] = useState(false);
   const [text, setText] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInput = useRef<HTMLInputElement>(null);
   const hidden = all ? 0 : Math.max(0, task.commentItems.length - VISIBLE_COMMENTS);
   const visible = task.commentItems.slice(hidden);
+  const ready = text.trim().length > 0 || files.length > 0;
+
+  const pick = (list: FileList | null) => {
+    if (!list) return;
+    setFiles((prev) => [...prev, ...Array.from(list)].slice(0, commentFilesMax));
+    if (fileInput.current) fileInput.current.value = '';
+  };
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!text.trim()) return;
-    add.mutate({ taskId: task.id, text: text.trim() });
+    if (!ready) return;
+    add.mutate({ taskId: task.id, text: text.trim(), files });
     setText('');
+    setFiles([]);
   };
 
   return (
@@ -495,11 +506,49 @@ function Discussion({ task }: { task: TaskDetail }) {
                   {formatInBishkek(c.at, 'd MMM, HH:mm', i18n.language)}
                 </time>
               </p>
-              <p className="mt-[2px] text-[12px] leading-[18px] text-sub">{c.text}</p>
+              {c.text && <p className="mt-[2px] text-[12px] leading-[18px] text-sub">{c.text}</p>}
+              {c.attachments.length > 0 && (
+                <ul
+                  className="mt-[6px] flex flex-wrap gap-[6px]"
+                  aria-label={t('taskCard.commentFiles')}
+                >
+                  {c.attachments.map((a) => (
+                    <li key={a.id}>
+                      <a
+                        href={attachmentUrl(a.id)}
+                        className="flex h-7 max-w-[220px] items-center gap-[6px] rounded-8 border border-line bg-surface px-[9px] text-[11px] text-sub hover:text-text"
+                      >
+                        <AttachMediumIcon size={13} className="shrink-0 text-faint" />
+                        <span className="truncate">{a.filename}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </li>
         ))}
       </ul>
+      {files.length > 0 && (
+        <ul className="mt-[10px] flex flex-wrap gap-[6px]" aria-label={t('taskCard.selectedFiles')}>
+          {files.map((f) => (
+            <li
+              key={`${f.name}-${f.size}-${f.lastModified}`}
+              className="flex h-7 max-w-[220px] items-center gap-[6px] rounded-8 border border-line bg-surface pl-[9px] pr-1 text-[11px] text-sub"
+            >
+              <span className="truncate">{f.name}</span>
+              <button
+                type="button"
+                aria-label={t('taskCard.removeFile', { name: f.name })}
+                onClick={() => setFiles((prev) => prev.filter((x) => x !== f))}
+                className="flex size-5 shrink-0 items-center justify-center rounded-6 text-faint hover:text-text"
+              >
+                <XIcon size={12} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
       <form
         onSubmit={submit}
         className="mt-[10px] flex h-10 items-center gap-1 rounded-9 border border-line bg-surface pl-[13px] pr-[6px] focus-within:border-info"
@@ -513,17 +562,30 @@ function Discussion({ task }: { task: TaskDetail }) {
         />
         <button
           type="button"
-          disabled
-          title={t('tasks.comingSoon')}
+          onClick={() => fileInput.current?.click()}
+          disabled={files.length >= commentFilesMax}
+          title={
+            files.length >= commentFilesMax
+              ? t('taskCard.filesMax', { count: commentFilesMax })
+              : undefined
+          }
           aria-label={t('taskCard.attach')}
-          className="flex size-6 items-center justify-center rounded-6 text-faint disabled:cursor-not-allowed"
+          className="flex size-6 items-center justify-center rounded-6 text-faint hover:text-sub disabled:cursor-not-allowed disabled:opacity-40"
         >
           <AttachMediumIcon size={16} />
         </button>
+        <input
+          ref={fileInput}
+          type="file"
+          multiple
+          hidden
+          data-testid="comment-files"
+          onChange={(e) => pick(e.target.files)}
+        />
         <button
           type="submit"
           aria-label={t('taskCard.send')}
-          disabled={!text.trim()}
+          disabled={!ready || add.isPending}
           className="flex size-6 items-center justify-center rounded-6 text-info disabled:opacity-40"
         >
           <SendIcon size={16} />

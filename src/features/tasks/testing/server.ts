@@ -354,7 +354,16 @@ export function createTasksServer({ today = todayInBishkek() }: { today?: IsoDat
         return { status: 200, body: sub };
       }
       if (action === 'comments' && method === 'POST') {
-        const comment = { id: `c-new-${++seq}`, author: me, at: now(), text: String(b.text) };
+        const form = body instanceof FormData ? body : null;
+        const text = form ? String(form.get('text') ?? '') : String(b.text);
+        const files = form ? (form.getAll('files') as File[]) : [];
+        if (!text.trim() && files.length === 0) return error(400, 'comment_length');
+        const attachments = files.map((f) => ({
+          id: `att-new-${++seq}`,
+          filename: f.name,
+          size: f.size,
+        }));
+        const comment = { id: `c-new-${++seq}`, author: me, at: now(), text, attachments };
         task.commentItems.push(comment);
         return { status: 201, body: { ...comment, author: apiPerson(me) } };
       }
