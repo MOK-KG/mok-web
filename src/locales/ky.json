@@ -188,6 +188,8 @@
     "openMenu": "Бөлүмдөр",
     "closeSearch": "Издөөнү жабуу",
     "noResults": "Эч нерсе табылган жок",
+    "emptyColumn": "Мамычада тапшырма жок",
+    "moveTo": "Которуу…",
     "filterDepartment": "Бөлүм",
     "view": {
       "board": "Такта",

@@ -188,6 +188,8 @@
     "openMenu": "Sections",
     "closeSearch": "Close search",
     "noResults": "Nothing found",
+    "emptyColumn": "No tasks in this column",
+    "moveTo": "Move to…",
     "filterDepartment": "Department",
     "view": {
       "board": "Board",

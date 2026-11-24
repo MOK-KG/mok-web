@@ -198,6 +198,8 @@
     "openMenu": "Разделы",
     "closeSearch": "Закрыть поиск",
     "noResults": "Ничего не найдено",
+    "emptyColumn": "В колонке нет задач",
+    "moveTo": "Переместить в…",
     "filterDepartment": "Департамент",
     "view": {
       "board": "Доска",
