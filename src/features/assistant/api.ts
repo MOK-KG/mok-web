@@ -12,11 +12,18 @@ import type { IsoDate } from '@/shared/lib/workDays';
  * бэкенд, сюда приходит только адрес и состояние. В тестах — подставной сервер testing/server.ts.
  */
 
+export type SchedulerStatus = {
+  lastRunAt: string | null;
+  ok: boolean;
+  lastError: string;
+};
+
 export type AssistantEnvironment = {
   /** Задан ли OPENAI_API_KEY */
   openaiKey: boolean;
   /** Модель, если в настройках пусто */
   defaultModel: string;
+  scheduler: SchedulerStatus;
 };
 
 export type AssistantSettings = {

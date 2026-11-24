@@ -36,7 +36,11 @@ export function createAssistantServer() {
     maxLetters: 20,
     updatedAt: '2026-11-10T09:00:00Z',
     updatedBy: null,
-    environment: { openaiKey: true, defaultModel: 'gpt-4.1-mini' },
+    environment: {
+      openaiKey: true,
+      defaultModel: 'gpt-4.1-mini',
+      scheduler: { lastRunAt: '2026-11-24T08:00:00Z', ok: true, lastError: '' },
+    },
   };
   const runs: AgentRun[] = [
     {

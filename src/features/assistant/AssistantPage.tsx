@@ -19,6 +19,7 @@ import {
   BoltIcon,
   BookIcon,
   ChevronLeftIcon,
+  ClockIcon,
   LockIcon,
   MailIcon,
   PlusIcon,
@@ -32,6 +33,7 @@ import {
   type DryRunSuggestion,
   type Mailbox,
   mailboxConnectResult,
+  type SchedulerStatus,
   useAgentRuns,
   useAssistantSettings,
   useDisconnectMailbox,
@@ -210,6 +212,29 @@ function EnvBadge({
   );
 }
 
+function SchedulerBadge({ status }: { status: SchedulerStatus }) {
+  const { t, i18n } = useTranslation();
+  const at = status.lastRunAt
+    ? formatInBishkek(status.lastRunAt, 'd MMM, HH:mm', i18n.language)
+    : null;
+  const text = status.ok
+    ? t('assistant.schedulerOk', { at })
+    : status.lastError
+      ? t('assistant.schedulerError', { error: status.lastError })
+      : at
+        ? t('assistant.schedulerStale', { at })
+        : t('assistant.schedulerNever');
+  return (
+    <p
+      role="status"
+      className={`flex items-center gap-2 text-[11.5px] ${status.ok ? 'text-success' : 'text-warning-text'}`}
+    >
+      <ClockIcon size={14} />
+      {text}
+    </p>
+  );
+}
+
 function SettingsForm({ settings }: { settings: AssistantSettings }) {
   const { t } = useTranslation();
   const save = useSaveAssistantSettings();
@@ -253,6 +278,7 @@ function SettingsForm({ settings }: { settings: AssistantSettings }) {
             okText={t('assistant.openaiKeySet')}
             missingText={t('assistant.openaiKeyMissing')}
           />
+          <SchedulerBadge status={env.scheduler} />
           <div className="grid grid-cols-2 gap-3">
             <Field id="assistant-model" text={t('assistant.model')} error={fieldError('model')}>
               <input

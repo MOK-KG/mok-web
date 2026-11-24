@@ -123,6 +123,7 @@ describe('настройки ИИ (экран)', () => {
     await waitFor(() => page().includes('Последние запуски') && page().includes('RateLimitError'));
     await waitFor(() => page().includes('info@olympic.kg'));
     expect(page()).toContain('Ключ OpenAI задан в окружении сервера');
+    expect(page()).toContain('Планировщик работает · последний проход');
     expect(page()).toContain('подключил(а) Дамира Токтосунова');
     expect(button('Подключить ящик Gmail')).toBeTruthy();
     // Полей IMAP и пароля на экране нет
@@ -185,6 +186,25 @@ describe('настройки ИИ (экран)', () => {
     await act(async () => button('Разобрать очередь сейчас')?.click());
     await waitFor(() => page().includes('Вручную'));
     expect(assistantServer.runs[0]).toMatchObject({ trigger: 'manual', analyzed: 2 });
+  });
+
+  it('планировщик давно не запускался или упал — предупреждение', async () => {
+    assistantServer.settings.environment.scheduler = {
+      lastRunAt: '2026-11-24T08:00:00Z',
+      ok: false,
+      lastError: '',
+    };
+    await render('R1');
+    await waitFor(() => page().includes('Планировщик не запускался с'));
+    act(() => root.unmount());
+    container.remove();
+    assistantServer.settings.environment.scheduler = {
+      lastRunAt: null,
+      ok: false,
+      lastError: 'OperationalError: db',
+    };
+    await render('R1');
+    await waitFor(() => page().includes('Планировщик: проход не удался — OperationalError: db'));
   });
 
   it('выключенный агент — кнопка разбора недоступна', async () => {
