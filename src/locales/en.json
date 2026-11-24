@@ -835,7 +835,13 @@
     "placeholderGroup": "Write to the group…",
     "pickGroupMembers": "Find a colleague",
     "creator": "creator",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "attachArticle": "Attach article",
+    "pickArticleSearch": "Find an article",
+    "noArticles": "No articles found",
+    "articleFromKb": "Knowledge base article",
+    "articleHidden": "Article from a restricted section",
+    "openArticle": "Open article"
   },
   "notifications": {
     "browser": {

@@ -111,9 +111,11 @@ export function usePreview() {
     const body =
       m.kind === 'task'
         ? `${t('chat.taskFromBoard')}: ${m.task?.title}`
-        : m.file && !m.text
-          ? `${m.file.name}.${m.file.ext}`
-          : m.text;
+        : m.kind === 'article'
+          ? `${t('chat.articleFromKb')}: ${m.article?.title ?? t('chat.articleHidden')}`
+          : m.file && !m.text
+            ? `${m.file.name}.${m.file.ext}`
+            : m.text;
     if (m.authorId === me) return `${t('chat.you')}: ${body}`;
     const author = m.authorId ? chatMembers[m.authorId] : null;
     return author ? `${author.name.split(' ')[0]}: ${body}` : body;

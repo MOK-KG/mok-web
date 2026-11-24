@@ -18,6 +18,7 @@ export type ChatMember = {
  * Сообщение:
  * - text — обычный текст (может быть с вложением-файлом);
  * - task — карточка задачи из доски;
+ * - article — карточка статьи базы знаний;
  * - system — служебное: эскалация, автоответ.
  */
 export type ChatMessage = {
@@ -26,10 +27,12 @@ export type ChatMessage = {
   /** null — системное сообщение */
   authorId: string | null;
   at: string;
-  kind: 'text' | 'task' | 'system';
+  kind: 'text' | 'task' | 'article' | 'system';
   text: string;
   /** Для task: задача из доски — её состояние сейчас (assignee — короткое имя) */
   task?: { id?: string; title: string; status: TaskStatus; assignee: string; due: string | null };
+  /** Для article: id и title — null, если статья закрыта для читающего */
+  article?: { id: string | null; title: string | null };
   /**
    * Для system: escalation — title заголовок, text пояснение;
    * autoreply — title дата конца отпуска (IsoDate), text заместитель

@@ -1,5 +1,6 @@
 import { vi } from 'vitest';
 import { absencesServer, sessionPerson } from '@/features/absences/testing/server';
+import { createMockKnowledge } from '@/features/knowledge-base/testing/fixtures';
 import { tasksServer } from '@/features/tasks/testing/server';
 import { diffDays, todayInBishkek } from '@/shared/lib/workDays';
 import type {
@@ -64,6 +65,7 @@ export function createChatServer(now?: number) {
     text: m.text,
     threadId: m.threadId ?? null,
     task: m.task ?? null,
+    article: m.article ?? null,
     system: m.system ?? null,
     file: m.file ? { size: 1, ...m.file } : null,
   });
@@ -281,6 +283,16 @@ export function createChatServer(now?: number) {
     }
     if (action === 'messages' && method === 'POST') {
       const text = String(b.text ?? '').trim();
+      if (b.kind === 'article') {
+        const found = createMockKnowledge().articles.find((a) => a.id === b.articleId);
+        if (!found) return error(404, 'article_not_found');
+        const sent = send(chat, {
+          kind: 'article',
+          text: '',
+          article: { id: found.id, title: found.title },
+        });
+        return { status: 201, body: toApi(sent) };
+      }
       const kind = b.kind === 'task' ? 'task' : 'text';
       const threadId = b.threadId ? String(b.threadId) : undefined;
       if (kind === 'text' && !text) return error(400, 'text_required');

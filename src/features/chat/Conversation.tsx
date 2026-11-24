@@ -3,7 +3,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
-import { useCurrentPersonId } from '@/features/auth';
+import { useCan, useCurrentPersonId } from '@/features/auth';
 import { useTasks } from '@/features/tasks/api';
 import { formatIsoDate } from '@/shared/lib/date';
 import { toast } from '@/shared/lib/toast';
@@ -11,6 +11,7 @@ import {
   ArrowRightIcon,
   AttachLargeIcon,
   BoltIcon,
+  BookIcon,
   GroupIcon,
   MoreIcon,
   PaperclipIcon,
@@ -28,7 +29,7 @@ import {
   useSendMessage,
   useSetMuted,
 } from './api';
-import { TaskPickerDialog } from './dialogs';
+import { ArticlePickerDialog, TaskPickerDialog } from './dialogs';
 import { GroupInfoDialog } from './groups';
 import { MentionTextarea } from './MentionTextarea';
 import {
@@ -245,6 +246,7 @@ function Message({
 }) {
   if (m.kind === 'system') return <SystemMessage message={m} peerName={peerName ?? ''} />;
   if (m.kind === 'task') return <TaskCard message={m} />;
+  if (m.kind === 'article') return <ArticleCard message={m} />;
   return <TextMessage message={m} replies={replies} onThread={onThread} />;
 }
 
@@ -367,6 +369,43 @@ function TaskCard({ message: m }: { message: ChatMessage }) {
   );
 }
 
+function ArticleCard({ message: m }: { message: ChatMessage }) {
+  const { t } = useTranslation();
+  if (!m.article) return null;
+  const { id, title } = m.article;
+  const body = (
+    <>
+      <span
+        aria-hidden
+        className="absolute inset-y-0 left-0 w-[2.5px] rounded-l-9 bg-tone-violet"
+      />
+      <span className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[1.4px] text-tone-violet">
+        <BookIcon size={16} />
+        {t('chat.articleFromKb')}
+      </span>
+      <span className="mt-2 flex items-center gap-2">
+        <span className={`flex-1 text-[13px] font-medium ${id ? 'text-text' : 'text-dim'}`}>
+          {title ?? t('chat.articleHidden')}
+        </span>
+        {id && <ArrowRightIcon size={14} className="text-faint" />}
+      </span>
+    </>
+  );
+  const box =
+    'relative ml-[42px] mt-[6px] block overflow-hidden rounded-9 border border-line bg-surface px-4 pb-3 pt-[13px]';
+  return id ? (
+    <Link
+      to={`/knowledge/${id}`}
+      aria-label={`${t('chat.openArticle')}: ${title}`}
+      className={`${box} hover:opacity-90`}
+    >
+      {body}
+    </Link>
+  ) : (
+    <div className={box}>{body}</div>
+  );
+}
+
 function SystemMessage({ message: m, peerName }: { message: ChatMessage; peerName: string }) {
   const { t, i18n } = useTranslation();
   if (m.system?.kind === 'autoreply') {
@@ -402,8 +441,10 @@ function SystemMessage({ message: m, peerName }: { message: ChatMessage; peerNam
 function Composer({ chat }: { chat: ChatSummary }) {
   const { t } = useTranslation();
   const send = useSendMessage();
+  const { can } = useCan();
   const [text, setText] = useState('');
   const [picking, setPicking] = useState(false);
+  const [pickingArticle, setPickingArticle] = useState(false);
   const file = useRef<HTMLInputElement>(null);
 
   const submit = () => {
@@ -447,16 +488,30 @@ function Composer({ chat }: { chat: ChatSummary }) {
             <PaperclipIcon size={16} />
           </button>
         </Tooltip>
-        <Tooltip content={t('chat.attachTask')}>
-          <button
-            type="button"
-            aria-label={t('chat.attachTask')}
-            onClick={() => setPicking(true)}
-            className={icon}
-          >
-            <TasksIcon size={16} />
-          </button>
-        </Tooltip>
+        {can('tasks.view') && (
+          <Tooltip content={t('chat.attachTask')}>
+            <button
+              type="button"
+              aria-label={t('chat.attachTask')}
+              onClick={() => setPicking(true)}
+              className={icon}
+            >
+              <TasksIcon size={16} />
+            </button>
+          </Tooltip>
+        )}
+        {can('knowledge.view') && (
+          <Tooltip content={t('chat.attachArticle')}>
+            <button
+              type="button"
+              aria-label={t('chat.attachArticle')}
+              onClick={() => setPickingArticle(true)}
+              className={icon}
+            >
+              <BookIcon size={16} />
+            </button>
+          </Tooltip>
+        )}
         <Tooltip content={t('chat.send')}>
           <button
             type="button"
@@ -481,6 +536,14 @@ function Composer({ chat }: { chat: ChatSummary }) {
         />
       </div>
       <p className="mt-[6px] text-[10.5px] text-dim">{t('chat.inputHint')}</p>
+      <ArticlePickerDialog
+        open={pickingArticle}
+        onClose={() => setPickingArticle(false)}
+        onPick={(article) => {
+          setPickingArticle(false);
+          send.mutate({ chatId: chat.id, message: { kind: 'article', text: '', article } });
+        }}
+      />
       <TaskPickerDialog
         open={picking}
         onClose={() => setPicking(false)}

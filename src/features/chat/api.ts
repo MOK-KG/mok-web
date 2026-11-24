@@ -28,6 +28,7 @@ export type ApiChatMessage = {
   text: string;
   threadId: string | null;
   task: NonNullable<ChatMessage['task']> | null;
+  article?: NonNullable<ChatMessage['article']> | null;
   system: NonNullable<ChatMessage['system']> | null;
   file: { name: string; ext: string; size: number } | null;
 };
@@ -63,6 +64,7 @@ export function toMessage(m: ApiChatMessage): ChatMessage {
     text: m.text,
     ...(m.threadId ? { threadId: String(m.threadId) } : {}),
     ...(m.task ? { task: m.task } : {}),
+    ...(m.article ? { article: m.article } : {}),
     ...(m.system ? { system: m.system } : {}),
     ...(m.file ? { file: m.file } : {}),
   };
@@ -150,7 +152,10 @@ export async function markChatRead(chatId: string) {
   await api.post(`/chat/chats/${chatId}/read`);
 }
 
-export type OutgoingMessage = Pick<ChatMessage, 'text' | 'kind' | 'task' | 'threadId'> & {
+export type OutgoingMessage = Pick<
+  ChatMessage,
+  'text' | 'kind' | 'task' | 'article' | 'threadId'
+> & {
   /** Файл-вложение: уходит отдельным запросом multipart */
   upload?: File;
 };
@@ -173,6 +178,7 @@ export async function sendMessage(chatId: string, message: OutgoingMessage): Pro
       text: message.text,
       threadId: message.threadId ?? null,
       ...(message.kind === 'task' ? { taskId: message.task?.id ?? null } : {}),
+      ...(message.kind === 'article' ? { articleId: message.article?.id ?? null } : {}),
     }),
   );
 }

@@ -2,9 +2,10 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { type ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCurrentPersonId } from '@/features/auth';
+import { useKnowledge } from '@/features/knowledge-base/api';
 import { useTasks } from '@/features/tasks/api';
 import type { Task } from '@/features/tasks/types';
-import { GroupIcon, SearchIcon, TasksIcon, XIcon } from '@/shared/ui/icons';
+import { BookIcon, GroupIcon, SearchIcon, TasksIcon, XIcon } from '@/shared/ui/icons';
 import { useChatMembers, useStartDirect } from './api';
 import { NewGroupForm } from './groups';
 import { MemberAvatar, useMemberLine } from './parts';
@@ -248,5 +249,48 @@ function TaskList({ onPick }: { onPick: (task: Task) => void }) {
         )}
       </ul>
     </>
+  );
+}
+
+export function ArticlePickerDialog({
+  open,
+  onClose,
+  onPick,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onPick: (article: { id: string; title: string }) => void;
+}) {
+  const { t } = useTranslation();
+  const articles = useKnowledge().data?.articles ?? [];
+  const [query, setQuery] = useState('');
+  const needle = query.trim().toLowerCase();
+  const shown = articles.filter((a) => !needle || a.title.toLowerCase().includes(needle));
+  return (
+    <PickerDialog open={open} title={t('chat.attachArticle')} onClose={onClose}>
+      <SearchBox value={query} onChange={setQuery} label={t('chat.pickArticleSearch')} />
+      <ul className="mt-3 min-h-0 flex-1 overflow-y-auto">
+        {shown.map((a) => (
+          <li key={a.id}>
+            <button
+              type="button"
+              onClick={() => onPick({ id: a.id, title: a.title })}
+              className="flex w-full items-center gap-[10px] rounded-9 px-2 py-[8px] text-left hover:bg-row-highlight"
+            >
+              <BookIcon size={16} className="shrink-0 text-tone-violet" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[12.5px] text-text">{a.title}</span>
+                {a.summary && (
+                  <span className="block truncate text-[10.5px] text-dim">{a.summary}</span>
+                )}
+              </span>
+            </button>
+          </li>
+        ))}
+        {shown.length === 0 && (
+          <li className="py-6 text-center text-[12px] text-dim">{t('chat.noArticles')}</li>
+        )}
+      </ul>
+    </PickerDialog>
   );
 }

@@ -835,7 +835,13 @@
     "placeholderGroup": "Топко жазуу…",
     "pickGroupMembers": "Кызматкерди табуу",
     "creator": "түзгөн",
-    "cancel": "Жокко чыгаруу"
+    "cancel": "Жокко чыгаруу",
+    "attachArticle": "Макаланы тиркөө",
+    "pickArticleSearch": "Макаланы табуу",
+    "noArticles": "Макалалар табылган жок",
+    "articleFromKb": "Билим базасынын макаласы",
+    "articleHidden": "Жабык бөлүмдүн макаласы",
+    "openArticle": "Макаланы ачуу"
   },
   "notifications": {
     "browser": {

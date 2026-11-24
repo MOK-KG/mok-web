@@ -6,6 +6,8 @@ import i18n from '@/app/i18n';
 import { AppProviders } from '@/app/providers';
 import { routes } from '@/app/router';
 import { mockSessionFor } from '@/features/auth/mock';
+import { createMockKnowledge } from '@/features/knowledge-base/testing/fixtures';
+import { installKnowledgeServer } from '@/features/knowledge-base/testing/server';
 import { resetTasksMock } from '@/features/tasks/api';
 import { people } from '@/features/tasks/directory';
 import {
@@ -21,6 +23,7 @@ import {
   unreadTotal,
   updateGroup,
 } from './api';
+import { chatServer } from './testing/server';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -227,5 +230,41 @@ describe('чат и уведомления (экраны)', () => {
     await open('/notifications?tab=unread');
     await waitFor(() => text().includes('Непрочитанные4'));
     expect(container.querySelectorAll('[role=tabpanel] li')).toHaveLength(4);
+  });
+
+  it('статья базы знаний: прикрепляется карточкой со ссылкой на статью', async () => {
+    installKnowledgeServer();
+    const article = createMockKnowledge().articles[0];
+    await open('/chat?c=c-at');
+    const attach = () =>
+      document.querySelector<HTMLButtonElement>('button[aria-label="Прикрепить статью"]');
+    await waitFor(() => !!attach());
+    await act(async () => attach()?.click());
+    await waitFor(() => text().includes(article.title));
+    const pick = [
+      ...document.querySelectorAll<HTMLButtonElement>('[role="dialog"] li button'),
+    ].find((b) => b.textContent?.startsWith(article.title));
+    await act(async () => pick?.click());
+    await waitFor(
+      () =>
+        !!document.querySelector(
+          `a[href="/knowledge/${article.id}"][aria-label^="Открыть статью"]`,
+        ),
+    );
+  });
+
+  it('статья из закрытого раздела: без названия и без ссылки', async () => {
+    chatServer?.store.messages.push({
+      id: 'm-closed',
+      chatId: 'c-at',
+      authorId: 'u-ka',
+      at: new Date().toISOString(),
+      kind: 'article',
+      text: '',
+      article: { id: null, title: null },
+    });
+    await open('/chat?c=c-at');
+    await waitFor(() => text().includes('Статья из закрытого раздела'));
+    expect(document.querySelector('a[href^="/knowledge/"]')).toBeNull();
   });
 });

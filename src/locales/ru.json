@@ -889,7 +889,13 @@
     "placeholderGroup": "Написать в группу…",
     "pickGroupMembers": "Найти сотрудника",
     "creator": "создатель",
-    "cancel": "Отмена"
+    "cancel": "Отмена",
+    "attachArticle": "Прикрепить статью",
+    "pickArticleSearch": "Найти статью",
+    "noArticles": "Статьи не найдены",
+    "articleFromKb": "Статья базы знаний",
+    "articleHidden": "Статья из закрытого раздела",
+    "openArticle": "Открыть статью"
   },
   "notifications": {
     "browser": {
