@@ -841,7 +841,9 @@
     "noArticles": "No articles found",
     "articleFromKb": "Knowledge base article",
     "articleHidden": "Article from a restricted section",
-    "openArticle": "Open article"
+    "openArticle": "Open article",
+    "groupNotFound": "Group not found",
+    "taskHidden": "Task unavailable — no access to tasks"
   },
   "notifications": {
     "browser": {

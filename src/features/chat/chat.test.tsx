@@ -20,6 +20,7 @@ import {
   removeGroupMember,
   sendMessage,
   startDirect,
+  toMessage,
   unreadTotal,
   updateGroup,
 } from './api';
@@ -83,6 +84,23 @@ describe('чат (логика)', () => {
     const me = edited?.createdById ?? '';
     await removeGroupMember(id, me);
     expect((await fetchChats()).some((c) => c.id === id)).toBe(false);
+  });
+
+  it('скрытая задача в чате: без названия, с признаком taskHidden', () => {
+    const hidden = toMessage({
+      id: '1',
+      chatId: 'c',
+      authorId: 'u',
+      at: new Date().toISOString(),
+      kind: 'task',
+      text: '',
+      threadId: null,
+      task: { id: null, title: null, status: null, assignee: null, due: null },
+      system: null,
+      file: null,
+    });
+    expect(hidden.taskHidden).toBe(true);
+    expect(hidden.task).toBeUndefined();
   });
 
   it('участники — с ролью и департаментом', async () => {

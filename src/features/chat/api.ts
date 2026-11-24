@@ -27,7 +27,10 @@ export type ApiChatMessage = {
   kind: ChatMessage['kind'];
   text: string;
   threadId: string | null;
-  task: NonNullable<ChatMessage['task']> | null;
+  task:
+    | NonNullable<ChatMessage['task']>
+    | { id: null; title: null; status: null; assignee: null; due: null }
+    | null;
   article?: NonNullable<ChatMessage['article']> | null;
   system: NonNullable<ChatMessage['system']> | null;
   file: { name: string; ext: string; size: number } | null;
@@ -63,7 +66,8 @@ export function toMessage(m: ApiChatMessage): ChatMessage {
     kind: m.kind,
     text: m.text,
     ...(m.threadId ? { threadId: String(m.threadId) } : {}),
-    ...(m.task ? { task: m.task } : {}),
+    ...(m.task && m.task.title !== null ? { task: m.task } : {}),
+    ...(m.task && m.task.title === null ? { taskHidden: true } : {}),
     ...(m.article ? { article: m.article } : {}),
     ...(m.system ? { system: m.system } : {}),
     ...(m.file ? { file: m.file } : {}),

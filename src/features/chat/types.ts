@@ -31,6 +31,8 @@ export type ChatMessage = {
   text: string;
   /** Для task: задача из доски — её состояние сейчас (assignee — короткое имя) */
   task?: { id?: string; title: string; status: TaskStatus; assignee: string; due: string | null };
+  /** Для task: задачи недоступны читающему — карточка без названия */
+  taskHidden?: boolean;
   /** Для article: id и title — null, если статья закрыта для читающего */
   article?: { id: string | null; title: string | null };
   /**

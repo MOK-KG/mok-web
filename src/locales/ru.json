@@ -895,7 +895,9 @@
     "noArticles": "Статьи не найдены",
     "articleFromKb": "Статья базы знаний",
     "articleHidden": "Статья из закрытого раздела",
-    "openArticle": "Открыть статью"
+    "openArticle": "Открыть статью",
+    "groupNotFound": "Группа не найдена",
+    "taskHidden": "Задача недоступна — нет доступа к задачам"
   },
   "notifications": {
     "browser": {

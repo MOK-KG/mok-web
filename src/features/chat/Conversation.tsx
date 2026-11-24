@@ -245,6 +245,7 @@ function Message({
   onThread?: () => void;
 }) {
   if (m.kind === 'system') return <SystemMessage message={m} peerName={peerName ?? ''} />;
+  if (m.kind === 'task' && m.taskHidden) return <HiddenTaskCard />;
   if (m.kind === 'task') return <TaskCard message={m} />;
   if (m.kind === 'article') return <ArticleCard message={m} />;
   return <TextMessage message={m} replies={replies} onThread={onThread} />;
@@ -366,6 +367,20 @@ function TaskCard({ message: m }: { message: ChatMessage }) {
     </Link>
   ) : (
     <div className={box}>{body}</div>
+  );
+}
+
+function HiddenTaskCard() {
+  const { t } = useTranslation();
+  return (
+    <div className="relative ml-[42px] mt-[6px] block overflow-hidden rounded-9 border border-line bg-surface px-4 pb-3 pt-[13px]">
+      <span aria-hidden className="absolute inset-y-0 left-0 w-[2.5px] rounded-l-9 bg-info" />
+      <span className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[1.4px] text-info">
+        <TasksIcon size={16} />
+        {t('chat.taskFromBoard')}
+      </span>
+      <span className="mt-2 block text-[13px] font-medium text-dim">{t('chat.taskHidden')}</span>
+    </div>
   );
 }
 

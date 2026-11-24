@@ -110,7 +110,7 @@ export function usePreview() {
     }
     const body =
       m.kind === 'task'
-        ? `${t('chat.taskFromBoard')}: ${m.task?.title}`
+        ? `${t('chat.taskFromBoard')}: ${m.task?.title ?? t('chat.taskHidden')}`
         : m.kind === 'article'
           ? `${t('chat.articleFromKb')}: ${m.article?.title ?? t('chat.articleHidden')}`
           : m.file && !m.text

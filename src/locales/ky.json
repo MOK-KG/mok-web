@@ -841,7 +841,9 @@
     "noArticles": "Макалалар табылган жок",
     "articleFromKb": "Билим базасынын макаласы",
     "articleHidden": "Жабык бөлүмдүн макаласы",
-    "openArticle": "Макаланы ачуу"
+    "openArticle": "Макаланы ачуу",
+    "groupNotFound": "Топ табылган жок",
+    "taskHidden": "Тапшырма жеткиликсиз — тапшырмаларга кирүү жок"
   },
   "notifications": {
     "browser": {
