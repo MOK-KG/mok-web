@@ -999,6 +999,7 @@
     "norm_one": "{{count}} working day · {{hours}} h",
     "norm_other": "{{count}} working days · {{hours}} h",
     "unofficial": "The {{year}} calendar has not been entered from the Ministry of Labour order yet: only fixed-date holidays are shown; Orozo Ait and Kurman Ait are not marked.",
+    "preliminary": "The {{year}} calendar is preliminary: entered by last year’s rules before the Ministry of Labour order; Orozo Ait and Kurman Ait dates are expected.",
     "shortenedTag": "−1 h",
     "more_one": "{{count}} more",
     "more_other": "{{count}} more",

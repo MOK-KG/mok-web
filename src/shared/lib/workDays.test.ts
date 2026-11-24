@@ -124,8 +124,22 @@ describe('часовой пояс и формат', () => {
 
   it('год без утверждённого календаря — только фиксированные праздники', () => {
     expect(isYearKnown(2026)).toBe(true);
-    expect(isYearKnown(2027)).toBe(false);
-    expect(dayKind('2027-01-01')).toEqual({ kind: 'holiday', holiday: 'newYearHolidays' });
-    expect(isWorkingDay('2027-01-08')).toBe(true);
+    expect(isYearKnown(2027)).toBe(true);
+    expect(isYearKnown(2028)).toBe(false);
+    expect(dayKind('2028-01-01')).toEqual({ kind: 'holiday', holiday: 'newYearHolidays' });
+    expect(isWorkingDay('2028-01-10')).toBe(true);
+  });
+});
+
+describe('производственный календарь 2027 (предварительно, по правилам 2026 года)', () => {
+  it('праздники с фиксированной датой и ожидаемые Орозо айт и Курман айт', () => {
+    expect(dayKind('2027-01-07')).toEqual({ kind: 'holiday', holiday: 'christmas' });
+    expect(dayKind('2027-03-10')).toEqual({ kind: 'holiday', holiday: 'orozoAit' });
+    expect(dayKind('2027-05-17')).toEqual({ kind: 'holiday', holiday: 'kurmanAit' });
+    expect(dayKind('2027-03-21')).toEqual({ kind: 'holiday', holiday: 'nooruz' });
+    expect(isWorkingDay('2027-03-22')).toBe(true);
+    expect(dayKind('2027-02-23')).toEqual({ kind: 'working', shortened: true });
+    expect(nextWorkingDay('2027-01-01')).toBe('2027-01-08');
+    expect(addWorkingDays('2027-04-30', 1)).toBe('2027-05-10');
   });
 });

@@ -1,4 +1,4 @@
-import type { HolidayKey } from '@/shared/config/workCalendar';
+import { type HolidayKey, years } from '@/shared/config/workCalendar';
 import { addDays, dayKind, diffDays, type IsoDate, isYearKnown } from '@/shared/lib/workDays';
 import { type Absence, isAbsentOn } from '../tasks/absences';
 import type { Task } from '../tasks/types';
@@ -80,6 +80,8 @@ export type MonthNorm = {
   shortened: IsoDate[];
   /** Год внесён по приказу Минтруда; иначе — только фиксированные праздники */
   official: boolean;
+  /** Год внесён заранее, до приказа: даты Орозо айт и Курман айт ожидаемые */
+  preliminary: boolean;
 };
 
 export function monthNorm(month: IsoMonth): MonthNorm {
@@ -103,6 +105,7 @@ export function monthNorm(month: IsoMonth): MonthNorm {
     holidays,
     shortened,
     official: isYearKnown(Number(month.slice(0, 4))),
+    preliminary: Boolean(years[Number(month.slice(0, 4))]?.preliminary),
   };
 }
 

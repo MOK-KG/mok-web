@@ -79,7 +79,9 @@ describe('норма месяца по календарю КР', () => {
   });
 
   it('год без приказа Минтруда помечается', () => {
-    expect(monthNorm('2027-01').official).toBe(false);
+    expect(monthNorm('2028-01').official).toBe(false);
+    expect(monthNorm('2026-01').preliminary).toBe(false);
+    expect(monthNorm('2027-03')).toMatchObject({ official: true, preliminary: true });
   });
 
   it('тип дня', () => {

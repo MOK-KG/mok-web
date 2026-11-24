@@ -182,6 +182,14 @@ export function CalendarPage() {
           {t('calendar.unofficial', { year: month.slice(0, 4) })}
         </p>
       )}
+      {norm.preliminary && (
+        <p
+          role="status"
+          className="rounded-9 border border-warning-line bg-warning-soft px-4 py-2 text-[12px] text-warning-text"
+        >
+          {t('calendar.preliminary', { year: month.slice(0, 4) })}
+        </p>
+      )}
 
       <div className="flex min-h-0 flex-1 gap-[14px]">
         <section

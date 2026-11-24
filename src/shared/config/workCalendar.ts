@@ -33,6 +33,8 @@ export type CalendarYear = {
   workingWeekends: string[];
   /** Документ, по которому внесён год */
   source: string;
+  /** Внесён заранее, до приказа Минтруда: даты Орозо айт и Курман айт ожидаемые */
+  preliminary?: boolean;
 };
 
 const range = (month: string, from: number, to: number, key: HolidayKey) =>
@@ -72,5 +74,17 @@ export const years: Record<number, CalendarYear> = {
     workingWeekends: [],
     source: 'Приказ Минтруда КР № 330 от 10.12.2025',
   },
-  // TODO: 2027 — внести после выхода приказа Минтруда (обычно декабрь 2026)
+  2027: {
+    holidays: {
+      ...fixedHolidays,
+      '03-10': 'orozoAit',
+      '05-17': 'kurmanAit',
+    },
+    shortened: ['02-23', '04-07', '04-30', '12-31'],
+    workingWeekends: [],
+    preliminary: true,
+    source:
+      'Предварительно, по правилам 2026 года; Орозо айт и Курман айт — ожидаемые даты. ' +
+      'Сверить с приказом Минтруда на 2027 год',
+  },
 };
