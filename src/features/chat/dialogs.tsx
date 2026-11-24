@@ -262,12 +262,21 @@ export function ArticlePickerDialog({
   onPick: (article: { id: string; title: string }) => void;
 }) {
   const { t } = useTranslation();
+  return (
+    <PickerDialog open={open} title={t('chat.attachArticle')} onClose={onClose}>
+      <ArticleList onPick={onPick} />
+    </PickerDialog>
+  );
+}
+
+function ArticleList({ onPick }: { onPick: (article: { id: string; title: string }) => void }) {
+  const { t } = useTranslation();
   const articles = useKnowledge().data?.articles ?? [];
   const [query, setQuery] = useState('');
   const needle = query.trim().toLowerCase();
   const shown = articles.filter((a) => !needle || a.title.toLowerCase().includes(needle));
   return (
-    <PickerDialog open={open} title={t('chat.attachArticle')} onClose={onClose}>
+    <>
       <SearchBox value={query} onChange={setQuery} label={t('chat.pickArticleSearch')} />
       <ul className="mt-3 min-h-0 flex-1 overflow-y-auto">
         {shown.map((a) => (
@@ -291,6 +300,6 @@ export function ArticlePickerDialog({
           <li className="py-6 text-center text-[12px] text-dim">{t('chat.noArticles')}</li>
         )}
       </ul>
-    </PickerDialog>
+    </>
   );
 }

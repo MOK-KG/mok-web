@@ -95,7 +95,8 @@ describe('чат (логика)', () => {
       kind: 'task',
       text: '',
       threadId: null,
-      task: { id: null, title: null, status: null, assignee: null, due: null },
+      task: null,
+      taskHidden: true,
       system: null,
       file: null,
     });
