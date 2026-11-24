@@ -230,6 +230,7 @@
     "showMoreComments": "Show {{count}} more",
     "writeComment": "Write a comment…",
     "attach": "Attach a file",
+    "discuss": "Discuss in chat",
     "commentFiles": "Comment files",
     "selectedFiles": "Selected files",
     "removeFile": "Remove {{name}}",
@@ -794,6 +795,15 @@
     "inputHint": "Paperclip — file · board icon — attach a task",
     "attachFile": "Attach file",
     "attachTask": "Attach task",
+    "discussTitle": "Discuss the task in chat",
+    "discussHint": "The task is posted as a card to the chosen chat, which then opens.",
+    "pickChatSearch": "Find a chat",
+    "noChats": "No chats found",
+    "kind": {
+      "channel": "Department channel",
+      "group": "Group",
+      "direct": "Direct message"
+    },
     "send": "Send",
     "membersTitle": "Members",
     "mute": "Mute notifications",

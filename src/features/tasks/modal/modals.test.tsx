@@ -6,6 +6,7 @@ import i18n from '@/app/i18n';
 import { AppProviders } from '@/app/providers';
 import { routes } from '@/app/router';
 import { mockSessionFor } from '@/features/auth/mock';
+import { chatServer } from '@/features/chat/testing/server';
 import { formatIsoDate } from '@/shared/lib/date';
 import {
   addDays,
@@ -189,6 +190,23 @@ describe('карточка задачи', () => {
       'smeta.xlsx',
     );
     expect(d.querySelector('[aria-label="Выбранные файлы"]')).toBeNull();
+  });
+
+  it('«Обсудить в чате»: задача уходит карточкой в выбранный чат, чат открывается', async () => {
+    await render(`/tasks?task=${translationId()}`);
+    await waitFor(() => dialog()?.textContent?.includes('Утверждение на Исполкоме') ?? false);
+    await act(async () => button('Обсудить в чате')?.click());
+    const picker = () => [...document.querySelectorAll<HTMLElement>('[role="dialog"]')].at(-1);
+    await waitFor(() => !!picker()?.querySelector('li button'));
+    expect(picker()?.textContent).toContain('Обсудить задачу в чате');
+    const first = picker()?.querySelector<HTMLButtonElement>('li button');
+    expect(first?.textContent).toContain('Канал департамента');
+    await act(async () => first?.click());
+    await waitFor(() => router.state.location.pathname === '/chat');
+    const chatId = new URLSearchParams(router.state.location.search).get('c');
+    const sent = chatServer?.store.messages.filter((m) => m.chatId === chatId).at(-1);
+    expect(sent?.kind).toBe('task');
+    expect(sent?.task?.id).toBe(translationId());
   });
 
   it('несуществующая задача — «Задача не найдена»', async () => {

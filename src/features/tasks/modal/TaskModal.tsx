@@ -1,9 +1,11 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { type ComponentType, type FormEvent, type ReactNode, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCurrentAbsences } from '@/features/absences/api';
 import { useCan } from '@/features/auth';
+import { useSendMessage } from '@/features/chat/api';
+import { ChatPickerDialog } from '@/features/chat/dialogs';
 import { formatInBishkek, formatIsoDate } from '@/shared/lib/date';
 import { initials } from '@/shared/lib/text';
 import { addDays, todayInBishkek } from '@/shared/lib/workDays';
@@ -131,6 +133,27 @@ function TaskBody({ task }: { task: TaskDetail }) {
   const { can } = useCan();
   const archive = useArchiveTask();
   const [editing, setEditing] = useState(false);
+  const [discussing, setDiscussing] = useState(false);
+  const send = useSendMessage();
+  const navigate = useNavigate();
+  const discussIn = (chatId: string) =>
+    send
+      .mutateAsync({
+        chatId,
+        message: {
+          kind: 'task',
+          text: '',
+          task: {
+            id: task.id,
+            title: task.title,
+            status: task.status,
+            assignee: task.assignee?.short ?? '—',
+            due: task.due,
+          },
+        },
+      })
+      .then(() => navigate(`/chat?c=${chatId}`))
+      .catch(() => undefined);
   const headerButton =
     'flex h-7 items-center rounded-[7px] border border-line px-[10px] text-[11px] font-medium text-sub hover:text-text disabled:opacity-50';
   const { urgency } = urgencyOf(task);
@@ -164,6 +187,11 @@ function TaskBody({ task }: { task: TaskDetail }) {
             {t('taskCard.archivedBadge')}
           </span>
         )}
+        {can('chat.use') && !task.archived && (
+          <button type="button" className={headerButton} onClick={() => setDiscussing(true)}>
+            {t('taskCard.discuss')}
+          </button>
+        )}
         {can('tasks.edit') && !task.archived && (
           <button type="button" className={headerButton} onClick={() => setEditing(true)}>
             {t('taskCard.edit')}
@@ -180,6 +208,12 @@ function TaskBody({ task }: { task: TaskDetail }) {
           </button>
         )}
       </header>
+      <ChatPickerDialog
+        open={discussing}
+        busy={send.isPending}
+        onClose={() => setDiscussing(false)}
+        onPick={(chat) => discussIn(chat.id)}
+      />
       <NewTaskModal
         open={editing}
         task={task}

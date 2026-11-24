@@ -5,11 +5,11 @@ import { useCurrentPersonId } from '@/features/auth';
 import { useKnowledge } from '@/features/knowledge-base/api';
 import { useTasks } from '@/features/tasks/api';
 import type { Task } from '@/features/tasks/types';
-import { BookIcon, GroupIcon, SearchIcon, TasksIcon, XIcon } from '@/shared/ui/icons';
-import { useChatMembers, useStartDirect } from './api';
+import { BookIcon, ChatIcon, GroupIcon, SearchIcon, TasksIcon, XIcon } from '@/shared/ui/icons';
+import { useChatMembers, useChats, useStartDirect } from './api';
 import { NewGroupForm } from './groups';
 import { MemberAvatar, useMemberLine } from './parts';
-import type { ChatMember } from './types';
+import type { Chat, ChatMember } from './types';
 
 export function PickerDialog({
   open,
@@ -191,6 +191,74 @@ function PersonRow({ member, onPick }: { member: ChatMember; onPick: () => void 
         </span>
       </button>
     </li>
+  );
+}
+
+/** Куда отправить задачу на обсуждение: каналы, группы и личные переписки сотрудника */
+export function ChatPickerDialog({
+  open,
+  onClose,
+  onPick,
+  busy = false,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onPick: (chat: Chat) => void;
+  busy?: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <PickerDialog
+      open={open}
+      title={t('chat.discussTitle')}
+      hint={t('chat.discussHint')}
+      onClose={onClose}
+    >
+      <ChatList onPick={onPick} busy={busy} />
+    </PickerDialog>
+  );
+}
+
+function ChatList({ onPick, busy }: { onPick: (chat: Chat) => void; busy: boolean }) {
+  const { t } = useTranslation();
+  const chats = useChats().data ?? [];
+  const [query, setQuery] = useState('');
+  const needle = query.trim().toLowerCase();
+  const order = { channel: 0, group: 1, direct: 2 } as const;
+  const shown = chats
+    .filter((c) => !needle || [c.title, c.fullTitle].some((v) => v.toLowerCase().includes(needle)))
+    .sort((a, b) => order[a.kind] - order[b.kind]);
+  return (
+    <>
+      <SearchBox value={query} onChange={setQuery} label={t('chat.pickChatSearch')} />
+      <ul className="mt-3 min-h-0 flex-1 overflow-y-auto">
+        {shown.map((c) => (
+          <li key={c.id}>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onPick(c)}
+              className="flex w-full items-center gap-[10px] rounded-9 px-2 py-[8px] text-left hover:bg-row-highlight disabled:opacity-50"
+            >
+              {c.kind === 'direct' ? (
+                <ChatIcon size={16} className="shrink-0 text-faint" />
+              ) : (
+                <GroupIcon size={16} className="shrink-0 text-info" />
+              )}
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[12.5px] text-text">{c.title}</span>
+                <span className="block truncate text-[10.5px] text-dim">
+                  {t(`chat.kind.${c.kind}`)}
+                </span>
+              </span>
+            </button>
+          </li>
+        ))}
+        {shown.length === 0 && (
+          <li className="py-6 text-center text-[12px] text-dim">{t('chat.noChats')}</li>
+        )}
+      </ul>
+    </>
   );
 }
 
