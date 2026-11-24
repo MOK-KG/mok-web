@@ -754,6 +754,9 @@
       "assistant.manage": "ЖИ жана почта агентин жөндөө"
     },
     "matrixEditHint": "Укукту берүү же алуу үчүн уячаны басыңыз. Өзгөрүүлөр сактагандан кийин күчүнө кирет.",
+    "rolePermissions_one": "{{count}} укук",
+    "rolePermissions_other": "{{count}} укук",
+    "matrixEditHintMobile": "Укукту берүү же алуу үчүн которгучту басыңыз. Өзгөрүүлөр сактагандан кийин күчүнө кирет.",
     "matrixChanges_one": "{{count}} өзгөрүү",
     "matrixChanges_other": "{{count}} өзгөрүү",
     "matrixSave": "Сактоо",

@@ -754,6 +754,9 @@
       "assistant.manage": "Configure AI and mail agent"
     },
     "matrixEditHint": "Click a cell to grant or revoke a permission. Changes apply after saving.",
+    "rolePermissions_one": "{{count}} permission",
+    "rolePermissions_other": "{{count}} permissions",
+    "matrixEditHintMobile": "Toggle a permission to grant or revoke it. Changes apply after saving.",
     "matrixChanges_one": "{{count}} change",
     "matrixChanges_other": "{{count}} changes",
     "matrixSave": "Save",

@@ -800,6 +800,11 @@
       "assistant.manage": "Настраивать ИИ и агента почты"
     },
     "matrixEditHint": "Нажмите на клетку, чтобы выдать или забрать право. Изменения действуют после сохранения.",
+    "rolePermissions_one": "{{count}} право",
+    "rolePermissions_few": "{{count}} права",
+    "rolePermissions_many": "{{count}} прав",
+    "rolePermissions_other": "{{count}} права",
+    "matrixEditHintMobile": "Переключите право, чтобы выдать или забрать его. Изменения действуют после сохранения.",
     "matrixChanges_one": "{{count}} изменение",
     "matrixChanges_few": "{{count}} изменения",
     "matrixChanges_many": "{{count}} изменений",
