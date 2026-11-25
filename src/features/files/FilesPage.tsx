@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import { usePageSubtitle } from '@/app/layout/AppLayout';
+import { chatFileUrl } from '@/features/chat/api';
 import { attachmentUrl as documentAttachmentUrl } from '@/features/documents/api';
 import { attachmentUrl } from '@/features/knowledge-base/api';
 import { formatInBishkek } from '@/shared/lib/date';
 import { Banner } from '@/shared/ui/Banner';
+import { fileLinkProps } from '@/shared/ui/fileLink';
 import { DownloadIcon, SearchIcon } from '@/shared/ui/icons';
 import { useFiles } from './api';
 import {
@@ -38,28 +40,18 @@ export const targetHref = (target: FileTarget) =>
       ? `/knowledge/${target.id}`
       : `/chat?c=${target.chatId}`;
 
-/** Скачать: вложения статей и документов — с бэкенда, остальное — демо-файл до бэкенда */
 function download(file: FileItem) {
   const full = file.ext ? `${file.name}.${file.ext}` : file.name;
+  const [, first, second] = file.id.split(':');
+  const url =
+    file.target.kind === 'article'
+      ? attachmentUrl(second)
+      : file.target.kind === 'document'
+        ? documentAttachmentUrl(second)
+        : chatFileUrl(first);
   const a = document.createElement('a');
-  a.download = full;
-  if (file.target.kind === 'article') {
-    a.href = attachmentUrl(file.id.split(':')[2]);
-    a.click();
-    return;
-  }
-  if (file.target.kind === 'document') {
-    a.href = documentAttachmentUrl(file.id.split(':')[2]);
-    a.click();
-    return;
-  }
-  const blob = new Blob(
-    [`${full}\n\nДемо-файл: настоящий файл появится после подключения хранилища.\n`],
-    { type: 'text/plain' },
-  );
-  a.href = URL.createObjectURL(blob);
+  Object.assign(a, fileLinkProps(url, full));
   a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
 /**

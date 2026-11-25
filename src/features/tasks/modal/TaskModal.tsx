@@ -9,6 +9,7 @@ import { ChatPickerDialog } from '@/features/chat/dialogs';
 import { formatInBishkek, formatIsoDate } from '@/shared/lib/date';
 import { initials } from '@/shared/lib/text';
 import { addDays, todayInBishkek } from '@/shared/lib/workDays';
+import { fileLinkProps } from '@/shared/ui/fileLink';
 import {
   AttachMediumIcon,
   BellSmallIcon,
@@ -322,7 +323,7 @@ function TaskBody({ task }: { task: TaskDetail }) {
               {task.attachmentItems.map((a) => (
                 <li key={a.id}>
                   <a
-                    href={attachmentUrl(a.id)}
+                    {...fileLinkProps(attachmentUrl(a.id), a.filename)}
                     className="flex h-8 max-w-[260px] items-center gap-[7px] rounded-8 border border-line bg-surface px-[10px] text-[11.5px] text-sub hover:text-text"
                   >
                     <AttachMediumIcon size={14} className="shrink-0 text-faint" />
@@ -549,7 +550,7 @@ function Discussion({ task }: { task: TaskDetail }) {
                   {c.attachments.map((a) => (
                     <li key={a.id}>
                       <a
-                        href={attachmentUrl(a.id)}
+                        {...fileLinkProps(attachmentUrl(a.id), a.filename)}
                         className="flex h-7 max-w-[220px] items-center gap-[6px] rounded-8 border border-line bg-surface px-[9px] text-[11px] text-sub hover:text-text"
                       >
                         <AttachMediumIcon size={13} className="shrink-0 text-faint" />

@@ -115,7 +115,7 @@
   },
   "tasks": {
     "tabs": {
-      "mine": "Mine",
+      "mine": "My Tasks",
       "department": "Department",
       "createdByMe": "Created by me",
       "completed": "Completed"
@@ -178,7 +178,7 @@
     "quick": {
       "all": "All",
       "overdue": "Overdue",
-      "mine": "Mine",
+      "mine": "My Tasks",
       "hot": "Urgent"
     },
     "showTasks_one": "Show {{count}} task",
@@ -1259,6 +1259,7 @@
     "infoText": "NOC records management: registering incoming letters and resolutions — a resolution creates a task for the assignee; outgoing letters on letterhead with a registration number; a correspondence log of what came in and what was answered. The section belongs to Phase 2: order and certificate templates, PDF and filing into Google Drive arrive with it."
   },
   "files": {
+    "share": "Share",
     "subtitle_one": "{{count}} file across sections",
     "subtitle_other": "{{count}} files across sections",
     "all": "All",

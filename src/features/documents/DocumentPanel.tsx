@@ -11,6 +11,7 @@ import { dueMessage } from '@/features/tasks/modal/NewTaskModal';
 import { useTaskLink } from '@/features/tasks/TaskOverlay';
 import { formatInBishkek, formatIsoDate } from '@/shared/lib/date';
 import { addWorkingDays, todayInBishkek } from '@/shared/lib/workDays';
+import { fileLinkProps } from '@/shared/ui/fileLink';
 import { BookIcon, FileIcon, XIcon } from '@/shared/ui/icons';
 import {
   attachmentUrl,
@@ -134,8 +135,7 @@ function Body({ doc }: { doc: DocumentRecord }) {
             {doc.attachments.map((a) => (
               <li key={a.id}>
                 <a
-                  href={attachmentUrl(a.id)}
-                  download={a.name}
+                  {...fileLinkProps(attachmentUrl(a.id), a.name)}
                   className="flex items-center gap-2 rounded-8 border border-line bg-surface px-3 py-2 text-[12px] text-sub hover:border-info-line hover:text-text"
                 >
                   <FileIcon size={14} className="shrink-0 text-faint" />

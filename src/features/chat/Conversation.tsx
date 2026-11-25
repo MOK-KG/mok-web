@@ -8,6 +8,7 @@ import { useTasks } from '@/features/tasks/api';
 import { useTaskLink } from '@/features/tasks/TaskOverlay';
 import { formatIsoDate } from '@/shared/lib/date';
 import { toast } from '@/shared/lib/toast';
+import { fileLinkProps } from '@/shared/ui/fileLink';
 import {
   ArrowRightIcon,
   AttachLargeIcon,
@@ -283,8 +284,10 @@ function TextMessage({
         )}
         {m.file && (
           <a
-            href={chatFileUrl(m.id)}
-            download
+            {...fileLinkProps(
+              chatFileUrl(m.id),
+              m.file.ext ? `${m.file.name}.${m.file.ext}` : m.file.name,
+            )}
             className="mt-[6px] inline-flex h-9 items-center gap-2 rounded-8 border border-line bg-surface px-3 text-[12px] text-sub hover:border-info hover:text-text"
           >
             <AttachLargeIcon size={16} className="text-faint" />
