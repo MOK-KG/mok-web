@@ -805,6 +805,7 @@
     "inputHint": "Paperclip — file · board icon — attach a task",
     "attachFile": "Attach file",
     "attachTask": "Attach task",
+    "online": "Online",
     "discussTitle": "Discuss the task in chat",
     "discussHint": "The task is posted as a card to the chosen chat, which then opens.",
     "pickChatSearch": "Find a chat",

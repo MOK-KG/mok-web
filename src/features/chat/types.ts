@@ -12,6 +12,8 @@ export type ChatMember = {
   department: string;
   /** false — сотрудник уволен: его сообщения остаются, новую переписку не начать */
   active?: boolean;
+  /** Был активен в платформе последние 2 минуты */
+  online?: boolean;
 };
 
 /**

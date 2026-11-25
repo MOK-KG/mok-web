@@ -17,7 +17,7 @@ import type { Chat, ChatMember, ChatMessage, ChatSummary } from './types';
 
 // --- Формат бэкенда ---------------------------------------------------------------------------
 
-export type ApiChatMember = ApiPerson & { role: RoleCode | ''; active: boolean };
+export type ApiChatMember = ApiPerson & { role: RoleCode | ''; active: boolean; online?: boolean };
 
 export type ApiChatMessage = {
   id: string;
@@ -52,6 +52,7 @@ export const toChatMember = (m: ApiChatMember): ChatMember => {
     role: (m.role || 'R5') as RoleCode,
     department: m.department ?? '',
     active: m.active,
+    online: m.online ?? false,
   };
 };
 
@@ -231,7 +232,8 @@ export function useChatMembers(enabled = true): Record<string, ChatMember> {
       enabled,
       queryKey: [...chatKey, 'members'],
       queryFn: fetchChatMembers,
-      staleTime: 5 * 60_000,
+      staleTime: 30_000,
+      refetchInterval: 60_000,
     }).data ?? noMembers
   );
 }

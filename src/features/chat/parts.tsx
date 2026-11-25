@@ -15,6 +15,7 @@ import type { ChatMember, ChatMessage } from './types';
 export function MemberAvatar({ member, size = 32 }: { member: ChatMember; size?: 30 | 32 }) {
   const tone = toneClasses[member.tone];
   const away = useAway(member.id);
+  const { t } = useTranslation();
   return (
     <span className="relative shrink-0">
       <span
@@ -26,11 +27,20 @@ export function MemberAvatar({ member, size = 32 }: { member: ChatMember; size?:
         {initials(member.name)}
         <PersonPhoto id={member.id} />
       </span>
-      {away && (
+      {member.online ? (
         <span
-          aria-hidden
-          className="absolute -bottom-px -right-px size-[9px] rounded-full border-[1.5px] border-panel bg-info"
+          role="img"
+          aria-label={t('chat.online')}
+          title={t('chat.online')}
+          className="absolute -bottom-px -right-px size-[9px] rounded-full border-[1.5px] border-panel bg-success"
         />
+      ) : (
+        away && (
+          <span
+            aria-hidden
+            className="absolute -bottom-px -right-px size-[9px] rounded-full border-[1.5px] border-panel bg-info"
+          />
+        )
       )}
     </span>
   );
