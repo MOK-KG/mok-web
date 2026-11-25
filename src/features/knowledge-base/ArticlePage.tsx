@@ -21,10 +21,12 @@ import {
   MoreIcon,
   TasksSmallIcon,
 } from '@/shared/ui/icons';
+import { Markdown } from '@/shared/ui/Markdown';
 import { Tooltip } from '@/shared/ui/Tooltip';
 import { useArticle, useKnowledge, useMarkReviewed } from './api';
 import { DocumentDialog } from './DocumentDialog';
 import { LocalGraph } from './graph/GraphPage';
+import { useArticleLinks } from './links';
 import {
   Avatar,
   capsTitle,
@@ -359,15 +361,18 @@ function Block({ block, first, changed }: { block: KbBlock; first: boolean; chan
 }
 
 function BlockContent({ block, first }: { block: KbBlock; first: boolean }) {
+  const resolve = useArticleLinks();
   switch (block.kind) {
     case 'paragraph':
       return (
-        <p className={`text-[13px] leading-[22px] text-sub ${first ? '' : 'mt-2'}`}>{block.text}</p>
+        <div className={first ? '' : 'mt-2'}>
+          <Markdown text={block.text} resolveLink={resolve} />
+        </div>
       );
     case 'heading':
       return (
         <h3 id={block.id} className={`${heading} scroll-mt-4 ${first ? '!mt-0' : ''}`}>
-          {block.text}
+          <Markdown text={block.text} resolveLink={resolve} inline />
         </h3>
       );
     case 'list':
@@ -379,7 +384,7 @@ function BlockContent({ block, first }: { block: KbBlock; first: boolean }) {
                 aria-hidden
                 className="absolute left-1 top-[9px] size-[5px] rounded-full bg-faint"
               />
-              {item}
+              <Markdown text={item} resolveLink={resolve} inline />
             </li>
           ))}
         </ul>
@@ -393,7 +398,9 @@ function BlockContent({ block, first }: { block: KbBlock; first: boolean }) {
             <p className="text-[12px] font-semibold tracking-[-0.1px] text-warning-strong">
               {block.title}
             </p>
-            <p className="mt-[3px] text-[11px] leading-4 text-warning-muted">{block.text}</p>
+            <p className="mt-[3px] whitespace-pre-line text-[11px] leading-4 text-warning-muted">
+              <Markdown text={block.text} resolveLink={resolve} inline />
+            </p>
           </div>
         </aside>
       );

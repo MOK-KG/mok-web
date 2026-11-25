@@ -1348,7 +1348,10 @@
     "kb": "KB",
     "mb": "MB",
     "infoTitle": "What “Files” is for",
-    "infoText": "All attachments you have access to in one place: from documents, knowledge base articles and chat conversations. A file opens where it was attached. Task files and Google Drive storage arrive in Phase 2."
+    "infoText": "All attachments you have access to in one place: from documents, knowledge base articles and chat conversations. A file opens where it was attached. Task files and Google Drive storage arrive in Phase 2.",
+    "viewerTitle": "File preview",
+    "viewerForbidden": "This file cannot be opened in the preview.",
+    "viewerError": "Could not open the file: it is missing or you have no access."
   },
   "journal": {
     "title": "Action log",

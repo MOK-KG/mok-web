@@ -1,4 +1,4 @@
-import { Fragment, type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from 'react';
+import { Fragment, type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTaskLink } from '@/features/tasks/TaskOverlay';
@@ -11,6 +11,7 @@ import {
   SparkleIcon,
   TasksIcon,
 } from '@/shared/ui/icons';
+import { Markdown } from '@/shared/ui/Markdown';
 import { Tooltip } from '@/shared/ui/Tooltip';
 import {
   type BotAction,
@@ -247,8 +248,8 @@ function BotMessageView({ message: m }: { message: BotMessage }) {
     <article className="mt-3 flex gap-[10px]">
       <BotAvatar />
       <div className="min-w-0 flex-1">
-        <div className="whitespace-pre-wrap break-words text-[13px] leading-[19px] text-sub">
-          <BotText text={m.text} />
+        <div className="break-words">
+          <Markdown text={m.text} size="compact" />
         </div>
         {m.sources.length > 0 && <Sources sources={m.sources} />}
         <time dateTime={m.at} className="mt-1 block text-[10px] text-dim">
@@ -257,46 +258,6 @@ function BotMessageView({ message: m }: { message: BotMessage }) {
         </time>
       </div>
     </article>
-  );
-}
-
-const PART = /\[([^\]]+)\]\(([^)\s]+)\)|\*\*([^*]+)\*\*|(https?:\/\/[^\s)]+)/g;
-
-/** Текст ответа: ссылки [название](адрес), голые ссылки и **жирный** — без полного markdown */
-export function BotText({ text }: { text: string }) {
-  const parts: ReactNode[] = [];
-  let last = 0;
-  for (const match of text.matchAll(PART)) {
-    const at = match.index ?? 0;
-    if (at > last) parts.push(text.slice(last, at));
-    const [whole, label, href, bold, bare] = match;
-    if (bold)
-      parts.push(
-        <strong key={at} className="font-semibold text-text">
-          {bold}
-        </strong>,
-      );
-    else parts.push(<SmartLink key={at} href={href ?? bare} label={label ?? bare} />);
-    last = at + whole.length;
-  }
-  if (last < text.length) parts.push(text.slice(last));
-  return <>{parts}</>;
-}
-
-function SmartLink({ href, label }: { href: string; label: string }) {
-  const cls = 'break-words text-info underline underline-offset-2 hover:opacity-80';
-  if (href.startsWith('/')) {
-    return (
-      <Link to={href} className={cls}>
-        {label}
-      </Link>
-    );
-  }
-  if (!/^https?:\/\//.test(href)) return <>{label}</>;
-  return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>
-      {label}
-    </a>
   );
 }
 

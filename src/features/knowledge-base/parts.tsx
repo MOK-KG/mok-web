@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import type { Person } from '@/features/tasks/types';
 import { toneClasses } from '@/features/tasks/ui';
 import { formatIsoDate } from '@/shared/lib/date';
+import { markdownViewerUrl } from '@/shared/lib/files';
 import { initials } from '@/shared/lib/text';
 import { type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
 import { CheckBadgeIcon } from '@/shared/ui/icons';
@@ -78,6 +79,16 @@ const viewable = /^(pdf|png|jpe?g|gif|webp|svg|txt)$/;
 
 /** Открыть вложение во вкладке (если браузер его показывает) или скачать */
 export function openAttachment(attachment: KbAttachment, mode: 'open' | 'download' = 'open') {
+  if (mode === 'open' && /^(md|markdown)$/i.test(attachment.ext)) {
+    // Markdown — в просмотрщике платформы, а не сырым текстом
+    const { url } = attachmentSource(attachment, { inline: false });
+    window.open(
+      markdownViewerUrl(url, `${attachment.name}.${attachment.ext}`),
+      '_blank',
+      'noopener',
+    );
+    return;
+  }
   const inline = mode === 'open' && viewable.test(attachment.ext);
   const { url, revoke } = attachmentSource(attachment, { inline });
   if (inline) {

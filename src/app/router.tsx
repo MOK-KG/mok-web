@@ -58,6 +58,9 @@ const RoleMatrixPage = lazy(() =>
 const ProjectsPage = lazy(() =>
   import('@/features/tasks/projects/ProjectsPage').then((m) => ({ default: m.ProjectsPage })),
 );
+const MarkdownViewer = lazy(() =>
+  import('@/features/files/MarkdownViewer').then((m) => ({ default: m.MarkdownViewer })),
+);
 const GraphPage = lazy(() =>
   import('@/features/knowledge-base/graph/GraphPage').then((m) => ({ default: m.GraphPage })),
 );
@@ -161,6 +164,16 @@ const sectionRoutes: RouteObject[] = [
     element: (
       <Suspense fallback={null}>
         <SearchPage />
+      </Suspense>
+    ),
+  },
+  // Просмотр файла .md из любого раздела (права на файл проверяет бэкенд)
+  {
+    path: 'view',
+    handle: { titleKey: 'files.viewerTitle' } satisfies RouteHandle,
+    element: (
+      <Suspense fallback={null}>
+        <MarkdownViewer />
       </Suspense>
     ),
   },

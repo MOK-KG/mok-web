@@ -7,7 +7,9 @@ import type { KbBlock } from './types';
  * - заголовок — `## текст` (при чтении подходит любой уровень `#`–`######`);
  * - список — строки `- пункт` (при чтении — также `*`, `+` и `1.`);
  * - заметка — цитата: `> **Заголовок**` и строки `> текст`;
- * - абзац — всё остальное, строки внутри абзаца сохраняются.
+ * - абзац — всё остальное, строки внутри абзаца сохраняются; внутри — обычный markdown
+ *   (жирный, ссылки, код, таблицы), его рисует `Markdown` из shared/ui;
+ * - блок кода ```…``` — один абзац целиком, даже с пустыми строками и «#» внутри.
  *
  * Якоря заголовков — `h-1`, `h-2`… по порядку: в markdown они не хранятся.
  */
@@ -80,8 +82,15 @@ function splitBlocks(markdown: string): string[] {
     if (text) chunks.push(text);
     current = [];
   };
+  let fence = false;
   for (const line of markdown.replace(/\r\n?/g, '\n').split('\n')) {
-    if (line.trim() === '') flush();
+    if (/^\s*(```|~~~)/.test(line)) {
+      if (!fence) flush();
+      current.push(line.trimEnd());
+      fence = !fence;
+      if (!fence) flush();
+    } else if (fence) current.push(line);
+    else if (line.trim() === '') flush();
     else if (HEADING.test(line)) {
       flush();
       current.push(line.trim());

@@ -22,3 +22,11 @@ export const extensionOf = (name: string) => {
 export const isPreviewable = (name: string) => PREVIEW_EXTENSIONS.has(extensionOf(name));
 
 export const inlineUrl = (url: string) => `${url}${url.includes('?') ? '&' : '?'}inline=1`;
+
+const MARKDOWN_EXTENSIONS = new Set(['md', 'markdown']);
+
+/** Markdown открывается не браузером (он покажет сырой текст), а просмотрщиком платформы */
+export const isMarkdown = (name: string) => MARKDOWN_EXTENSIONS.has(extensionOf(name));
+
+export const markdownViewerUrl = (src: string, name: string) =>
+  `/view?${new URLSearchParams({ src, name })}`;
