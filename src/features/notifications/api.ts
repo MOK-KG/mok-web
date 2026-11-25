@@ -102,7 +102,7 @@ export function useNotifications() {
   return useQuery({
     queryKey: key,
     queryFn: async () => (await api.get<ApiNotification[]>('/notifications/')).map(toNotification),
-    refetchInterval: 60_000,
+    refetchInterval: 15_000,
   });
 }
 

@@ -24,7 +24,8 @@ export function AppProviders({ children }: { children: ReactNode }) {
       }),
       defaultOptions: {
         queries: {
-          staleTime: 30_000,
+          staleTime: 10_000,
+          refetchInterval: 30_000,
           // Повторять имеет смысл только сбои сети и сервера; 4xx от повтора не исправится
           retry: (count, error) =>
             count < 1 &&
