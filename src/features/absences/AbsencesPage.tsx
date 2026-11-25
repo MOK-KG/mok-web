@@ -75,6 +75,7 @@ export function AbsencesPage() {
   const { t, i18n } = useTranslation();
   const { can } = useCan();
   const canManage = can('staff.manage') || can('tasks.assign');
+  const canRequest = canManage || can('absences.request');
   const today = todayInBishkek();
   const list = useAbsences().data ?? [];
   const [creating, setCreating] = useState(false);
@@ -122,10 +123,12 @@ export function AbsencesPage() {
             </button>
           ))}
         </div>
-        <button type="button" className={primaryButton} onClick={() => setCreating(true)}>
-          <PlusIcon size={15} />
-          {t('absences.new')}
-        </button>
+        {canRequest && (
+          <button type="button" className={primaryButton} onClick={() => setCreating(true)}>
+            <PlusIcon size={15} />
+            {t('absences.new')}
+          </button>
+        )}
       </div>
 
       {grouped.map(({ group, items }) => (

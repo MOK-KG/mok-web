@@ -24,6 +24,7 @@ const groupTitle: Record<string, string> = {
   roles: 'sections.access',
   journal: 'journal.title',
   assistant: 'assistant.title',
+  absences: 'absences.title',
 };
 
 export function RoleMatrixPage() {

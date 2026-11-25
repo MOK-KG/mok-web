@@ -753,7 +753,8 @@
       "roles.assign": "Assign roles",
       "journal.view": "View audit log",
       "journal.export": "Export audit log",
-      "assistant.manage": "Configure AI and mail agent"
+      "assistant.manage": "Configure AI and mail agent",
+      "absences.request": "Request own absence"
     },
     "matrixEditHint": "Click a cell to grant or revoke a permission. Changes apply after saving.",
     "rolePermissions_one": "{{count}} permission",

@@ -47,6 +47,8 @@ export const permissions = [
   'journal.export',
   // Ассистент: настройки ИИ и агента почты, журнал его запусков
   'assistant.manage',
+  // Отпуск и командировки: оформить и отменить своё отсутствие
+  'absences.request',
 ] as const;
 
 export type Permission = (typeof permissions)[number];
@@ -76,7 +78,7 @@ export const roleCodes = ['R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8', 'R9'] 
 export type RoleCode = (typeof roleCodes)[number];
 
 /** У всех сотрудников аппарата */
-const staffBase: Permission[] = ['chat.use', 'calendar.view', 'files.view'];
+const staffBase: Permission[] = ['chat.use', 'calendar.view', 'files.view', 'absences.request'];
 
 /** Работа с задачами без назначения и архивирования */
 const taskWork: Permission[] = ['tasks.view', 'tasks.create', 'tasks.edit'];
