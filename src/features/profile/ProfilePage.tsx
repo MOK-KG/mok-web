@@ -18,6 +18,8 @@ import type { RoleCode } from '@/shared/config/permissions';
 import { formatIsoDate } from '@/shared/lib/date';
 import { initials } from '@/shared/lib/text';
 import { LogoutIcon, PlaneIcon } from '@/shared/ui/icons';
+import { PersonPhoto } from '@/shared/ui/PersonPhoto';
+import { PhotoControls } from './PhotoControls';
 import { SessionsPanel } from './SessionsPanel';
 
 const panel = 'rounded-14 border border-line bg-panel px-5 py-4';
@@ -58,8 +60,9 @@ export function ProfilePage() {
     <div className="grid gap-[14px] pb-4 leading-[normal] lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <div className="flex flex-col gap-[14px]">
         <section className={`${panel} flex items-center gap-4`}>
-          <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-control text-[18px] font-semibold text-info">
+          <span className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-control text-[18px] font-semibold text-info">
             {initials(user.name)}
+            <PersonPhoto id={user.id} />
           </span>
           <div className="min-w-0">
             <h2 className="text-[17px] font-semibold tracking-[-0.3px] text-text">{user.name}</h2>
@@ -67,6 +70,7 @@ export function ProfilePage() {
               {[user.position, user.department].filter(Boolean).join(' · ')}
             </p>
             <p className="mt-[2px] text-[12px] text-faint">{user.email}</p>
+            <PhotoControls />
           </div>
         </section>
 

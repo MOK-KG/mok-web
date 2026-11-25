@@ -3,6 +3,7 @@ import { toneClasses } from '@/features/tasks/ui';
 import type { RoleCode } from '@/shared/config/permissions';
 import type { Tone } from '@/shared/config/tokens';
 import { initials } from '@/shared/lib/text';
+import { PersonPhoto } from '@/shared/ui/PersonPhoto';
 import type { StaffBadge } from './types';
 
 /** Цвет кода роли, как в макете; R5 и R9 — нейтральные */
@@ -56,10 +57,12 @@ export function StaffAvatar({
   name,
   tone,
   size,
+  personId,
 }: {
   name: string | null;
   tone: Tone;
   size: 30 | 48;
+  personId?: string | null;
 }) {
   const box = size === 30 ? 'size-[30px] text-[10.5px]' : 'size-12 text-[15px]';
   if (!name) {
@@ -75,9 +78,10 @@ export function StaffAvatar({
   return (
     <span
       aria-hidden
-      className={`flex shrink-0 items-center justify-center rounded-full font-semibold ${toneClasses[tone].bg} ${toneClasses[tone].text} ${box}`}
+      className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold ${toneClasses[tone].bg} ${toneClasses[tone].text} ${box}`}
     >
       {initials(name)}
+      <PersonPhoto id={personId} />
     </span>
   );
 }

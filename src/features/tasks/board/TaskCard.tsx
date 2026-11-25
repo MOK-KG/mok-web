@@ -14,6 +14,7 @@ import {
   RescheduleIcon,
   SubtasksIcon,
 } from '@/shared/ui/icons';
+import { PersonPhoto } from '@/shared/ui/PersonPhoto';
 import { type Urgency, urgencyOf } from '../deadline';
 import type { Task } from '../types';
 import { toneClasses } from '../ui';
@@ -221,9 +222,10 @@ function CardView({
         {task.assignee && (
           <span
             title={task.assignee.name}
-            className={`flex size-5 items-center justify-center rounded-full text-[8.5px] font-semibold ${toneClasses[task.assignee.tone].bg} ${toneClasses[task.assignee.tone].text}`}
+            className={`relative flex size-5 items-center justify-center overflow-hidden rounded-full text-[8.5px] font-semibold ${toneClasses[task.assignee.tone].bg} ${toneClasses[task.assignee.tone].text}`}
           >
             {initials(task.assignee.name)}
+            <PersonPhoto id={task.assignee.id} />
           </span>
         )}
         {task.fromEmail && <Meta Icon={MailSmallIcon} label={t('tasks.fromEmail')} />}

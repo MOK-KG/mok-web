@@ -5,6 +5,7 @@ import { formatIsoDate } from '@/shared/lib/date';
 import { initials } from '@/shared/lib/text';
 import { type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
 import { CheckBadgeIcon } from '@/shared/ui/icons';
+import { PersonPhoto } from '@/shared/ui/PersonPhoto';
 import { attachmentSource } from './api';
 import type { KbAttachment, KbFreshness } from './types';
 
@@ -21,11 +22,12 @@ export function Avatar({ person, size }: { person: Person; size: 20 | 24 }) {
   return (
     <span
       aria-hidden
-      className={`flex shrink-0 items-center justify-center rounded-full font-semibold ${tone.bg} ${tone.text} ${
+      className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold ${tone.bg} ${tone.text} ${
         size === 20 ? 'size-5 text-[8.5px]' : 'size-6 text-[9.5px]'
       }`}
     >
       {initials(person.name)}
+      <PersonPhoto id={person.id} />
     </span>
   );
 }

@@ -303,7 +303,7 @@ function Row({
     >
       <td className="pl-4">
         <div className="flex items-center gap-[10px]">
-          <StaffAvatar name={r.name} tone={r.tone} size={30} />
+          <StaffAvatar name={r.name} tone={r.tone} size={30} personId={r.personId} />
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               {/* Строка открывается кликом; кнопка — для клавиатуры и экранных дикторов */}

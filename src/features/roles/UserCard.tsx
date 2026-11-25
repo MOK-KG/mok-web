@@ -97,7 +97,7 @@ function Card({
   return (
     <div className="leading-[normal]">
       <header className="flex items-center gap-[14px] border-b border-line px-7 pb-6 pt-[26px] pr-[76px]">
-        <StaffAvatar name={m.name} tone={m.tone} size={48} />
+        <StaffAvatar name={m.name} tone={m.tone} size={48} personId={m.personId} />
         <div className="min-w-0 flex-1">
           <Dialog.Title className="truncate text-[19px] font-semibold tracking-[-0.4px] text-text">
             {m.name ?? m.position}

@@ -23,6 +23,7 @@ import {
   SidebarExpandIcon,
   TasksIcon,
 } from '@/shared/ui/icons';
+import { PersonPhoto } from '@/shared/ui/PersonPhoto';
 import { Tooltip } from '@/shared/ui/Tooltip';
 
 type NavItem = {
@@ -183,8 +184,9 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
           collapsed ? 'mx-auto w-11 justify-center' : 'px-2'
         }`}
       >
-        <span className="flex size-[30px] shrink-0 items-center justify-center rounded-full bg-control text-[11px] font-semibold text-info">
+        <span className="relative flex size-[30px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-control text-[11px] font-semibold text-info">
           {initials(user.name)}
+          <PersonPhoto id={user.id} />
         </span>
         {!collapsed && (
           <span className="min-w-0 leading-none">

@@ -10,6 +10,7 @@ import {
   PlaneIcon,
   SubtasksIcon,
 } from '@/shared/ui/icons';
+import { PersonPhoto } from '@/shared/ui/PersonPhoto';
 import { DueChips } from '../board/TaskCard';
 import { urgencyOf } from '../deadline';
 import { matchesQuick, type QuickFilter, quickFilters, sortForList } from '../list';
@@ -103,9 +104,10 @@ function TaskRow({
             {task.assignee && (
               <span
                 title={task.assignee.name}
-                className={`flex size-6 items-center justify-center rounded-full text-[9px] font-semibold ${toneClasses[task.assignee.tone].bg} ${toneClasses[task.assignee.tone].text}`}
+                className={`relative flex size-6 items-center justify-center overflow-hidden rounded-full text-[9px] font-semibold ${toneClasses[task.assignee.tone].bg} ${toneClasses[task.assignee.tone].text}`}
               >
                 {initials(task.assignee.name)}
+                <PersonPhoto id={task.assignee.id} />
               </span>
             )}
           </span>

@@ -29,6 +29,7 @@ import {
   SendIcon,
   XIcon,
 } from '@/shared/ui/icons';
+import { PersonPhoto } from '@/shared/ui/PersonPhoto';
 import { absenceOf, isAbsentOn } from '../absences';
 import {
   attachmentUrl,
@@ -60,9 +61,10 @@ function Avatar({ person, size = 20 }: { person: Person; size?: number }) {
     <span
       title={person.name}
       style={{ width: size, height: size, fontSize: size * 0.36 }}
-      className={`flex shrink-0 items-center justify-center rounded-full font-semibold ${tone.bg} ${tone.text}`}
+      className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold ${tone.bg} ${tone.text}`}
     >
       {initials(person.name)}
+      <PersonPhoto id={person.id} />
     </span>
   );
 }

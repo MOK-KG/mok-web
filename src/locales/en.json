@@ -403,6 +403,9 @@
       "user_not_active": "The employee is already deactivated.",
       "user_active": "The employee is not dismissed.",
       "comment_files": "Up to 10 files per comment.",
+      "photo_type": "Use a PNG, JPEG or WebP image.",
+      "photo_too_large": "The photo is larger than 5 MB.",
+      "photo_required": "Choose a file.",
       "absence_invalid": "The absence cannot be saved: check the dates and the deputy.",
       "document_status": "The document status has changed — refresh the card.",
       "document_immutable": "A sent document cannot be changed.",
@@ -1542,6 +1545,12 @@
     }
   },
   "profile": {
+    "photo": {
+      "upload": "Upload photo",
+      "remove": "Remove photo",
+      "saved": "Photo updated",
+      "removed": "Photo removed"
+    },
     "sessions": {
       "title": "Active sessions",
       "hint": "Where you are signed in. End an unfamiliar device — it will have to sign in again.",

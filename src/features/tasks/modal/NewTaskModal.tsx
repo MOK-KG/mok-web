@@ -22,6 +22,7 @@ import {
   PlusMediumIcon,
   XIcon,
 } from '@/shared/ui/icons';
+import { PersonPhoto } from '@/shared/ui/PersonPhoto';
 import { absenceOf } from '../absences';
 import { defaultDue, useCreateTask, useDirectory, useSimilarTasks, useUpdateTask } from '../api';
 import { type DueProblem, dueProblem } from '../deadline';
@@ -540,9 +541,10 @@ function PersonOption({ person }: { person: Person }) {
   return (
     <span className="flex items-center gap-2">
       <span
-        className={`flex size-5 items-center justify-center rounded-full text-[8.5px] font-semibold ${tone.bg} ${tone.text}`}
+        className={`relative flex size-5 items-center justify-center overflow-hidden rounded-full text-[8.5px] font-semibold ${tone.bg} ${tone.text}`}
       >
         {initials(person.name)}
+        <PersonPhoto id={person.id} />
       </span>
       {person.short}
     </span>

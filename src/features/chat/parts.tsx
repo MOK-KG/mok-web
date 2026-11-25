@@ -6,6 +6,7 @@ import { formatIsoDate } from '@/shared/lib/date';
 import { initials } from '@/shared/lib/text';
 import { addDays, todayInBishkek } from '@/shared/lib/workDays';
 import { GroupIcon } from '@/shared/ui/icons';
+import { PersonPhoto } from '@/shared/ui/PersonPhoto';
 import { useChatMembers } from './api';
 import type { ChatMember, ChatMessage } from './types';
 
@@ -17,11 +18,12 @@ export function MemberAvatar({ member, size = 32 }: { member: ChatMember; size?:
     <span className="relative shrink-0">
       <span
         aria-hidden
-        className={`flex items-center justify-center rounded-full font-semibold ${tone.bg} ${tone.text} ${
+        className={`relative flex items-center justify-center overflow-hidden rounded-full font-semibold ${tone.bg} ${tone.text} ${
           size === 32 ? 'size-8 text-[11px]' : 'size-[30px] text-[10.5px]'
         }`}
       >
         {initials(member.name)}
+        <PersonPhoto id={member.id} />
       </span>
       {away && (
         <span
