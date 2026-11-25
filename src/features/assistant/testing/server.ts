@@ -10,6 +10,7 @@ import type {
   AssistantSettingsInput,
   Mailbox,
 } from '../api';
+import type { BotAction, BotMessage } from '../bot';
 
 /**
  * Подставной бэкенд ассистента для тестов: те же адреса и формат, что у mok-backend
@@ -35,6 +36,8 @@ export function createAssistantServer() {
     knowledgeRoles: [],
     maxLetters: 20,
     confidenceMin: 60,
+    botModel: '',
+    botDailyLimit: 200,
     updatedAt: '2026-11-10T09:00:00Z',
     updatedBy: null,
     environment: {
@@ -131,7 +134,132 @@ export function createAssistantServer() {
     return { status: 200, body: suggestion };
   }
 
+  // --- Ассистент в чате: отвечает сразу; «задач…» в вопросе — карточка новой задачи ---------
+  const bot = {
+    available: true,
+    messages: [] as (BotMessage & { conversationId: number })[],
+    conversations: [] as { id: number; title: string; updatedAt: string }[],
+    nextId: 1,
+  };
+  let botCurrent: number | null = null;
+
+  function botConversation(id?: number | null) {
+    const found = id ? bot.conversations.find((c) => c.id === id) : undefined;
+    if (found || id) return found ?? null;
+    return bot.conversations.find((c) => c.id === botCurrent) ?? null;
+  }
+
+  function botMessage(conversationId: number, fields: Partial<BotMessage>) {
+    const message: BotMessage & { conversationId: number } = {
+      conversationId,
+      id: bot.nextId++,
+      role: 'assistant',
+      text: '',
+      status: 'done',
+      error: '',
+      action: null,
+      sources: [],
+      steps: [],
+      at: new Date().toISOString(),
+      ...fields,
+    };
+    bot.messages.push(message);
+    return message;
+  }
+
+  function botSend(body: Body): Reply {
+    const text = String(body.text ?? '').trim();
+    if (!text) return error(400, 'validation', { text: 'required' });
+    if (!bot.available) return error(409, 'openai_key_missing');
+    let conversation = botConversation(body.conversationId as number | undefined);
+    if (body.conversationId && !conversation) return error(404, 'not_found');
+    if (!conversation) {
+      conversation = { id: bot.nextId++, title: '', updatedAt: new Date().toISOString() };
+      bot.conversations.unshift(conversation);
+    }
+    if (!conversation.title) conversation.title = text.slice(0, 80);
+    botCurrent = conversation.id;
+    const c = conversation.id;
+    const question = botMessage(c, { role: 'user', text });
+    conversation.updatedAt = question.at;
+    if (/задач/i.test(text)) {
+      const action: BotAction = {
+        id: `a${bot.nextId}`,
+        kind: 'create_task',
+        status: 'pending',
+        preview: {
+          title: 'Подготовить ответ федерации',
+          fields: [
+            { key: 'assignee', value: 'Нурлан Бакиров' },
+            { key: 'due', value: '27.11.2026 (пт)' },
+          ],
+          warnings: [],
+        },
+        result: {},
+        error: '',
+        decidedAt: null,
+      };
+      botMessage(c, { role: 'action', action });
+      botMessage(c, { text: 'Подготовил карточку задачи — подтвердите её.' });
+    } else {
+      botMessage(c, {
+        text: 'Ответ по статье [Зоны ответственности](/knowledge/zony-otvetstvennosti).',
+        sources: [
+          {
+            kind: 'article',
+            title: 'Зоны ответственности',
+            url: '/knowledge/zony-otvetstvennosti',
+          },
+        ],
+        steps: [{ name: 'search_knowledge', arguments: '{}' }],
+      });
+    }
+    return { status: 201, body: question };
+  }
+
+  function botDecide(id: string, decision: string): Reply {
+    const message = bot.messages.find((m) => m.action?.id === id);
+    if (!message?.action) return error(404, 'not_found');
+    if (message.action.status !== 'pending') return error(409, 'action_decided');
+    message.action =
+      decision === 'confirm'
+        ? {
+            ...message.action,
+            status: 'done',
+            result: { taskId: 't-bot', code: 'ЗД-2026-0099', title: message.action.preview.title },
+          }
+        : { ...message.action, status: 'cancelled' };
+    return { status: 200, body: message.action };
+  }
+
   function handle(method: string, path: string, query: URLSearchParams, body?: Body): Reply {
+    if (path === '/assistant/bot' && method === 'GET') {
+      const id = Number(query.get('conversation')) || null;
+      const conversation = botConversation(id);
+      if (id && !conversation) return error(404, 'not_found');
+      return {
+        status: 200,
+        body: {
+          available: bot.available,
+          conversation,
+          messages: bot.messages.filter((m) => m.conversationId === conversation?.id),
+          notesUrl: bot.messages.length ? '/knowledge/assistant-notes' : null,
+        },
+      };
+    }
+    if (path === '/assistant/bot' && method === 'POST') return botSend(body ?? {});
+    if (path === '/assistant/bot/conversations' && method === 'GET') {
+      const used = new Set(bot.messages.map((m) => m.conversationId));
+      return { status: 200, body: bot.conversations.filter((c) => used.has(c.id)) };
+    }
+    if (path === '/assistant/bot/conversations' && method === 'POST') {
+      const conversation = { id: bot.nextId++, title: '', updatedAt: new Date().toISOString() };
+      bot.conversations.unshift(conversation);
+      botCurrent = conversation.id;
+      return { status: 201, body: conversation };
+    }
+    const decision = path.match(/^\/assistant\/bot\/actions\/([^/]+)\/(confirm|cancel)$/);
+    if (decision && method === 'POST') return botDecide(decision[1], decision[2]);
     if (path === '/assistant/settings' && method === 'GET') return { status: 200, body: settings };
     if (path === '/assistant/settings' && method === 'PATCH') return patch(body ?? {});
     if (path === '/assistant/runs' && method === 'GET') {
@@ -161,6 +289,7 @@ export function createAssistantServer() {
 
   return {
     handle,
+    bot,
     settings,
     runs,
     get mailboxes() {

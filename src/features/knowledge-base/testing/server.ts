@@ -184,6 +184,39 @@ export function createKnowledgeServer({
         },
       };
     }
+    if (resource === 'graph' && method === 'GET') {
+      // Ссылки — по цепочке: первая статья → вторая → третья (как [[ссылки]] в тексте)
+      const shown = visible(roles);
+      const nodeId = (a: KbArticle) => `doc:${a.id}`;
+      let links = shown
+        .slice(0, 3)
+        .slice(1)
+        .map((a, i) => ({ source: nodeId(shown[i]), target: nodeId(a), kind: 'link' as const }));
+      let nodes = shown;
+      const center = query.get('article');
+      if (center) {
+        const me = `doc:${center}`;
+        links = links.filter((l) => l.source === me || l.target === me);
+        const keep = new Set([me, ...links.flatMap((l) => [l.source, l.target])]);
+        nodes = shown.filter((a) => keep.has(nodeId(a)));
+      }
+      return {
+        status: 200,
+        body: {
+          nodes: nodes.map((a) => ({
+            id: nodeId(a),
+            kind: 'article',
+            slug: a.id,
+            title: a.title,
+            sectionId: a.sectionId,
+            sectionName: sections.find((x) => x.id === a.sectionId)?.name ?? '',
+            personal: false,
+            degree: links.filter((l) => l.source === nodeId(a) || l.target === nodeId(a)).length,
+          })),
+          links,
+        },
+      };
+    }
     if (resource === 'search') {
       const q = query.get('q') ?? '';
       const hits = visible(roles).filter((a) => matchesQuery(a, q));

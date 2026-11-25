@@ -99,6 +99,17 @@ export const knownErrorCodes = [
   'web_push_disabled',
   'possible_duplicate',
   'task_linked_elsewhere',
+  'bot_busy',
+  'bot_limit',
+  'bot_text',
+  'action_decided',
+  'invalid_range',
+  'event_title',
+  'event_day',
+  'event_time',
+  'event_attendees',
+  'event_description',
+  'event_location',
 ] as const;
 
 /**

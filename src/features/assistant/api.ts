@@ -35,6 +35,10 @@ export type AssistantSettings = {
   maxLetters: number;
   /** Ниже этого процента уверенности письмо разбирает человек */
   confidenceMin: number;
+  /** Модель ассистента в чате; пусто — как у агента почты */
+  botModel: string;
+  /** Сколько сообщений ассистенту в день у одного сотрудника */
+  botDailyLimit: number;
   updatedAt: string;
   updatedBy: ApiPerson | null;
   environment: AssistantEnvironment;

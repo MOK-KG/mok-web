@@ -14,7 +14,9 @@ import type { Task } from '@/features/tasks/types';
 import { years } from '@/shared/config/workCalendar';
 import { formatIsoDate } from '@/shared/lib/date';
 import { type IsoDate, todayInBishkek } from '@/shared/lib/workDays';
-import { ChevronLeftIcon, PlaneIcon } from '@/shared/ui/icons';
+import { ChevronLeftIcon, ExternalIcon, PlaneIcon, PlusIcon } from '@/shared/ui/icons';
+import { EventDialog } from './EventDialog';
+import { type CalendarEvent, eventsOn, useCancelEvent, useEvents } from './events';
 import {
   type CalendarLayer,
   calendarLayers,
@@ -35,6 +37,8 @@ import {
 
 /** Сколько сроков видно в клетке дня; остальные — «ещё N» */
 const CELL_DEADLINES = 2;
+/** Сколько событий видно в клетке дня */
+const CELL_EVENTS = 2;
 
 const capitalize = (s: string) => s.charAt(0).toLocaleUpperCase() + s.slice(1);
 
@@ -78,9 +82,20 @@ export function CalendarPage() {
   const selected = isIsoDate(params.get('d')) ? (params.get('d') as IsoDate) : today;
   const month = isIsoMonth(params.get('m')) ? (params.get('m') as string) : monthOf(selected);
   const [layers, setLayers] = useState<Set<CalendarLayer>>(() => new Set(calendarLayers));
+  // События (встречи, сроки, поставленные ассистентом) — отдельный слой, со своего API
+  const [showEvents, setShowEvents] = useState(true);
+  const [creating, setCreating] = useState(false);
   const tasks = useTasks('department');
 
   const weeks = useMemo(() => monthGrid(month), [month]);
+  const gridDays = weeks.flat();
+  const rangeFrom = [gridDays[0], selected].sort()[0];
+  const rangeTo = [gridDays[gridDays.length - 1], selected].sort()[1];
+  const eventList = useEvents(rangeFrom, rangeTo).data;
+  const dayEvents = useMemo(
+    () => (showEvents ? eventsOn(eventList) : new Map<IsoDate, CalendarEvent[]>()),
+    [eventList, showEvents],
+  );
   const norm = useMemo(() => monthNorm(month), [month]);
   const absenceList = useCurrentAbsences().data;
   const meId = useCurrentPersonId();
@@ -162,6 +177,14 @@ export function CalendarPage() {
           >
             {t('calendar.today')}
           </button>
+          <button
+            type="button"
+            onClick={() => setCreating(true)}
+            className="ml-1 flex h-8 items-center gap-[5px] rounded-9 bg-brand-red px-3 text-[12.5px] font-semibold text-[#FFFFFF] hover:opacity-90"
+          >
+            <PlusIcon size={15} />
+            {t('calendar.newEvent')}
+          </button>
         </div>
         <fieldset className="flex flex-wrap items-center gap-[6px]">
           <legend className="sr-only">{t('calendar.layers')}</legend>
@@ -189,6 +212,22 @@ export function CalendarPage() {
                 </button>
               );
             })}
+          <button
+            type="button"
+            aria-pressed={showEvents}
+            onClick={() => setShowEvents((v) => !v)}
+            className={`flex h-8 items-center gap-[7px] rounded-9 border px-3 text-[12px] ${
+              showEvents
+                ? 'border-transparent bg-control-active font-medium text-text'
+                : 'border-line text-faint hover:text-text'
+            }`}
+          >
+            <span
+              aria-hidden
+              className={`size-2 rounded-full ${showEvents ? 'bg-tone-violet' : 'bg-dim'}`}
+            />
+            {t('calendar.layer.events')}
+          </button>
         </fieldset>
       </div>
 
@@ -238,6 +277,7 @@ export function CalendarPage() {
                 today={day === today}
                 selected={day === selected}
                 events={events.get(day)}
+                dayEvents={dayEvents.get(day) ?? []}
                 onPick={() => pick(day)}
               />
             ))}
@@ -247,12 +287,15 @@ export function CalendarPage() {
         <DayPanel
           day={selected}
           events={events.get(selected)}
+          dayEvents={dayEvents.get(selected) ?? []}
+          showEvents={showEvents}
           month={month}
           norm={norm}
           load={load}
           onPick={pick}
         />
       </div>
+      <EventDialog open={creating} day={selected} onClose={() => setCreating(false)} />
     </div>
   );
 }
@@ -263,6 +306,7 @@ function DayCell({
   today,
   selected,
   events,
+  dayEvents,
   onPick,
 }: {
   day: IsoDate;
@@ -270,6 +314,7 @@ function DayCell({
   today: boolean;
   selected: boolean;
   events: DayEvents | undefined;
+  dayEvents: CalendarEvent[];
   onPick: () => void;
 }) {
   const meId = useCurrentPersonId();
@@ -286,6 +331,7 @@ function DayCell({
     type.type === 'holiday' ? t(`holidays.${type.holiday}`) : null,
     deadlines.length ? t('calendar.deadlinesCount', { count: deadlines.length }) : null,
     absences.length ? t('calendar.absentCount', { count: absences.length }) : null,
+    dayEvents.length ? t('calendar.eventsCount', { count: dayEvents.length }) : null,
   ]
     .filter(Boolean)
     .join(', ');
@@ -332,6 +378,20 @@ function DayCell({
           </span>
         )}
       </span>
+      {dayEvents.slice(0, CELL_EVENTS).map((e) => (
+        <span
+          key={e.id}
+          className="flex min-w-0 items-center gap-1 rounded-[5px] bg-tone-violet-bg px-[6px] py-[2px] text-[10.5px] text-text"
+        >
+          {e.startTime && <span className="shrink-0 text-faint">{e.startTime}</span>}
+          <span className="truncate">{e.title}</span>
+        </span>
+      ))}
+      {dayEvents.length > CELL_EVENTS && (
+        <span className="px-[6px] text-[10.5px] text-faint">
+          {t('calendar.more', { count: dayEvents.length - CELL_EVENTS })}
+        </span>
+      )}
       {deadlines.slice(0, CELL_DEADLINES).map((task) => (
         <span
           key={task.id}
@@ -386,6 +446,8 @@ function deadlineChip(task: Task, meId: string | undefined) {
 function DayPanel({
   day,
   events,
+  dayEvents,
+  showEvents,
   month,
   norm,
   load,
@@ -393,6 +455,8 @@ function DayPanel({
 }: {
   day: IsoDate;
   events: DayEvents | undefined;
+  dayEvents: CalendarEvent[];
+  showEvents: boolean;
   month: string;
   norm: ReturnType<typeof monthNorm>;
   load: MonthLoad;
@@ -424,6 +488,20 @@ function DayPanel({
             ` · ${t('calendar.hours', { count: type.shortened ? 7 : 8 })}`}
         </p>
       </div>
+
+      {showEvents && (
+        <PanelSection title={t('calendar.events')} count={dayEvents.length}>
+          {dayEvents.length === 0 ? (
+            <Empty text={t('calendar.noEvents')} />
+          ) : (
+            <ul>
+              {dayEvents.map((e) => (
+                <EventRow key={e.id} event={e} />
+              ))}
+            </ul>
+          )}
+        </PanelSection>
+      )}
 
       <PanelSection title={t('calendar.deadlines')} count={deadlines.length}>
         {deadlines.length === 0 ? (
@@ -595,6 +673,61 @@ function DayPanel({
         )}
       </div>
     </aside>
+  );
+}
+
+function EventRow({ event: e }: { event: CalendarEvent }) {
+  const { t } = useTranslation();
+  const meId = useCurrentPersonId();
+  const taskLink = useTaskLink();
+  const cancel = useCancelEvent();
+  const people = e.attendees.map((p) => p.name).join(', ');
+  return (
+    <li className="px-5 py-[9px]">
+      <p className="text-[12.5px] leading-[17px] text-text">
+        <span className="mr-2 text-faint">
+          {e.startTime ? `${e.startTime}${e.endTime ? `–${e.endTime}` : ''}` : t('calendar.allDay')}
+        </span>
+        {e.title}
+      </p>
+      {(e.location || people) && (
+        <p className="mt-[3px] text-[11px] text-dim">
+          {[e.location, people].filter(Boolean).join(' · ')}
+        </p>
+      )}
+      <p className="mt-[5px] flex flex-wrap items-center gap-3 text-[11px]">
+        {e.task && (
+          <Link to={taskLink(e.task.id)} className="text-info hover:underline">
+            {e.task.code}
+          </Link>
+        )}
+        {e.googleLink && (
+          <a
+            href={e.googleLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-info hover:underline"
+          >
+            Google Calendar
+            <ExternalIcon size={11} />
+          </a>
+        )}
+        {e.source === 'google' && <span className="text-dim">{t('calendar.fromGoogle')}</span>}
+        {e.source === 'platform' && e.createdBy.id === meId && (
+          <button
+            type="button"
+            disabled={cancel.isPending}
+            onClick={() => cancel.mutate(e.id)}
+            className="text-sub hover:text-danger hover:underline disabled:opacity-50"
+          >
+            {t('calendar.cancelEvent')}
+          </button>
+        )}
+      </p>
+      {e.googleError && (
+        <p className="mt-[3px] text-[11px] text-warning-text">{t('calendar.googleFailed')}</p>
+      )}
+    </li>
   );
 }
 

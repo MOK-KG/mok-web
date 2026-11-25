@@ -12,6 +12,7 @@ import {
   DocMiniIcon,
   FilterIcon,
   FolderIcon,
+  GraphIcon,
   LockIcon,
   MoreIcon,
   PlusIcon,
@@ -105,6 +106,13 @@ export function KnowledgePage() {
       <div className="flex h-10 shrink-0 items-center justify-between gap-3 px-1">
         <SearchField value={query} onChange={(q) => update({ q })} />
         <div className="flex items-center gap-2">
+          <Link
+            to="/knowledge/graph"
+            className="flex h-8 items-center gap-[6px] rounded-9 border border-line px-3 text-[12.5px] text-sub hover:text-text"
+          >
+            <GraphIcon size={15} />
+            {t('knowledge.graph.title')}
+          </Link>
           <FilterMenu
             articles={articles}
             value={filters}

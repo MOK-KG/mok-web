@@ -144,6 +144,7 @@ export function ArticleEditor() {
   const { t } = useTranslation();
   const { articleId } = useParams();
   const editing = articleId !== undefined;
+  const { can } = useCan();
   const article = useArticle(articleId ?? '', { enabled: editing });
   const list = useKnowledge();
 
@@ -158,6 +159,10 @@ export function ArticleEditor() {
     );
   }
   if (!list.data || (editing && !article.data)) return null;
+  // Правка: knowledge.edit или свой личный документ (заметки ассистента)
+  if (editing && article.data && !(article.data.canEdit ?? can('knowledge.edit'))) {
+    return <ForbiddenPage />;
+  }
   return <EditorForm article={article.data ?? null} sections={list.data.sections} />;
 }
 

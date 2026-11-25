@@ -422,7 +422,18 @@
       "project_exists": "This project already exists",
       "permission_unknown": "No such permission.",
       "possible_duplicate": "A similar task already exists — check the warning under the title and press “Create” again.",
-      "task_linked_elsewhere": "The task is already linked to another article — remove that link first."
+      "task_linked_elsewhere": "The task is already linked to another article — remove that link first.",
+      "bot_busy": "The assistant is still answering the previous message.",
+      "bot_limit": "Daily assistant message limit reached.",
+      "bot_text": "Message — up to 4000 characters.",
+      "action_decided": "The card has already been decided.",
+      "invalid_range": "The period is too long.",
+      "event_title": "Event title — 2 to 300 characters.",
+      "event_day": "Choose the event day.",
+      "event_time": "Check the start and end time.",
+      "event_attendees": "Attendee not found.",
+      "event_description": "The description is too long.",
+      "event_location": "The location is too long."
     }
   },
   "toast": {
@@ -580,7 +591,25 @@
     "accessLoseOwn": "Your role isn't selected: after saving you'll no longer see this section's articles.",
     "accessSaved": "Section access saved",
     "openTo": "Open to roles: {{roles}}",
-    "docOpen": "Open in Documents"
+    "docOpen": "Open in Documents",
+    "personal": "Personal — only you can see it",
+    "graph": {
+      "title": "Graph",
+      "counts": "Articles: {{articles}} · links: {{links}}",
+      "search": "Find on graph",
+      "filters": "Graph filters",
+      "tasks": "Tasks",
+      "suggested": "Similar by meaning",
+      "empty": "No articles",
+      "hint": "Wheel — zoom, drag — pan, click — open",
+      "noLinks": "No links yet: link another article — [[Title]]",
+      "depth": "Depth {{count}}",
+      "openGlobal": "Whole graph",
+      "backlinks": "Linked from",
+      "noBacklinks": "No articles link here",
+      "links": "Links"
+    },
+    "noSection": "No section"
   },
   "access": {
     "usersTab": "Users",
@@ -1000,7 +1029,8 @@
     "layer": {
       "mine": "My deadlines",
       "department": "Department deadlines",
-      "absences": "Leave"
+      "absences": "Leave",
+      "events": "Events"
     },
     "norm_one": "{{count}} working day · {{hours}} h",
     "norm_other": "{{count}} working days · {{hours}} h",
@@ -1032,7 +1062,28 @@
       "peaks_other": "{{count}} peak days:",
       "conflicts_one": "{{count}} deadline during leave:",
       "conflicts_other": "{{count}} deadlines during leave:"
-    }
+    },
+    "eventsCount_one": "{{count}} event",
+    "eventsCount_other": "{{count}} events",
+    "events": "Events",
+    "noEvents": "No events",
+    "allDay": "All day",
+    "cancelEvent": "Cancel",
+    "googleFailed": "Not sent to Google Calendar",
+    "eventCancelled": "Event cancelled",
+    "fromGoogle": "from Google",
+    "newEvent": "New event",
+    "eventTitle": "Title",
+    "eventDate": "Day",
+    "eventStart": "Start",
+    "eventEnd": "End",
+    "eventLocation": "Location or link",
+    "eventDescription": "Description",
+    "eventAttendees": "Attendees",
+    "toGoogle": "Add to Google Calendar ({{email}}) — attendees get invitations",
+    "googleNotConnected": "Google Calendar is not connected — the event stays in the platform only. Connect it in your profile.",
+    "createEvent": "Create",
+    "eventCreated": "Event created"
   },
   "documents": {
     "subtitle": "Records management",
@@ -1341,7 +1392,12 @@
       "taskDueChanged": "Deadline changed",
       "taskArchived": "Task archived",
       "taskRestored": "Task restored",
-      "mailLinked": "Reply linked to task"
+      "mailLinked": "Reply linked to task",
+      "calendarConnected": "Google Calendar connected",
+      "calendarDisconnected": "Google Calendar disconnected",
+      "driveConnected": "Google Drive connected for import",
+      "driveDisconnected": "Google Drive disconnected",
+      "assistantAction": "Action via assistant"
     },
     "integrityOk_one": "Chain intact · {{count}} entry checked",
     "integrityOk_other": "Chain intact · {{count}} entries checked",
@@ -1548,7 +1604,66 @@
       "schedule": "Scheduled",
       "manual": "Manual",
       "command": "Command"
-    }
+    },
+    "bot": {
+      "title": "Assistant",
+      "subtitle": "AI helper · changes only after you confirm",
+      "rowHint": "Tasks, calendar, knowledge base",
+      "newChat": "New conversation",
+      "unavailable": "The assistant is unavailable: the server has no OpenAI key.",
+      "thinking": "The assistant is thinking…",
+      "welcome": "How can I help?",
+      "welcomeHint": "The assistant searches the knowledge base, tasks and calendar, and prepares tasks, events and messages as cards — they run only when you press the button.",
+      "example1": "What are my tasks this week and what is overdue?",
+      "example2": "Create a task to prepare a reply to the federation by Friday",
+      "example3": "Who is responsible for delegation accreditation?",
+      "example4": "Schedule a meeting with the department on Monday at 10:00",
+      "failed": "The assistant could not answer — try again.",
+      "steps_one": "{{count}} step",
+      "steps_other": "{{count}} steps",
+      "sources": "Sources",
+      "confirm": "Create",
+      "send": "Send",
+      "kind": {
+        "create_task": "New task",
+        "update_task": "Task change",
+        "comment": "Task comment",
+        "message": "Chat message",
+        "event": "Calendar event"
+      },
+      "field": {
+        "assignee": "Assignee",
+        "due": "Due",
+        "priority": "Priority",
+        "project": "Project",
+        "description": "Description",
+        "title": "Title",
+        "stage": "Stage",
+        "text": "Text",
+        "when": "When",
+        "attendees": "Attendees",
+        "location": "Location",
+        "task": "Task",
+        "google": "Google Calendar"
+      },
+      "status": {
+        "pending": "Awaiting confirmation",
+        "done": "Done",
+        "cancelled": "Cancelled",
+        "failed": "Failed"
+      },
+      "openChat": "Open chat",
+      "openCalendar": "In calendar",
+      "googleFailed": "Not sent to Google Calendar: {{error}}",
+      "placeholder": "Write to the assistant…",
+      "hint": "Enter — send, Shift+Enter — new line. The assistant can make mistakes — check the cards.",
+      "memory": "Memory",
+      "memoryHint": "The assistant's notes for the month — a personal knowledge base document only you can see",
+      "conversations": "Conversations",
+      "untitled": "Untitled"
+    },
+    "botModel": "Chat assistant model",
+    "botDailyLimit": "Assistant messages per day"
   },
   "profile": {
     "photo": {
@@ -1583,7 +1698,26 @@
     "noAbsences": "No leave or trips, and you aren't covering for anyone.",
     "myAbsence": "{{kind}} {{from}} – {{to}}, covered by {{deputy}}",
     "covering": "You're covering for {{name}}: {{from}} – {{to}}",
-    "save": "Save"
+    "save": "Save",
+    "calendar": {
+      "title": "Google Calendar",
+      "hint": "Events from the platform and the assistant will appear in your Google Calendar; attendees get invitations.",
+      "connectedAs": "Connected: {{email}}",
+      "needsReconnect": "Google revoked access — connect the calendar again.",
+      "reconnect": "Reconnect",
+      "disconnect": "Disconnect",
+      "connect": "Connect Google Calendar",
+      "connected": "Google Calendar connected",
+      "disconnected": "Google Calendar disconnected",
+      "error": {
+        "access_denied": "Connection was cancelled in Google.",
+        "scope": "Calendar events access is required — tick it on the Google screen.",
+        "forbidden": "You have no calendar access.",
+        "calendar_domain": "Only organization calendars can be connected.",
+        "no_code": "Google returned no code — try again.",
+        "google_error": "Could not connect the calendar — try again."
+      }
+    }
   },
   "projects": {
     "title": "Projects",

@@ -45,6 +45,11 @@ export type JournalAction =
   | 'sessionEnded'
   | 'mailboxConnected'
   | 'mailboxDisconnected'
+  | 'calendarConnected'
+  | 'calendarDisconnected'
+  | 'driveConnected'
+  | 'driveDisconnected'
+  | 'assistantAction'
   | 'rolePermissionsChanged';
 
 /** Группы действий — для фильтра на экране журнала */
@@ -73,6 +78,9 @@ export const journalGroups = {
     'taskDueChanged',
     'taskArchived',
     'taskRestored',
+    'calendarConnected',
+    'calendarDisconnected',
+    'assistantAction',
   ],
   documents: [
     'documentRegistered',
@@ -81,6 +89,8 @@ export const journalGroups = {
     'documentDone',
     'documentAnnulled',
     'documentBounced',
+    'driveConnected',
+    'driveDisconnected',
   ],
   journal: ['journalExported'],
 } as const satisfies Record<string, readonly JournalAction[]>;

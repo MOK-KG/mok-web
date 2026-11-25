@@ -54,6 +54,8 @@ const toForm = (s: AssistantSettings): Form => ({
   knowledgeRoles: s.knowledgeRoles,
   maxLetters: s.maxLetters,
   confidenceMin: s.confidenceMin,
+  botModel: s.botModel,
+  botDailyLimit: s.botDailyLimit,
 });
 
 /**
@@ -339,6 +341,34 @@ function SettingsForm({ settings }: { settings: AssistantSettings }) {
             <p id="assistant-confidence-hint" className="self-end pb-2 text-[11px] text-dim">
               {t('assistant.confidenceMinHint', { count: form.confidenceMin })}
             </p>
+            <Field
+              id="assistant-bot-model"
+              text={t('assistant.botModel')}
+              error={fieldError('botModel')}
+            >
+              <input
+                id="assistant-bot-model"
+                value={form.botModel}
+                onChange={(e) => set('botModel', e.target.value)}
+                placeholder={form.model || t('assistant.modelDefault', { model: env.defaultModel })}
+                className={fieldBox}
+              />
+            </Field>
+            <Field
+              id="assistant-bot-limit"
+              text={t('assistant.botDailyLimit')}
+              error={fieldError('botDailyLimit')}
+            >
+              <input
+                id="assistant-bot-limit"
+                type="number"
+                min={1}
+                max={2000}
+                value={form.botDailyLimit}
+                onChange={(e) => set('botDailyLimit', Number(e.target.value))}
+                className={fieldBox}
+              />
+            </Field>
           </div>
           <Field
             id="assistant-instructions"

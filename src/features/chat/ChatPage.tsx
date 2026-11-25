@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { usePageSubtitle } from '@/app/layout/AppLayout';
+import { BotAvatar, BotChat } from '@/features/assistant/BotChat';
 import { useCurrentPersonId } from '@/features/auth';
 import { PlusIcon, SearchIcon } from '@/shared/ui/icons';
 import { useChatMembers, useChats, useChatUnread } from './api';
@@ -36,6 +37,8 @@ export function ChatPage() {
 
   const list = chats.data ?? [];
   const openId = params.get('c');
+  // Личный ассистент — не чат с сервера, а отдельный разговор (?c=assistant)
+  const botOpen = openId === BOT_ID;
   const open = list.find((c) => c.id === openId) ?? null;
   const select = (id: string) => setParams({ c: id }, { replace: !openId });
 
@@ -78,6 +81,7 @@ export function ChatPage() {
           </button>
         </div>
         <ul className="min-h-0 flex-1 overflow-y-auto border-t border-line">
+          <BotRow selected={botOpen} onSelect={() => select(BOT_ID)} />
           {shown.map((c) => (
             <ChatRow
               key={c.id}
@@ -93,10 +97,12 @@ export function ChatPage() {
       </nav>
 
       <section
-        aria-label={open?.fullTitle ?? t('chat.title')}
+        aria-label={botOpen ? t('assistant.bot.title') : (open?.fullTitle ?? t('chat.title'))}
         className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-14 border border-line bg-panel"
       >
-        {open ? (
+        {botOpen ? (
+          <BotChat />
+        ) : open ? (
           <Conversation key={open.id} chat={open} />
         ) : (
           chats.data && <p className="m-auto text-[12.5px] text-dim">{t('chat.selectChat')}</p>
@@ -112,6 +118,38 @@ export function ChatPage() {
         }}
       />
     </div>
+  );
+}
+
+const BOT_ID = 'assistant';
+
+/** Ассистент — всегда первым в списке */
+function BotRow({ selected, onSelect }: { selected: boolean; onSelect: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <li className="px-0">
+      <button
+        type="button"
+        aria-current={selected ? 'page' : undefined}
+        onClick={onSelect}
+        className={`relative flex w-full items-center gap-3 border-b border-line px-[14px] py-[11px] text-left ${
+          selected ? 'bg-nav-active' : 'hover:bg-row-highlight'
+        }`}
+      >
+        {selected && (
+          <span aria-hidden className="absolute inset-y-0 left-0 w-[2.5px] bg-brand-red" />
+        )}
+        <BotAvatar />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[13px] font-medium tracking-[-0.1px] text-text">
+            {t('assistant.bot.title')}
+          </span>
+          <span className="mt-[2px] block truncate text-[11.5px] text-sub">
+            {t('assistant.bot.rowHint')}
+          </span>
+        </span>
+      </button>
+    </li>
   );
 }
 

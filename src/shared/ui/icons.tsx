@@ -365,3 +365,7 @@ export const PhoneIcon = icon(
   16,
   `<rect x="4" y="1.5" width="8" height="13" rx="1.75" stroke="currentColor" stroke-width="1.5"/><path d="M7 12H9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>`,
 );
+export const GraphIcon = icon(
+  16,
+  `<circle cx="4" cy="4" r="2" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="6" r="2" stroke="currentColor" stroke-width="1.4"/><circle cx="6" cy="12.5" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M5.8 4.6L10.2 5.4M5.1 10.6L4.6 6M10.6 7.4L7.4 11.2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>`,
+);

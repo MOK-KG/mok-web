@@ -71,6 +71,10 @@ export type KbArticle = KbArticleSummary & {
   relatedTasks: KbRelatedTask[];
   relatedDocuments: KbRelatedDocument[];
   versions: KbVersion[];
+  /** Личный документ (заметки ассистента): виден только владельцу */
+  personal?: boolean;
+  /** Может ли сотрудник править: knowledge.edit или свой личный документ */
+  canEdit?: boolean;
 };
 
 export type KbFreshness = 'fresh' | 'stale' | null;

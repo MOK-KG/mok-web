@@ -24,6 +24,7 @@ import {
 import { Tooltip } from '@/shared/ui/Tooltip';
 import { useArticle, useKnowledge, useMarkReviewed } from './api';
 import { DocumentDialog } from './DocumentDialog';
+import { LocalGraph } from './graph/GraphPage';
 import {
   Avatar,
   capsTitle,
@@ -121,6 +122,7 @@ function useViewedVersion(article: KbArticle): KbVersion | null {
 
 function ArticleBody({ article: current }: { article: KbArticle }) {
   const { t, i18n } = useTranslation();
+  const { can } = useCan();
   const shortDate = useShortDate();
   const location = useLocation();
   const old = useViewedVersion(current);
@@ -161,6 +163,11 @@ function ArticleBody({ article: current }: { article: KbArticle }) {
       >
         <div className="flex min-h-7 items-start justify-between gap-3">
           {!old && <FreshnessBadge freshness={freshness} large />}
+          {a.personal && (
+            <span className="flex h-7 items-center gap-[5px] rounded-[7px] bg-info-chip px-[10px] text-[11.5px] font-medium text-info-text">
+              {t('knowledge.personal')}
+            </span>
+          )}
           <div className="ml-auto flex items-center gap-2">
             <Can permission="knowledge.edit">
               {!old && freshness !== 'fresh' && (
@@ -177,17 +184,19 @@ function ArticleBody({ article: current }: { article: KbArticle }) {
                 </Tooltip>
               )}
             </Can>
-            <Can permission="knowledge.edit">
-              {!old && (
-                <Link
-                  to={`/knowledge/${a.id}/edit`}
-                  className="flex h-7 w-[92px] items-center justify-center gap-[5px] rounded-[7px] border border-line text-[11.5px] font-medium text-sub hover:text-text"
-                >
-                  <EditMediumIcon size={16} />
-                  {t('knowledge.edit')}
-                </Link>
-              )}
-            </Can>
+            {(a.canEdit ?? can('knowledge.edit')) && (
+              <>
+                {!old && (
+                  <Link
+                    to={`/knowledge/${a.id}/edit`}
+                    className="flex h-7 w-[92px] items-center justify-center gap-[5px] rounded-[7px] border border-line text-[11.5px] font-medium text-sub hover:text-text"
+                  >
+                    <EditMediumIcon size={16} />
+                    {t('knowledge.edit')}
+                  </Link>
+                )}
+              </>
+            )}
             <DropdownMenu.Root>
               <Tooltip content={t('knowledge.more')}>
                 <DropdownMenu.Trigger
@@ -460,6 +469,10 @@ function SidePanel({
           {divider('mt-[14px] mb-[15px]')}
         </>
       )}
+
+      <h2 className={`${capsTitle} mb-2 px-[6px]`}>{t('knowledge.graph.links')}</h2>
+      <LocalGraph slug={a.id} />
+      {divider('mt-4 mb-[17px]')}
 
       {a.relatedTasks.length > 0 && (
         <>

@@ -58,6 +58,9 @@ const RoleMatrixPage = lazy(() =>
 const ProjectsPage = lazy(() =>
   import('@/features/tasks/projects/ProjectsPage').then((m) => ({ default: m.ProjectsPage })),
 );
+const GraphPage = lazy(() =>
+  import('@/features/knowledge-base/graph/GraphPage').then((m) => ({ default: m.GraphPage })),
+);
 const ArticlePage = lazy(() =>
   import('@/features/knowledge-base/ArticlePage').then((m) => ({ default: m.ArticlePage })),
 );
@@ -103,6 +106,11 @@ const sectionRoutes: RouteObject[] = [
     path: 'tasks/projects',
     handle: { section: 'tasks', titleKey: 'projects.title' } satisfies RouteHandle,
     element: guarded('tasks', <ProjectsPage />),
+  },
+  {
+    path: 'knowledge/graph',
+    handle: { section: 'knowledge', titleKey: 'knowledge.graph.title' } satisfies RouteHandle,
+    element: guarded('knowledge', <GraphPage />),
   },
   {
     path: 'knowledge/:articleId',
@@ -176,12 +184,18 @@ const sectionRoutes: RouteObject[] = [
       </Suspense>
     ),
   },
-  // Редактор — только с правом knowledge.edit; без него по прямой ссылке — 403
-  ...['knowledge/new', 'knowledge/:articleId/edit'].map((path) => ({
+  // Новая статья — только с правом knowledge.edit; правка — ещё и своих заметок ассистента
+  // (редактор сам покажет 403, если статью править нельзя)
+  ...(
+    [
+      ['knowledge/new', 'knowledge.edit'],
+      ['knowledge/:articleId/edit', 'knowledge.view'],
+    ] as const
+  ).map(([path, permission]) => ({
     path,
     handle: { section: 'knowledge' } satisfies RouteHandle,
     element: (
-      <RequirePermission permission="knowledge.edit">
+      <RequirePermission permission={permission}>
         {guarded('knowledge', <ArticleEditor />)}
       </RequirePermission>
     ),

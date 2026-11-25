@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, vi } from 'vitest';
+
+// Граф базы знаний рисуется на canvas — в jsdom его нет; заглушка показывает узлы кнопками
+vi.mock('react-force-graph-2d', () => import('./forceGraphMock'));
+
 import { installAbsencesServer } from '@/features/absences/testing/server';
 import { installAssistantServer } from '@/features/assistant/testing/server';
+import { installCalendarServer } from '@/features/calendar/testing/server';
 import { installChatServer } from '@/features/chat/testing/server';
 import { installDocumentsServer } from '@/features/documents/testing/server';
 import { installJournalServer } from '@/features/journal/testing/server';
@@ -29,6 +34,8 @@ beforeEach(() => {
   installNotificationsServer();
   // Настройки ИИ и агент почты
   installAssistantServer();
+  // События календаря и личный Google Календарь
+  installCalendarServer();
   // Активные сессии (профиль)
   installSessionsServer();
 });

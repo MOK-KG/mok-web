@@ -47,6 +47,8 @@ type ApiArticle = ApiSummary & {
   relatedTasks: KbRelatedTask[];
   relatedDocuments: KbRelatedDocument[];
   versions: ApiVersion[];
+  personal?: boolean;
+  canEdit?: boolean;
 };
 
 type ApiFile = {
@@ -125,6 +127,8 @@ const toArticle = (a: ApiArticle): KbArticle => ({
     author: toPerson(v.author),
     body: markdownToBlocks(v.body),
   })),
+  personal: a.personal ?? false,
+  canEdit: a.canEdit,
 });
 
 // --- Чтение -----------------------------------------------------------------------------------

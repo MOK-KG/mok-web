@@ -5,6 +5,7 @@ import { usePageSubtitle } from '@/app/layout/AppLayout';
 import { type ThemeMode, useTheme } from '@/app/providers/ThemeProvider';
 import { useCurrentAbsences } from '@/features/absences/api';
 import { useSession, useSignOut } from '@/features/auth';
+import { GoogleCalendarPanel } from '@/features/calendar/GoogleCalendarPanel';
 import { primaryButton, secondaryButton } from '@/features/documents/parts';
 import {
   type NotificationSettings,
@@ -200,6 +201,7 @@ export function ProfilePage() {
             </button>
           </div>
         </section>
+        <GoogleCalendarPanel />
         <SessionsPanel />
       </div>
     </div>
