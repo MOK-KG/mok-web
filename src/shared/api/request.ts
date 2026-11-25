@@ -27,6 +27,7 @@ export type ApiClientConfig = {
 };
 
 const DEFAULT_TIMEOUT_MS = 20_000;
+const UPLOAD_TIMEOUT_MS = 300_000;
 
 function buildQuery(query?: QueryParams) {
   if (!query) return '';
@@ -56,7 +57,10 @@ export function createApiClient(config: ApiClientConfig) {
   const url = (path: string, query?: QueryParams) => `${config.baseUrl}${path}${buildQuery(query)}`;
 
   async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-    const { body, query, timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS, ...init } = options;
+    const { body, query, timeoutMs: requested, ...init } = options;
+    const upload = typeof FormData !== 'undefined' && body instanceof FormData;
+    const timeoutMs =
+      requested ?? (upload ? UPLOAD_TIMEOUT_MS : (config.timeoutMs ?? DEFAULT_TIMEOUT_MS));
     const controller = new AbortController();
     let timedOut = false;
     const timer = setTimeout(() => {

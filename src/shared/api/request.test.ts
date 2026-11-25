@@ -80,6 +80,42 @@ describe('базовый запрос', () => {
     expect(error.isTimeout).toBe(true);
   });
 
+  it('загрузка файла ждёт дольше обычного запроса', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_url: string, init: RequestInit) =>
+          new Promise((_, reject) =>
+            init.signal?.addEventListener('abort', () =>
+              reject(new DOMException('', 'AbortError')),
+            ),
+          ),
+      ),
+    );
+    let settled = false;
+    const pending = api
+      .post<never>('/upload', new FormData())
+      .catch((e: ApiError) => e)
+      .finally(() => {
+        settled = true;
+      });
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(settled).toBe(false);
+    await vi.advanceTimersByTimeAsync(240_000);
+    expect((await pending).isTimeout).toBe(true);
+  });
+
+  it('413 от прокси — понятная ошибка про размер файла', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response('<html>413</html>', { status: 413 })),
+    );
+    const error = await api.post<never>('/upload', new FormData()).catch((e: ApiError) => e);
+    expect(error.status).toBe(413);
+    expect(errorMessageKey(error)).toBe('errors.tooLarge');
+  });
+
   it('отмена снаружи — не ошибка сети', async () => {
     vi.stubGlobal(
       'fetch',
