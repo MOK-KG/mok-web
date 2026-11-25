@@ -137,6 +137,23 @@ export async function createAbsence(input: AbsenceInput, today = todayInBishkek(
   );
 }
 
+export async function updateAbsence(id: string, input: AbsenceInput, today = todayInBishkek()) {
+  const others = currentAbsences().filter((a) => a.id !== id);
+  const problems = absenceProblems(input, others, today).filter(
+    (p) => p.code !== 'past' || diffDays(today, input.to) < 0,
+  );
+  if (problems.length > 0 || !input.deputy) throw new AbsenceError(problems);
+  return toAbsence(
+    await api.patch<ApiAbsence>(`/staff/absences/${id}`, {
+      kind: input.kind,
+      dateFrom: input.from,
+      dateTo: input.to,
+      deputyId: input.deputy.id,
+      note: input.note.trim(),
+    }),
+  );
+}
+
 /** Отменить с причиной: запись остаётся, заместитель перестаёт действовать сразу */
 export async function cancelAbsence(id: string, reason: string) {
   return toAbsence(
@@ -189,6 +206,12 @@ function useAbsenceMutation<V, R>(fn: (vars: V) => Promise<R>, successMessage: s
 
 export const useCreateAbsence = () =>
   useAbsenceMutation((input: AbsenceInput) => createAbsence(input), 'absences.created');
+
+export const useUpdateAbsence = () =>
+  useAbsenceMutation(
+    ({ id, input }: { id: string; input: AbsenceInput }) => updateAbsence(id, input),
+    'absences.updated',
+  );
 
 export const useCancelAbsence = () =>
   useAbsenceMutation(

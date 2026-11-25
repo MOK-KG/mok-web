@@ -10,6 +10,7 @@ import {
   cancelAbsence,
   createAbsence,
   fetchAbsences,
+  updateAbsence,
 } from './api';
 import { installAbsencesServer } from './testing/server';
 
@@ -48,6 +49,17 @@ describe('оформление отсутствия', () => {
     expect(a.deputy.short).toBe('Ю. Ведерникова');
     expect(lastJournal()).toMatchObject({ action: 'absenceCreated' });
     expect((await fetchAbsences()).map((x) => x.id)).toContain(a.id);
+  });
+
+  it('правка: новые даты и вид сохраняются, своя запись не считается пересечением', async () => {
+    const a = await createAbsence(input(), TODAY);
+    await fetchAbsences();
+    const b = await updateAbsence(a.id, input({ kind: 'trip', to: '2026-09-28' }), TODAY);
+    expect(b).toMatchObject({ id: a.id, kind: 'trip', to: '2026-09-28' });
+    expect(lastJournal()).toMatchObject({ action: 'absenceUpdated' });
+    await expect(updateAbsence(a.id, input({ deputy: null }), TODAY)).rejects.toThrow(
+      'deputyRequired',
+    );
   });
 
   it('проверки дат и заместителя', () => {

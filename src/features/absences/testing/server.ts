@@ -114,6 +114,35 @@ export function createAbsencesServer({ today = todayInBishkek() }: { today?: Iso
       );
       return { status: 201, body: toApi(absence) };
     }
+    const one = path.match(/^\/staff\/absences\/([^/]+)$/);
+    if (one && method === 'PATCH') {
+      const absence = absences.find((a) => a.id === one[1]);
+      if (!absence) return error(404, 'not_found');
+      if (absence.status === 'cancelled') return error(409, 'absence_cancelled');
+      const deputy = allPeople.find((p) => p.id === b.deputyId) ?? null;
+      const input: AbsenceInput = {
+        kind: b.kind as Absence['kind'],
+        person: absence.person,
+        from: b.dateFrom as IsoDate,
+        to: b.dateTo as IsoDate,
+        deputy,
+        note: String(b.note ?? ''),
+      };
+      const problems = absenceProblems(
+        input,
+        active().filter((a) => a.id !== absence.id),
+        today,
+      );
+      if (problems.length > 0 || !deputy) {
+        return error(400, 'absence_invalid', { problems: problems.map((p) => p.code) });
+      }
+      Object.assign(absence, { ...input, deputy, note: input.note.trim() });
+      journalServer?.record(
+        'absenceUpdated',
+        `${absence.person.short}: ${absence.from} – ${absence.to}`,
+      );
+      return { status: 200, body: toApi(absence) };
+    }
     const cancel = path.match(/^\/staff\/absences\/([^/]+)\/cancel$/);
     if (cancel && method === 'POST') {
       const absence = absences.find((a) => a.id === cancel[1]);

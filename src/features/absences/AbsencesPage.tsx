@@ -11,7 +11,12 @@ import {
   secondaryButton,
 } from '@/features/documents/parts';
 import { Avatar } from '@/features/knowledge-base/parts';
-import { type Absence, type AbsenceKind, absenceKinds } from '@/features/tasks/absences';
+import {
+  type Absence,
+  type AbsenceKind,
+  absenceKinds,
+  currentAbsences,
+} from '@/features/tasks/absences';
 import { useTasks } from '@/features/tasks/api';
 import type { Person } from '@/features/tasks/types';
 import { formatIsoDate } from '@/shared/lib/date';
@@ -26,6 +31,7 @@ import {
   useAbsences,
   useCancelAbsence,
   useCreateAbsence,
+  useUpdateAbsence,
 } from './api';
 
 /** Текущий сотрудник как Person: из справочника, пока он грузится — из сессии */
@@ -80,6 +86,7 @@ export function AbsencesPage() {
   const list = useAbsences().data ?? [];
   const [creating, setCreating] = useState(false);
   const [cancelling, setCancelling] = useState<Absence | null>(null);
+  const [editing, setEditing] = useState<Absence | null>(null);
   const [onlyMine, setOnlyMine] = useState(!canManage);
   const staff = useAbsencePeople().data ?? [];
   const me = useMePerson(staff);
@@ -191,6 +198,15 @@ export function AbsencesPage() {
                     {canCancel && (
                       <button
                         type="button"
+                        onClick={() => setEditing(a)}
+                        className="h-8 rounded-8 border border-line px-3 text-[12px] text-sub hover:text-text"
+                      >
+                        {t('absences.edit')}
+                      </button>
+                    )}
+                    {canCancel && (
+                      <button
+                        type="button"
                         onClick={() => setCancelling(a)}
                         className="h-8 rounded-8 border border-line px-3 text-[12px] text-sub hover:text-text"
                       >
@@ -214,6 +230,22 @@ export function AbsencesPage() {
         />
       </FormDialog>
       <FormDialog
+        open={editing !== null}
+        title={t('absences.editTitle')}
+        onClose={() => setEditing(null)}
+      >
+        {editing && (
+          <AbsenceForm
+            key={editing.id}
+            canManage={false}
+            staff={staff}
+            me={editing.person}
+            editing={editing}
+            onDone={() => setEditing(null)}
+          />
+        )}
+      </FormDialog>
+      <FormDialog
         open={cancelling !== null}
         title={t('absences.cancelTitle')}
         onClose={() => setCancelling(null)}
@@ -229,23 +261,27 @@ function AbsenceForm({
   canManage,
   staff,
   me,
+  editing,
   onDone,
 }: {
   canManage: boolean;
   staff: Person[];
   me: Person;
+  editing?: Absence;
   onDone: () => void;
 }) {
   const { t } = useTranslation();
   const create = useCreateAbsence();
+  const update = useUpdateAbsence();
   const problemText = useProblemText();
   const today = todayInBishkek();
-  const [kind, setKind] = useState<AbsenceKind>('vacation');
+  const [kind, setKind] = useState<AbsenceKind>(editing?.kind ?? 'vacation');
   const [personId, setPersonId] = useState(me.id);
-  const [from, setFrom] = useState(today);
-  const [to, setTo] = useState(today);
-  const [deputyId, setDeputyId] = useState('');
-  const [note, setNote] = useState('');
+  const [from, setFrom] = useState<IsoDate>(editing?.from ?? today);
+  const [to, setTo] = useState<IsoDate>(editing?.to ?? today);
+  const [deputyId, setDeputyId] = useState(editing?.deputy.id ?? '');
+  const [note, setNote] = useState(editing?.note ?? '');
+  const started = editing ? diffDays(editing.from, today) > 0 : false;
   const [tried, setTried] = useState(false);
   const person = staff.find((p) => p.id === personId) ?? me;
   const deputy = staff.find((p) => p.id === deputyId) ?? null;
@@ -253,7 +289,10 @@ function AbsenceForm({
 
   const input: AbsenceInput = { kind, person, from, to, deputy, note };
   const datesSet = from !== '' && to !== '';
-  const problems = datesSet ? absenceProblems(input) : [];
+  const others = editing ? currentAbsences().filter((a) => a.id !== editing.id) : undefined;
+  const problems = datesSet
+    ? absenceProblems(input, others).filter((p) => !(started && p.code === 'past' && to >= today))
+    : [];
   // Пока не нажали «Сохранить», не ругаемся на пустого заместителя — только на конфликты
   const shownProblems = problems.filter((p) => tried || p.code !== 'deputyRequired');
   const days = datesSet ? absenceWorkingDays(from, to) : 0;
@@ -272,7 +311,8 @@ function AbsenceForm({
     e.preventDefault();
     setTried(true);
     if (!datesSet || problems.length > 0) return;
-    create.mutate(input, { onSuccess: onDone });
+    if (editing) update.mutate({ id: editing.id, input }, { onSuccess: onDone });
+    else create.mutate(input, { onSuccess: onDone });
   };
 
   return (
@@ -325,7 +365,8 @@ function AbsenceForm({
           <input
             id="abs-from"
             type="date"
-            min={today}
+            min={started ? undefined : today}
+            disabled={started}
             value={from}
             onChange={(e) => setFrom(e.target.value)}
             className={`${fieldBox} mt-[6px]`}

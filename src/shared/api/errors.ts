@@ -80,6 +80,7 @@ export const knownErrorCodes = [
   'photo_too_large',
   'photo_required',
   'absence_invalid',
+  'absence_started',
   'document_status',
   'document_immutable',
   'assistant_disabled',
