@@ -36,3 +36,39 @@ export function insertMention(text: string, draft: MentionDraft, member: ChatMem
     caret: draft.start + inserted.length,
   };
 }
+
+export type MessagePart =
+  | { kind: 'text'; value: string }
+  | { kind: 'mention'; value: string }
+  | { kind: 'link'; value: string; href: string };
+
+const TOKEN = /(@[А-ЯЁA-Z]\. [А-ЯЁA-Z][а-яёa-z-]+|https?:\/\/[^\s<>]+|www\.[^\s<>]+)/;
+const TRAILING = /[.,;:!?)\]»"']+$/;
+
+export function messageParts(text: string): MessagePart[] {
+  const parts: MessagePart[] = [];
+  const push = (value: string) => {
+    if (!value) return;
+    const last = parts.at(-1);
+    if (last?.kind === 'text') last.value += value;
+    else parts.push({ kind: 'text', value });
+  };
+  for (const piece of text.split(TOKEN)) {
+    if (!piece) continue;
+    if (piece.startsWith('@')) {
+      parts.push({ kind: 'mention', value: piece });
+    } else if (/^(https?:\/\/|www\.)/.test(piece)) {
+      const tail = piece.match(TRAILING)?.[0] ?? '';
+      const value = tail ? piece.slice(0, -tail.length) : piece;
+      parts.push({
+        kind: 'link',
+        value,
+        href: value.startsWith('www.') ? `https://${value}` : value,
+      });
+      push(tail);
+    } else {
+      push(piece);
+    }
+  }
+  return parts;
+}

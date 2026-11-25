@@ -8,6 +8,7 @@ import { addDays, todayInBishkek } from '@/shared/lib/workDays';
 import { GroupIcon } from '@/shared/ui/icons';
 import { PersonPhoto } from '@/shared/ui/PersonPhoto';
 import { useChatMembers } from './api';
+import { messageParts } from './mentions';
 import type { ChatMember, ChatMessage } from './types';
 
 /** Аватар участника; точка — в отпуске (как в макете у М. Эсеновой) */
@@ -126,17 +127,27 @@ export function usePreview() {
 
 /** Текст с подсветкой упоминаний «@А. Дуйшеев» */
 export function MessageText({ text }: { text: string }) {
-  const parts = text.split(/(@[А-ЯЁA-Z]\. [А-ЯЁA-Z][а-яёa-z-]+)/);
   return (
     <>
-      {parts.map((part, i) =>
-        part.startsWith('@') ? (
+      {messageParts(text).map((part, i) =>
+        part.kind === 'mention' ? (
           // biome-ignore lint/suspicious/noArrayIndexKey: части текста не переставляются
           <span key={i} className="font-medium text-info">
-            {part}
+            {part.value}
           </span>
+        ) : part.kind === 'link' ? (
+          <a
+            // biome-ignore lint/suspicious/noArrayIndexKey: части текста не переставляются
+            key={i}
+            href={part.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="break-all text-info underline underline-offset-2 hover:opacity-80"
+          >
+            {part.value}
+          </a>
         ) : (
-          part
+          part.value
         ),
       )}
     </>

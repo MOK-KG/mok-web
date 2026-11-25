@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { insertMention, mentionAt, mentionCandidates } from './mentions';
+import { insertMention, mentionAt, mentionCandidates, messageParts } from './mentions';
 import type { ChatMember } from './types';
 
 const member = (id: string, name: string, short: string, active = true): ChatMember => ({
@@ -90,5 +90,24 @@ describe('insertMention', () => {
       text: '@Н. Бакиров ',
       caret: 12,
     });
+  });
+});
+
+describe('ссылки и упоминания в тексте сообщения', () => {
+  it('ссылка кликабельна, знаки препинания после неё — обычный текст', () => {
+    expect(messageParts('См. https://olympic.kg/docs?id=1, и www.noc.kg. @Н. Бакиров')).toEqual([
+      { kind: 'text', value: 'См. ' },
+      { kind: 'link', value: 'https://olympic.kg/docs?id=1', href: 'https://olympic.kg/docs?id=1' },
+      { kind: 'text', value: ', и ' },
+      { kind: 'link', value: 'www.noc.kg', href: 'https://www.noc.kg' },
+      { kind: 'text', value: '. ' },
+      { kind: 'mention', value: '@Н. Бакиров' },
+    ]);
+  });
+
+  it('без ссылок — один текст', () => {
+    expect(messageParts('javascript:alert(1)')).toEqual([
+      { kind: 'text', value: 'javascript:alert(1)' },
+    ]);
   });
 });
