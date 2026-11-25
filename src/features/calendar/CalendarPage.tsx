@@ -5,7 +5,7 @@ import { usePageSubtitle } from '@/app/layout/AppLayout';
 import { useCurrentAbsences } from '@/features/absences/api';
 import { useCan, useCurrentPersonId } from '@/features/auth';
 import { Avatar } from '@/features/knowledge-base/parts';
-import { absenceOf } from '@/features/tasks/absences';
+import { type AbsenceKind, absenceOf } from '@/features/tasks/absences';
 import { useTasks } from '@/features/tasks/api';
 import { DueChips } from '@/features/tasks/board/TaskCard';
 import { urgencyOf } from '@/features/tasks/deadline';
@@ -39,6 +39,24 @@ const CELL_DEADLINES = 2;
 const capitalize = (s: string) => s.charAt(0).toLocaleUpperCase() + s.slice(1);
 
 const isIsoDate = (v: string | null): v is IsoDate => !!v && /^\d{4}-\d{2}-\d{2}$/.test(v);
+
+const absenceRing: Record<AbsenceKind, string> = {
+  vacation: 'ring-tone-green',
+  trip: 'ring-tone-cyan',
+};
+
+const absenceChip: Record<AbsenceKind, string> = {
+  vacation: 'bg-tone-green-bg text-tone-green',
+  trip: 'bg-tone-cyan-bg text-tone-cyan',
+};
+
+function AbsenceMark({ kind }: { kind: AbsenceKind }) {
+  return kind === 'trip' ? (
+    <PlaneIcon size={11} className="shrink-0 text-tone-cyan" />
+  ) : (
+    <span aria-hidden className="size-[7px] shrink-0 rounded-full bg-tone-green" />
+  );
+}
 
 const layerDot: Record<CalendarLayer, string> = {
   mine: 'bg-info',
@@ -331,14 +349,28 @@ function DayCell({
         </span>
       )}
       {absences.length > 0 && (
-        <span className="mt-auto flex items-center gap-[3px]">
-          <PlaneIcon size={11} className="shrink-0 text-tone-cyan" />
-          {absences.slice(0, 3).map((a) => (
-            <Avatar key={a.person.id} person={a.person} size={20} />
-          ))}
-          {absences.length > 3 && (
-            <span className="text-[10px] text-faint">+{absences.length - 3}</span>
-          )}
+        <span className="mt-auto flex flex-wrap items-center gap-x-[6px] gap-y-[2px]">
+          {(['vacation', 'trip'] as const).map((kind) => {
+            const group = absences.filter((a) => a.kind === kind);
+            if (group.length === 0) return null;
+            return (
+              <span
+                key={kind}
+                title={t(`absences.kind.${kind}`)}
+                className="flex items-center gap-[3px]"
+              >
+                <AbsenceMark kind={kind} />
+                {group.slice(0, 2).map((a) => (
+                  <span key={a.person.id} className={`rounded-full ring-2 ${absenceRing[kind]}`}>
+                    <Avatar person={a.person} size={20} />
+                  </span>
+                ))}
+                {group.length > 2 && (
+                  <span className="text-[10px] text-faint">+{group.length - 2}</span>
+                )}
+              </span>
+            );
+          })}
         </span>
       )}
     </button>
@@ -430,9 +462,19 @@ function DayPanel({
           <ul>
             {absences.map((a) => (
               <li key={a.person.id} className="flex items-center gap-[10px] px-5 py-2">
-                <Avatar person={a.person} size={24} />
+                <span className={`rounded-full ring-2 ${absenceRing[a.kind]}`}>
+                  <Avatar person={a.person} size={24} />
+                </span>
                 <div className="min-w-0">
-                  <p className="truncate text-[12.5px] text-text">{a.person.name}</p>
+                  <p className="flex items-center gap-2 truncate text-[12.5px] text-text">
+                    <span className="truncate">{a.person.name}</span>
+                    <span
+                      className={`flex shrink-0 items-center gap-1 rounded-[5px] px-[6px] py-[1px] text-[10.5px] font-medium ${absenceChip[a.kind]}`}
+                    >
+                      <AbsenceMark kind={a.kind} />
+                      {t(`absences.kind.${a.kind}`)}
+                    </span>
+                  </p>
                   <p className="truncate text-[11px] text-faint">
                     {t('dashboard.absentFrom', { from: date(a.from), to: date(a.to) })}
                     {' · '}
