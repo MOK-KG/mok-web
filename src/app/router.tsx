@@ -1,6 +1,7 @@
 import { lazy, type ReactElement, Suspense } from 'react';
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-dom';
 import { AuthGate, LoginPage, PendingPage, RequirePermission } from '@/features/auth';
+import { PrivacyPage } from '@/features/legal/PrivacyPage';
 import { type Section, sections } from '@/shared/config/permissions';
 import { AppLayout, type RouteHandle } from './layout/AppLayout';
 
@@ -241,6 +242,7 @@ export const routes: RouteObject[] = [
     ),
     children: sectionRoutes,
   },
+  { path: '/privacy', element: <PrivacyPage /> },
   { path: '*', element: <Navigate to="/" replace /> },
 ];
 

@@ -1754,5 +1754,97 @@
     "inTwoWorkingDays": "In 2 working days",
     "inAWeek": "In a week",
     "weekend": "weekend"
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "updated": "Effective 26 November 2026",
+    "intro": "The NOC KR Platform is the internal system of the public association “National Olympic Committee of the Kyrgyz Republic” (NOC KR) for its staff: the web version at dashboard.olympic.kg and the “НОК КР” mobile app. This policy explains what data is processed, why, and who it is shared with.",
+    "sections": [
+      {
+        "title": "1. Who uses the platform",
+        "items": [
+          "Only NOC KR staff and invited participants with a work Google account in the olympic.kg domain.",
+          "Accounts are created by the NOC KR administrator. There is no self sign-up in the app."
+        ]
+      },
+      {
+        "title": "2. Data we process",
+        "items": [
+          "Account: full name, work email, position, department, role, and a profile photo if the user uploads one.",
+          "Work data: tasks and comments, chat messages, knowledge base articles, calendar events, leave and business trips, attached files.",
+          "Technical data: device and browser, IP address, sign-in and last activity time, push notification token, and an audit log (who did what and when).",
+          "Emails from the work Gmail mailbox connected by the administrator — read-only, to turn them into tasks.",
+          "If a user connects their Google Calendar or Google Drive: their calendar events and the files they granted access to."
+        ]
+      },
+      {
+        "title": "3. Why",
+        "items": [
+          "Running the platform: tasks, messaging, knowledge base, calendar, absences and deputies.",
+          "Notifications about assignments, deadlines and mentions.",
+          "Security: sign-in with work accounts only, role-based permissions, audit log.",
+          "Reading incoming emails and suggesting tasks."
+        ]
+      },
+      {
+        "title": "4. AI assistant",
+        "items": [
+          "To parse emails and answer questions, email texts, user questions and the knowledge base and task excerpts needed for the answer are sent to OpenAI.",
+          "The assistant sees only what the user can see. It only proposes tasks, messages and events — they are carried out after the user confirms."
+        ]
+      },
+      {
+        "title": "5. Who data is shared with",
+        "items": [
+          "Google — sign-in, Gmail, Google Calendar and Google Drive.",
+          "OpenAI — processing text for the AI assistant.",
+          "Apple and Expo — delivering push notifications to phones.",
+          "The hosting provider of the platform servers.",
+          "Data is not sold or used for advertising. There is no cross-app or cross-site tracking."
+        ]
+      },
+      {
+        "title": "6. How long data is kept",
+        "items": [
+          "Account and work data — as long as NOC KR needs it for its work.",
+          "A former employee is deactivated; their past actions are kept.",
+          "Notifications are deleted after 12 months.",
+          "The audit log is kept indefinitely and cannot be changed."
+        ]
+      },
+      {
+        "title": "7. Protection",
+        "items": [
+          "Data is transferred over HTTPS only.",
+          "Permissions are checked on the server by the user’s role.",
+          "Google access keys are stored encrypted.",
+          "Audit log entries are protected against modification."
+        ]
+      },
+      {
+        "title": "8. User rights",
+        "items": [
+          "Find out what data is stored about you, correct it, remove your profile photo.",
+          "Request deletion of profile data through the NOC KR administrator or at info@olympic.kg. Work records and the audit log are deleted within the NOC KR record-keeping rules."
+        ]
+      },
+      {
+        "title": "9. Age",
+        "items": ["The platform is intended for staff and not for persons under 18."]
+      },
+      {
+        "title": "10. Changes",
+        "items": ["A new version is published on this page with its effective date."]
+      },
+      {
+        "title": "11. Contact",
+        "items": [
+          "Public association “National Olympic Committee of the Kyrgyz Republic”, Bishkek.",
+          "Email: info@olympic.kg"
+        ]
+      }
+    ],
+    "back": "Back to sign-in",
+    "link": "Privacy Policy"
   }
 }

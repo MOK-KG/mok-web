@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { useTheme } from '@/app/providers/ThemeProvider';
 import type { Language } from '@/shared/config/i18n';
 import { links } from '@/shared/config/links';
@@ -54,6 +55,12 @@ export function AuthLayout({ children, footerNote, footerDivider = false }: Prop
             >
               {t('auth.contactAdmin')}
             </a>
+            <Link
+              to="/privacy"
+              className="mt-[6px] block text-[12px] text-faint hover:text-text hover:underline"
+            >
+              {t('privacy.link')}
+            </Link>
           </div>
         </div>
       </main>
